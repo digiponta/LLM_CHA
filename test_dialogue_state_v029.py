@@ -14,6 +14,9 @@ class DialogueStateTests(unittest.TestCase):
         self.assertFalse(repeat_check("SFです","SF小説には宇宙探査を扱う作品があります。",self.history)[0])
     def test_empty_history(self):
         self.assertFalse(repeat_check("SFです","そう。どんな本を読んでいるの?",[])[0])
+    def test_unpunctuated_new_questions(self):
+        for question in ("あなたは誰ですか", "CPUとは", "GPUの理由を説明してください", "お名前を教えてください"):
+            self.assertFalse(dialogue_state(self.history, question)["user_answered"], question)
     def test_unrelated_question_does_not_trigger(self):
         self.assertFalse(repeat_check("あなたは誰ですか","そう。どんな本を読んでいるの?",self.history)[0])
 if __name__=="__main__": unittest.main()
