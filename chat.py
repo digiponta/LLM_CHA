@@ -17,6 +17,7 @@
 # prediction principle.
 
 from __future__ import annotations
+from conversation_intent_v023 import intent_reply as conversation_intent_reply
 from conversation_quality_gate_v022 import quality_check as conversation_quality_check
 
 from character_runtime_v010 import character_command, select_profile, speaker as character_speaker
@@ -4653,6 +4654,19 @@ def main() -> None:
                 last_ai_reply = None
                 print("[conversation history cleared after training]")
             print()
+            continue
+
+        # v0.2.3: opt-in character conversational intents run separately from
+        # factual Semantic Memory and /sleep. Never train from these outputs.
+        intent_result = conversation_intent_reply(user_text, active_character, history)
+        if intent_result is not None:
+            intent_name, intent_answer = intent_result
+            print(f"{character_speaker(active_character)}> {intent_answer}")
+            print(f"[character-intent={intent_name}, source=profile/context, generation=0]")
+            print()
+            history.append((user_text, intent_answer))
+            last_user_text = user_text
+            last_ai_reply = None
             continue
 
         last_user_text = user_text
