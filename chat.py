@@ -4622,6 +4622,7 @@ def main() -> None:
                 device,
             )
             history.clear()
+            conversation_context.clear()
             last_user_text = None
             last_ai_reply = None
             print(
