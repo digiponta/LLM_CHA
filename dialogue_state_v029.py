@@ -9,6 +9,14 @@ from difflib import SequenceMatcher
 def normalize(s: str) -> str:
     return re.sub(r"[\s。？！?!、,.]+", "", s or "").strip()
 
+def is_new_question(text: str) -> bool:
+    """Conservative detection of explicit new questions without '?' punctuation."""
+    q = text.strip().rstrip("。！？?! ")
+    return bool(
+        re.search(r"[？?]", text)
+        or re.search(r"(?:ですか|ますか|でしょうか|だろうか|なのか|とは|教えて(?:ください)?|説明して(?:ください)?|何ですか|誰ですか)$", q)
+    )
+
 def dialogue_state(history: list[tuple[str,str]], current: str) -> dict:
     if not history:
         return {"has_previous":False,"previous_question":"","user_answered":False}
@@ -16,7 +24,7 @@ def dialogue_state(history: list[tuple[str,str]], current: str) -> dict:
     previous_question = prior_ai.strip() if ("？" in prior_ai or "?" in prior_ai) else ""
     # A brief follow-up after a question often answers it.
     user_answered = bool(previous_question and current.strip() and len(current.strip())<=35
-                         and not re.search(r"[？?]",current))
+                         and not is_new_question(current))
     return {"has_previous":True,"previous_question":previous_question,
             "user_answered":user_answered}
 
