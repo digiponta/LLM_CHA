@@ -17,6 +17,7 @@
 # prediction principle.
 
 from __future__ import annotations
+from conversation_quality_gate_v022 import quality_check as conversation_quality_check
 
 from character_runtime_v010 import character_command, select_profile, speaker as character_speaker
 
@@ -428,6 +429,7 @@ def parse_args() -> argparse.Namespace:
             "the current turn by this cosine-similarity margin."
         ),
     )
+    parser.add_argument("--conversation-quality-gate", action=argparse.BooleanOptionalAction, default=True, help="Conservative gate for raw generated conversational answers.")
     parser.add_argument(
         "--show-risk",
         action=argparse.BooleanOptionalAction,
@@ -5151,6 +5153,16 @@ def main() -> None:
             )
         else:
             effective_agreement = args.min_agreement
+
+        if accepted and args.conversation_quality_gate and args.unknown_rejection and internalized_record is None:
+            quality_ok, quality_reason = conversation_quality_check(
+                user_text, primary.text,
+                lexical_agreement=agreement,
+                semantic_agreement=semantic_agreement,
+            )
+            if not quality_ok:
+                accepted = False
+                reason = quality_reason
 
         if accepted and args.semantic_consistency:
             if not semantic_ok:
