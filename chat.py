@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+from character_runtime_v010 import character_command, select_profile, speaker as character_speaker
+
 import argparse
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -236,6 +238,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Chat with the current LLM_GPU conversational model."
     )
+    parser.add_argument("--character-dir", default="characters", help="Character profile JSON directory (separate from Semantic Memory).")
+    parser.add_argument("--character", default="", help="Optional character profile ID; off by default.")
     parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument(
@@ -3111,6 +3115,7 @@ def checkpoint_trained_fingerprints(
 
 def main() -> None:
     args = parse_args()
+    active_character = select_profile(args.character_dir, args.character) if args.character else None
 
     tokenizer_path = resolve_runtime_path(args.tokenizer)
     model_path = choose_startup_model(
@@ -3164,6 +3169,7 @@ def main() -> None:
     )
 
     print("Commands:")
+    print("  /character list|select ID|show|off  select display character without changing semantic facts")
     print("  /reset        clear conversation history")
     print("  /info         show model/checkpoint information")
     print("  /learn on     capture accepted turns for later training")
@@ -3317,6 +3323,11 @@ def main() -> None:
             continue
 
         command = user_text.lower()
+        handled, active_character, character_message = character_command(user_text, args.character_dir, active_character)
+        if handled:
+            print(character_message)
+            print()
+            continue
 
         if command in ("/exit", "exit", "quit"):
             break
@@ -4123,7 +4134,7 @@ def main() -> None:
                 subject,
             )
             if answer:
-                print(f"AI> {answer}")
+                print(f"{character_speaker(active_character)}> {answer}")
             else:
                 print(f"[no semantic propositions for {subject!r}]")
             print()
@@ -4706,7 +4717,7 @@ def main() -> None:
 
         input_ok, input_reason = input_quality_check(user_text)
         if not input_ok:
-            print(f"AI> {UNKNOWN_REPLY}")
+            print(f"{character_speaker(active_character)}> {UNKNOWN_REPLY}")
             if args.show_risk and args.unknown_rejection:
                 print(
                     f"[gate=UNKNOWN, confidence=0.000, "
@@ -4731,7 +4742,7 @@ def main() -> None:
         )
         if conditional_query.matched:
             if conditional_answer:
-                print(f"AI> {conditional_answer}")
+                print(f"{character_speaker(active_character)}> {conditional_answer}")
                 print(
                     f"[conditional-retrieval=HIT, "
                     f"subject={conditional_query.subject!r}, "
@@ -4774,7 +4785,7 @@ def main() -> None:
                     retrieval_truth.state
                 )
                 if direct_retrieval_allowed:
-                    print(f"AI> {retrieval.answer}")
+                    print(f"{character_speaker(active_character)}> {retrieval.answer}")
                     function_part = ""
                     if retrieval.function_structure is not None:
                         fs = retrieval.function_structure
@@ -4856,7 +4867,7 @@ def main() -> None:
             dispatch.action == "RETRIEVE"
             and not force_internalized_verification
         ):
-            print(f"AI> {dispatch.answer}")
+            print(f"{character_speaker(active_character)}> {dispatch.answer}")
             predicate_part = (
                 f", predicate_type={dispatch.predicate_type}"
                 if dispatch.predicate_type
@@ -4945,7 +4956,7 @@ def main() -> None:
                     else UNKNOWN_REPLY
                 )
             )
-            print(f"AI> {block_reply}")
+            print(f"{character_speaker(active_character)}> {block_reply}")
             print(
                 f"[knowledge-state={dispatch.state}, "
                 f"concept={dispatch.focus}, generation=blocked]"
@@ -5272,7 +5283,7 @@ def main() -> None:
         if not reply:
             reply = UNKNOWN_REPLY if args.unknown_rejection else "(no response)"
 
-        print(f"AI> {reply}")
+        print(f"{character_speaker(active_character)}> {reply}")
 
         if args.show_risk and args.unknown_rejection and not accepted:
             print(f"[candidate={primary.text}]")
