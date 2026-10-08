@@ -17,6 +17,7 @@
 # prediction principle.
 
 from __future__ import annotations
+from conversation_diagnostics_v026 import classify_quality as diagnostic_quality, prompt_debug
 from conversation_context_v025 import ConversationContext
 from conversation_intent_v023 import intent_reply as conversation_intent_reply
 from conversation_quality_gate_v022 import quality_check as conversation_quality_check
@@ -241,6 +242,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Chat with the current LLM_GPU conversational model."
     )
+    parser.add_argument("--show-context", action="store_true", help="Show the exact prompt passed to the model. May expose user conversation text.")
+    parser.add_argument("--show-conversation-diagnostics", action="store_true", help="Show generic/non-answer diagnostic flags without changing gate decisions.")
     parser.add_argument("--dialogue-history-turns", type=int, default=0, help="Opt-in chronological history turns for nonfactual character conversation (0=legacy policy).")
     parser.add_argument("--character-dir", default="characters", help="Character profile JSON directory (separate from Semantic Memory).")
     parser.add_argument("--character", default="", help="Optional character profile ID; off by default.")
@@ -5085,6 +5088,9 @@ def main() -> None:
                 history_turns=args.history_turns,
             )
 
+        if args.show_context:
+            print(prompt_debug(prompt, len(selected_history), from_chatter and generation_user_text != user_text))
+
         start = time.perf_counter()
 
         # Primary response: greedy when rejection is enabled so that the
@@ -5119,6 +5125,9 @@ def main() -> None:
                 )
 
         primary = results[0]
+        if args.show_conversation_diagnostics:
+            note = diagnostic_quality(user_text, primary.text)
+            print(f"[conversation-diagnostic flag={note['flag']}, generic={note['generic']}, context_required={note['context_required']}, reason={note['reason']}]")
 
         accepted = True
         confidence = primary.mean_confidence
