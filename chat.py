@@ -240,6 +240,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Chat with the current LLM_GPU conversational model."
     )
+    parser.add_argument("--dialogue-history-turns", type=int, default=0, help="Opt-in chronological history turns for nonfactual character conversation (0=legacy policy).")
     parser.add_argument("--character-dir", default="characters", help="Character profile JSON directory (separate from Semantic Memory).")
     parser.add_argument("--character", default="", help="Optional character profile ID; off by default.")
     parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
@@ -5054,11 +5055,24 @@ def main() -> None:
             if internalized_record is not None
             else normalize_identity_query(user_text)
         )
-        prompt, selected_history = build_prompt(
-            history=history,
-            user_text=generation_user_text,
-            history_turns=args.history_turns,
+        # v0.2.4: chronology only for conversational model generation.
+        # Never feed contextual chatter to verified/internalized knowledge answers.
+        from_chatter = (
+            active_character is not None
+            and internalized_record is None
+            and args.dialogue_history_turns > 0
+            and classify_intent_and_slots(user_text)[0] not in ("definition", "comparison")
         )
+        if from_chatter:
+            selected_history = history[-args.dialogue_history_turns:]
+            prompt = "".join(f"{USER_PREFIX}{q}\n{AI_PREFIX}{a}\n" for q, a in selected_history)
+            prompt += f"{USER_PREFIX}{generation_user_text}\n{AI_PREFIX}"
+        else:
+            prompt, selected_history = build_prompt(
+                history=history,
+                user_text=generation_user_text,
+                history_turns=args.history_turns,
+            )
 
         start = time.perf_counter()
 
