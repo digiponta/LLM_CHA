@@ -49,13 +49,14 @@ def build(source: Path, output: Path, max_rpc: int, replay_factor: int, seed: in
     # Discard potential exact-question overlap from RPC to avoid conflicting labels.
     protected = {x["user"] for x in anchors}
     rpc = [x for x in rpc if x["user"] not in protected]
-    train = rpc + anchors * replay_factor
+    train = list(rpc)
     rng.shuffle(train)
     output.mkdir(parents=True, exist_ok=True)
     write_pairs(output/"rpc_replay_train.jsonl",train)
+    write_pairs(output/"rpc_replay_anchors.jsonl",anchors)
     write_pairs(output/"rpc_replay_anchor_eval.jsonl",anchors)
     report = {"rpc_rows":len(rpc),"anchor_unique":len(anchors),"anchor_repetitions":replay_factor,
-              "training_rows":len(train),"seed":seed,"note":"Anchor evaluation is a retention diagnostic, not an independent held-out score"}
+              "training_rows":len(train),"effective_anchor_rows":len(anchors)*replay_factor,"seed":seed,"note":"Anchor evaluation is a retention diagnostic, not an independent held-out score"}
     (output/"rpc_replay_manifest.json").write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     return report
 
