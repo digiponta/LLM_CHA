@@ -39,6 +39,7 @@ SEED = 42
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Nagato-style conversational SFT for LLM_TRY.")
+    p.add_argument("--preformatted-prompts", action="store_true", help="Treat user field as complete prefix-free multi-turn chat prompt body.")
     p.add_argument("--data", default="data/nagato_canonical_v91.jsonl")
     p.add_argument("--tokenizer", default="model/tokenizer-v0.7-bpe.json")
     p.add_argument("--base-model", default="model/model-gpu-v0.8-chat-clean.pt")
@@ -228,12 +229,15 @@ class ConversationDataset(Dataset):
         pairs: Sequence[Tuple[str, str]],
         tokenizer: Tokenizer,
         context_length: int,
+        preformatted_prompts: bool = False,
     ):
         self.rows = []
+        self.preformatted_prompts = preformatted_prompts
 
         for user_text, answer_text in pairs:
+            prompt_text = (f"{user_text}\n{AI_PREFIX}" if preformatted_prompts else f"{USER_PREFIX}{user_text}\n{AI_PREFIX}")
             prompt_ids = tokenizer.encode(
-                f"{USER_PREFIX}{user_text}\n{AI_PREFIX}",
+                prompt_text,
                 add_bos=True,
             )
             answer_ids = tokenizer.encode(answer_text, add_eos=True)
@@ -449,11 +453,13 @@ def main() -> None:
         repeated_train,
         tokenizer,
         model.context_length,
+        preformatted_prompts=args.preformatted_prompts,
     )
     val_ds = ConversationDataset(
         val_pairs,
         tokenizer,
         model.context_length,
+        preformatted_prompts=args.preformatted_prompts,
     )
 
     train_loader = DataLoader(
