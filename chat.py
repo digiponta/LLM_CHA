@@ -17,6 +17,7 @@
 # prediction principle.
 
 from __future__ import annotations
+from conversation_context_v025 import ConversationContext
 from conversation_intent_v023 import intent_reply as conversation_intent_reply
 from conversation_quality_gate_v022 import quality_check as conversation_quality_check
 
@@ -3219,6 +3220,7 @@ def main() -> None:
     print()
 
     history: List[Tuple[str, str]] = []
+    conversation_context = ConversationContext()
     learning_log = Path(args.learning_log)
     learning_state = Path(args.learning_state)
     proposition_path = resolve_runtime_path(args.propositions)
@@ -3338,6 +3340,7 @@ def main() -> None:
 
         if command == "/reset":
             history.clear()
+            conversation_context.clear()
             print("[conversation history cleared]")
             print()
             continue
@@ -4355,6 +4358,7 @@ def main() -> None:
                 )
                 load_concept_calibration(calibration_path, device)
                 history.clear()
+                conversation_context.clear()
                 last_user_text = None
                 last_ai_reply = None
 
@@ -4558,6 +4562,7 @@ def main() -> None:
                     "adjust training/replay before retry]"
                 )
                 history.clear()
+                conversation_context.clear()
                 last_user_text = None
                 last_ai_reply = None
                 print(
@@ -4651,11 +4656,14 @@ def main() -> None:
                 )
                 load_concept_calibration(calibration_path, device)
                 history.clear()
+                conversation_context.clear()
                 last_user_text = None
                 last_ai_reply = None
                 print("[conversation history cleared after training]")
             print()
             continue
+
+        conversation_context.add_user(user_text)
 
         # v0.2.3: opt-in character conversational intents run separately from
         # factual Semantic Memory and /sleep. Never train from these outputs.
@@ -4666,6 +4674,7 @@ def main() -> None:
             print(f"[character-intent={intent_name}, source=profile/context, generation=0]")
             print()
             history.append((user_text, intent_answer))
+            conversation_context.mark_answered()
             last_user_text = user_text
             last_ai_reply = None
             continue
@@ -5064,6 +5073,7 @@ def main() -> None:
             and classify_intent_and_slots(user_text)[0] not in ("definition", "comparison")
         )
         if from_chatter:
+            generation_user_text = conversation_context.pending_prefix(current=generation_user_text)
             selected_history = history[-args.dialogue_history_turns:]
             prompt = "".join(f"{USER_PREFIX}{q}\n{AI_PREFIX}{a}\n" for q, a in selected_history)
             prompt += f"{USER_PREFIX}{generation_user_text}\n{AI_PREFIX}"
@@ -5412,6 +5422,7 @@ def main() -> None:
             if resolved:
                 print(f"[resolved teaching queue entries: {resolved}]")
             history.append((user_text, reply))
+            conversation_context.mark_answered()
             last_ai_reply = reply
             if learning_enabled:
                 print("[learning candidate ready: use /good to approve or /teach TEXT to correct]")
