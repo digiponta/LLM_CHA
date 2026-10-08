@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 from conversation_diagnostics_v026 import classify_quality as diagnostic_quality, prompt_debug
+from conversation_quality_gate_v027 import context_quality_decision, repair_reply
 from conversation_context_v025 import ConversationContext
 from conversation_intent_v023 import intent_reply as conversation_intent_reply
 from conversation_quality_gate_v022 import quality_check as conversation_quality_check
@@ -243,6 +244,8 @@ def parse_args() -> argparse.Namespace:
         description="Chat with the current LLM_GPU conversational model."
     )
     parser.add_argument("--show-context", action="store_true", help="Show the exact prompt passed to the model. May expose user conversation text.")
+    parser.add_argument("--context-quality-gate", action=argparse.BooleanOptionalAction, default=True, help="Reject generic non-answers to explicit continuation requests.")
+    parser.add_argument("--conversation-repair", action=argparse.BooleanOptionalAction, default=True, help="Give a clarification instead of unknown for context-only rejected replies.")
     parser.add_argument("--show-conversation-diagnostics", action="store_true", help="Show generic/non-answer diagnostic flags without changing gate decisions.")
     parser.add_argument("--dialogue-history-turns", type=int, default=0, help="Opt-in chronological history turns for nonfactual character conversation (0=legacy policy).")
     parser.add_argument("--character-dir", default="characters", help="Character profile JSON directory (separate from Semantic Memory).")
@@ -5212,6 +5215,14 @@ def main() -> None:
                 accepted = False
                 reason = quality_reason
 
+        context_quality_rejected = False
+        if accepted and args.unknown_rejection and args.context_quality_gate and internalized_record is None:
+            context_ok, context_reason = context_quality_decision(user_text, primary.text)
+            if not context_ok:
+                accepted = False
+                context_quality_rejected = True
+                reason = context_reason
+
         if accepted and args.semantic_consistency:
             if not semantic_ok:
                 accepted = False
@@ -5332,6 +5343,8 @@ def main() -> None:
                 route_result += f"; verification resolved={verified}"
 
         reply = primary.text if accepted else UNKNOWN_REPLY
+        if context_quality_rejected and args.conversation_repair:
+            reply = repair_reply(user_text, has_context=bool(selected_history))
         new_tokens = sum(r.token_count for r in results)
 
         if device.type == "cuda":
