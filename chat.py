@@ -17,6 +17,7 @@
 # prediction principle.
 
 from __future__ import annotations
+from dialogue_state_v029 import dialogue_state, repeat_check
 from conversation_diagnostics_v026 import classify_quality as diagnostic_quality, prompt_debug
 from conversation_quality_gate_v027 import context_quality_decision, repair_reply
 from conversation_context_v025 import ConversationContext
@@ -244,6 +245,8 @@ def parse_args() -> argparse.Namespace:
         description="Chat with the current LLM_GPU conversational model."
     )
     parser.add_argument("--show-context", action="store_true", help="Show the exact prompt passed to the model. May expose user conversation text.")
+    parser.add_argument("--dialogue-repetition-gate", action=argparse.BooleanOptionalAction, default=True, help="Reject repeated AI questions after short user answers.")
+    parser.add_argument("--show-dialogue-state", action="store_true", help="Display dialogue-state/repetition diagnostics.")
     parser.add_argument("--context-quality-gate", action=argparse.BooleanOptionalAction, default=True, help="Reject generic non-answers to explicit continuation requests.")
     parser.add_argument("--conversation-repair", action=argparse.BooleanOptionalAction, default=True, help="Give a clarification instead of unknown for context-only rejected replies.")
     parser.add_argument("--show-conversation-diagnostics", action="store_true", help="Show generic/non-answer diagnostic flags without changing gate decisions.")
@@ -5128,6 +5131,9 @@ def main() -> None:
                 )
 
         primary = results[0]
+        dialogue_repeat, dialogue_similarity = repeat_check(user_text, primary.text, history if from_chatter else [])
+        if args.show_dialogue_state:
+            print(f"[dialogue-state {dialogue_state(history, user_text) if from_chatter else {'mode': 'not-conversational'}}, repeat={dialogue_repeat}, sim={dialogue_similarity:.3f}]")
         if args.show_conversation_diagnostics:
             note = diagnostic_quality(user_text, primary.text)
             print(f"[conversation-diagnostic flag={note['flag']}, generic={note['generic']}, context_required={note['context_required']}, reason={note['reason']}]")
@@ -5222,6 +5228,10 @@ def main() -> None:
                 accepted = False
                 context_quality_rejected = True
                 reason = context_reason
+
+        if accepted and args.unknown_rejection and args.dialogue_repetition_gate and from_chatter and dialogue_repeat:
+            accepted = False
+            reason = "repeated previous assistant question after user answer"
 
         if accepted and args.semantic_consistency:
             if not semantic_ok:
