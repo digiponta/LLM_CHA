@@ -17,6 +17,7 @@
 # prediction principle.
 
 from __future__ import annotations
+from candidate_reranker_v0210 import rank_candidates
 from dialogue_state_v029 import dialogue_state, repeat_check
 from conversation_diagnostics_v026 import classify_quality as diagnostic_quality, prompt_debug
 from conversation_quality_gate_v027 import context_quality_decision, repair_reply
@@ -245,6 +246,8 @@ def parse_args() -> argparse.Namespace:
         description="Chat with the current LLM_GPU conversational model."
     )
     parser.add_argument("--show-context", action="store_true", help="Show the exact prompt passed to the model. May expose user conversation text.")
+    parser.add_argument("--candidate-reranking", action=argparse.BooleanOptionalAction, default=True, help="Rank conversational candidates before existing Unknown/Semantic Gates.")
+    parser.add_argument("--show-candidate-ranking", action="store_true", help="Print candidate ranking diagnostics.")
     parser.add_argument("--dialogue-repetition-gate", action=argparse.BooleanOptionalAction, default=True, help="Reject repeated AI questions after short user answers.")
     parser.add_argument("--show-dialogue-state", action="store_true", help="Display dialogue-state/repetition diagnostics.")
     parser.add_argument("--context-quality-gate", action=argparse.BooleanOptionalAction, default=True, help="Reject generic non-answers to explicit continuation requests.")
@@ -5130,6 +5133,17 @@ def main() -> None:
                     )
                 )
 
+        if args.candidate_reranking and from_chatter and args.unknown_rejection and internalized_record is None:
+            results, candidate_scores = rank_candidates(
+                user_text, results, history,
+                min_confidence=args.min_confidence,
+                min_token_confidence=args.min_token_confidence,
+                min_margin=args.min_mean_margin,
+            )
+            if args.show_candidate_ranking:
+                for entry in candidate_scores:
+                    print(f"[rerank candidate={entry['index']} valid={entry['valid']} score={entry['score']:.3f} repetition={entry['repetition']} generic={entry['generic']} text={entry['text']!r}]")
+                print(f"[rerank selected={next((e['index'] for e in candidate_scores if e['text'] == results[0].text), 0)}; downstream gates=enabled]")
         primary = results[0]
         dialogue_repeat, dialogue_similarity = repeat_check(user_text, primary.text, history if from_chatter else [])
         if args.show_dialogue_state:
