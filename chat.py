@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 from candidate_reranker_v0210 import rank_candidates
+from conversation_gate_v0219 import rescue_casual_gate, topic_followup
 from dialogue_state_v029 import dialogue_state, repeat_check
 from conversation_diagnostics_v026 import classify_quality as diagnostic_quality, prompt_debug
 from conversation_quality_gate_v027 import context_quality_decision, repair_reply
@@ -5087,6 +5088,8 @@ def main() -> None:
         )
         if from_chatter:
             generation_user_text = conversation_context.pending_prefix(current=generation_user_text)
+            if generation_user_text == user_text:
+                generation_user_text = topic_followup(user_text, conversation_context)
             selected_history = history[-args.dialogue_history_turns:]
             prompt = "".join(f"{USER_PREFIX}{q}\n{AI_PREFIX}{a}\n" for q, a in selected_history)
             prompt += f"{USER_PREFIX}{generation_user_text}\n{AI_PREFIX}"
@@ -5254,6 +5257,25 @@ def main() -> None:
             elif reason == "accepted":
                 reason = semantic_reason
             # Preserve diagnostic reasons such as "semantic probe agreement".
+
+        # v0.2.19: restore a rejected conversational candidate only for
+        # robust, non-knowledge small talk. Never override truth/provenance or
+        # contextual/repetition quality gates.
+        if (not accepted and args.unknown_rejection and from_chatter
+                and internalized_record is None):
+            rescue_context_ok, _ = context_quality_decision(user_text, primary.text)
+            if rescue_casual_gate(
+                user_text=user_text, answer=primary.text, intent=intent,
+                semantic_ok=semantic_ok, slot_coverage=slot_coverage,
+                confidence=confidence, min_token_conf=primary.min_confidence,
+                mean_margin=primary.mean_top2_margin,
+                semantic_agreement=semantic_agreement,
+                rejection_reason=reason, internalized=False,
+                truth_restricted=truth_record is not None,
+                repeat=dialogue_repeat, context_ok=rescue_context_ok,
+            ):
+                accepted = True
+                reason = "v0.2.19 vetted conversational lexical-gate rescue"
 
         internalized_fidelity = -1.0
         internalized_lexical_coverage = -1.0
