@@ -27,7 +27,26 @@ def main():
     a=p.parse_args()
     if a.init_k<1 or not 0<=a.init_weight<=10 or not 0<=a.late_weight<=10:p.error("invalid loss arguments")
     if not Path(a.context).is_file():p.error("run prepare_topic_grounded_preformatted_v02291.py first")
-    # The v0.2.25 manifest describes 18 old context rows at weight 12.\n    # This experiment deliberately substitutes 12 rows at weight 18.\n    # Verify its own exposures without weakening the historical manifest check.\n    context_count=len(load_pairs(Path(a.context)))\n    if context_count != 12 or a.context_weight != 18:\n        p.error("v0.2.29.1 expects 12 grounded rows at weight 18")\n    old_manifest=json.loads(Path(a.manifest).read_text(encoding="utf-8"))\n    old_exposures=old_manifest["unique_context_pairs"]*old_manifest["context_weight"]\n    if old_exposures != context_count*a.context_weight:\n        p.error("Context exposure counts are not matched to historical experiment")\n    # Feed a temporary compatible manifest to the historical command,\n    # preserving its strict count/weight validation.\n    import tempfile\n    with tempfile.TemporaryDirectory(prefix="llm_cha_v02291_") as tmp:\n        manifest_path=Path(tmp)/"manifest.json"\n        updated=dict(old_manifest,unique_context_pairs=context_count,context_weight=a.context_weight)\n        manifest_path.write_text(json.dumps(updated,ensure_ascii=False),encoding="utf-8")\n        a.manifest=str(manifest_path)\n        cmd,stats=command(a)\n
+    # Historical manifest: 18 context rows x 12 = 216 exposures.
+    # New experiment: 12 grounded rows x 18 = 216 exposures.
+    context_count = len(load_pairs(Path(a.context)))
+    if context_count != 12 or a.context_weight != 18:
+        p.error("v0.2.29.1 expects 12 grounded rows at weight 18")
+    old_manifest = json.loads(Path(a.manifest).read_text(encoding="utf-8"))
+    old_exposures = old_manifest["unique_context_pairs"] * old_manifest["context_weight"]
+    if old_exposures != context_count * a.context_weight:
+        p.error("Context exposure counts differ from historical experiment")
+
+    # Retain upstream manifest validation using an experiment-local compatible copy.
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix="llm_cha_v02291_") as tmp:
+        manifest_path = Path(tmp) / "manifest.json"
+        new_manifest = dict(old_manifest, unique_context_pairs=context_count,
+                            context_weight=a.context_weight)
+        manifest_path.write_text(json.dumps(new_manifest, ensure_ascii=False), encoding="utf-8")
+        a.manifest = str(manifest_path)
+        cmd, stats = command(a)
+
     if cmd[1]!="train_nagato_chat.py":raise RuntimeError("unexpected upstream trainer")
     cmd[1]="train_context_persistence_v0228.py"
     cmd+=["--context-selective","--init-k",str(a.init_k),
