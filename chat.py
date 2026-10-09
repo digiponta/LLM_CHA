@@ -5081,8 +5081,7 @@ def main() -> None:
         # v0.2.4: chronology only for conversational model generation.
         # Never feed contextual chatter to verified/internalized knowledge answers.
         from_chatter = (
-            active_character is not None
-            and internalized_record is None
+            internalized_record is None
             and args.dialogue_history_turns > 0
             and classify_intent_and_slots(user_text)[0] not in ("definition", "comparison")
         )
