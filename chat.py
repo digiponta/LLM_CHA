@@ -254,7 +254,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--context-quality-gate", action=argparse.BooleanOptionalAction, default=True, help="Reject generic non-answers to explicit continuation requests.")
     parser.add_argument("--conversation-repair", action=argparse.BooleanOptionalAction, default=True, help="Give a clarification instead of unknown for context-only rejected replies.")
     parser.add_argument("--show-conversation-diagnostics", action="store_true", help="Show generic/non-answer diagnostic flags without changing gate decisions.")
-    parser.add_argument("--dialogue-history-turns", type=int, default=0, help="Opt-in chronological history turns for nonfactual character conversation (0=legacy policy).")
+    parser.add_argument("--dialogue-history-turns", type=int, default=2, help="Chronological conversational turns (0=legacy mode); factual Semantic Memory is separate.")
     parser.add_argument("--character-dir", default="characters", help="Character profile JSON directory (separate from Semantic Memory).")
     parser.add_argument("--character", default="", help="Optional character profile ID; off by default.")
     parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
