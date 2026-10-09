@@ -17,7 +17,7 @@
 # prediction principle.
 
 from __future__ import annotations
-from candidate_reranker_v0210 import rank_candidates
+from candidate_reranker_v0220 import rank_candidates
 from conversation_gate_v0219 import rescue_casual_gate, topic_followup
 from dialogue_state_v029 import dialogue_state, repeat_check
 from conversation_diagnostics_v026 import classify_quality as diagnostic_quality, prompt_debug
@@ -5144,7 +5144,7 @@ def main() -> None:
             )
             if args.show_candidate_ranking:
                 for entry in candidate_scores:
-                    print(f"[rerank candidate={entry['index']} valid={entry['valid']} score={entry['score']:.3f} repetition={entry['repetition']} generic={entry['generic']} text={entry['text']!r}]")
+                    print(f"[rerank candidate={entry['index']} valid={entry['valid']} score={entry['score']:.3f} repetition={entry['repetition']} generic={entry['generic']} ack={entry['acknowledgement']} overlap={entry['topic_overlap']} text={entry['text']!r}]")
                 print(f"[rerank selected={next((e['index'] for e in candidate_scores if e['text'] == results[0].text), 0)}; downstream gates=enabled]")
         primary = results[0]
         dialogue_repeat, dialogue_similarity = repeat_check(user_text, primary.text, history if from_chatter else [])
