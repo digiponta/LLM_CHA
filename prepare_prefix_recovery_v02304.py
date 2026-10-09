@@ -7,12 +7,12 @@ import argparse,json
 from pathlib import Path
 from prepare_topic_grounded_v02290 import TRAIN,HOLDOUT
 
-# Curated from observed v0.2.30.3 behavior, not claimed as newly sampled data.
+# Curated controlled CONTINUE stems and observed-style RESTART examples.
 OBSERVED={
- "宇宙探査":("宇宙探査機が好きですね。","宇宙には、まだ解明されていない現象が多くある。"),
+ "宇宙探査":("宇宙探査は、","宇宙には、まだ解明されていない現象が多くある。"),
  "カレー":("カレーは、","長門有希。"),
  "クラシック音楽":("クラシック音楽では、","それなら、いえばすね。"),
- "ゲーム開発":("ゲームとか、","ゲームとか、感じですね。"),
+ "ゲーム開発":("ゲーム開発では、","ゲームとか、感じですね。"),
  "歴史小説":("歴史小説では、","宇宙には、まだ解明されていない現象が多くある。"),
  "写真撮影":("写真撮影では、","モデルを使って処理するのが好きです。"),
 }
