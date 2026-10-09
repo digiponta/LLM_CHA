@@ -15,7 +15,7 @@ from prepare_prefix_recovery_v02304 import build
 from evaluate_prefix_recovery_v02304 import generate, score
 
 @torch.no_grad()
-def recovery_recovery_answer_nll(model,tok,user,answer):
+def recovery_answer_nll(model,tok,user,answer):
     # user already contains the full multi-turn prompt, as in
     # ConversationDataset(preformatted_prompts=True).
     prefix=tok.encode(user+"\nAI: ",add_bos=True)
