@@ -17,7 +17,7 @@ def build(source:Path,dest:Path,limit:int=5000,seed:int=42):
     for row in selected:
         answer=row.get("assistant","")
         if not isinstance(answer,str) or len(answer.strip())<12:continue
-        parts.append(answer.strip()+"。\n")
+        parts.append(answer.strip().rstrip("。！？!?")+"。\n")
     if not parts:raise ValueError("No usable training text")
     dest.parent.mkdir(parents=True,exist_ok=True)
     dest.write_text("".join(parts),encoding="utf-8")
