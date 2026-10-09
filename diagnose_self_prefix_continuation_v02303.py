@@ -31,29 +31,6 @@ def analyze(topic,prefix_text,continuation_text,mode):
             "full_two_sentences":m["two_plus_sentences"],
             "full_second_sentence_topic":m["lexical_topic_in_second_sentence"]}
 
-@torch.no_grad()
-def generation_pair(model,tok,question,reference,prefix_len,max_new_tokens):
-    input_ids=continuation_prompt(tok,question)
-    # Generate the first k answer tokens autonomously (no EOS sampling).
-    generated=model.generate(input_ids,max_new_tokens=prefix_len,eos_id=None,
-                             temperature=0.0,repetition_penalty=1.15)
-    self_prefix=generated[len(input_ids):]
-    gold=tok.encode(reference,add_eos=False)
-    gold_prefix,_=split_prefix(gold,prefix_len)
-    results=[]
-    for mode,forced in (("self_prefix",self_prefix),("reference_prefix",gold_prefix)):
-        model_input=input_ids+forced
-        output=model.generate(model_input,max_new_tokens=max_new_tokens,
-                              eos_id=tok.eos_id,temperature=0.0,
-                              repetition_penalty=1.15)
-        suffix=output[len(model_input):]
-        prefix_text=tok.decode(forced,skip_special_tokens=True)
-        suffix_text=tok.decode(suffix,skip_special_tokens=True)
-        result=analyze(question["topic"],prefix_text,suffix_text,mode)
-        result.update({"prefix_tokens":len(forced),"suffix_tokens":len(suffix)})
-        results.append(result)
-    return results
-
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--fixture",default="data/topic_grounded_v02290/eval.jsonl")
