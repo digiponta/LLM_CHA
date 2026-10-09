@@ -10,7 +10,8 @@ class DecodingQualityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             path=Path(d);(path/"in.json").write_text(json.dumps(self.data,ensure_ascii=False),encoding="utf-8")
             self.assertEqual(build(path/"in.json",path/"out"),2)
-            rows=list(csv.DictReader((path/"out"/"blind_ratings.csv").open(encoding="utf-8-sig",newline="")))
+            with (path/"out"/"blind_ratings.csv").open(encoding="utf-8-sig",newline="") as handle:
+                rows=list(csv.DictReader(handle))
             self.assertEqual(len(rows),2)
             self.assertNotIn("model",rows[0])
             self.assertNotIn("method",rows[0])
