@@ -16,8 +16,8 @@ SEQUENCE=re.compile(r"それから|その後|してから|した後")
 EXPLICIT_SWITCH=re.compile(r"やっぱり|それより|代わりに|変更したい|話題を変え")
 # Limited paraphrases targeting observable referent and purpose phenomena.
 PURPOSE_PHRASES=(
- ("development",r"作ってみたい|作りたい|開発したい|実装したい|自作したい"),
- ("learning",r"勉強したい|学習したい|学びたい"),
+ ("development",r"作ってみたい|作りたい|開発(?:も)?したい|実装(?:も)?したい|自作(?:も)?したい"),
+ ("learning",r"勉強(?:も)?したい|学習(?:も)?したい|学び(?:も)?たい"),
  ("troubleshooting",r"直したい|修正したい"),
  ("casual",r"雑談したい|話したい"),
 )
