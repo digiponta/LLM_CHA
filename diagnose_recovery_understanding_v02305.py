@@ -8,11 +8,27 @@ import argparse, json
 from pathlib import Path
 from collections import defaultdict
 import torch
-from analyze_topic_contrastive_v02292 import answer_nll
+import torch.nn.functional as F
 from model import LanguageModel
 from tokenizer_bpe import Tokenizer
 from prepare_prefix_recovery_v02304 import build
 from evaluate_prefix_recovery_v02304 import generate, score
+
+@torch.no_grad()
+def recovery_recovery_answer_nll(model,tok,user,answer):
+    # user already contains the full multi-turn prompt, as in
+    # ConversationDataset(preformatted_prompts=True).
+    prefix=tok.encode(user+"\nAI: ",add_bos=True)
+    response=tok.encode(answer,add_eos=True)
+    seq=prefix+response
+    if len(seq)>model.context_length+1:
+        raise ValueError("prompt + answer longer than model context")
+    device=next(model.parameters()).device
+    x=torch.tensor([seq[:-1]],dtype=torch.long,device=device)
+    y=torch.tensor(seq[1:],dtype=torch.long,device=device)
+    logits=model(x)[0].float()
+    losses=F.cross_entropy(logits,y,reduction="none")
+    return float(losses[len(prefix)-1:].mean().item()),len(response)
 
 COMMANDS={"continue":"[CONTINUE] 同じ話題を続けて",
           "restart":"[RESTART] 最初から話題に沿って答え直して"}
@@ -70,11 +86,11 @@ def main():
                 opposite="restart" if mode=="continue" else "continue"
                 swapped=counterfactual_prompt(prompt,opposite)
                 target=case["assistant"]
-                matched_nll,_=answer_nll(model,tok,prompt,target)
-                swapped_nll,_=answer_nll(model,tok,swapped,target)
+                matched_nll,_=recovery_answer_nll(model,tok,prompt,target)
+                swapped_nll,_=recovery_answer_nll(model,tok,swapped,target)
                 candidates={"target":matched_nll}
                 for i,text in enumerate(GENERIC,1):
-                    candidates[f"generic_{i}"]=answer_nll(model,tok,prompt,text)[0]
+                    candidates[f"generic_{i}"]=recovery_answer_nll(model,tok,prompt,text)[0]
                 c=candidate_summary(candidates)
                 delta=command_preference(matched_nll,swapped_nll)
                 generated=generate(model,tok,prompt,a.max_new_tokens)
