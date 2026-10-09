@@ -31,4 +31,15 @@ class ContextualPurposeTests(unittest.TestCase):
     def test_evaluator_structure(self):
         self.assertEqual(len(evaluate(fixture(),step)),12)
         self.assertEqual(len(evaluate(FRESH,step)),6)
+    def test_additive_learning(self):
+        d=DialogueState()
+        d,_,_=step(d,"画像認識を開発したい")
+        d,action,_=step(d,"さらに勉強もしたい")
+        self.assertEqual((action,d.purposes),("PLAN",["development","learning"]))
+    def test_additive_followup_history(self):
+        d=DialogueState()
+        d,_,_=step(d,"Pythonを学習したい")
+        d,action,_=step(d,"その後、開発もしたい")
+        self.assertEqual((action,d.purposes,d.relation),("PLAN",["learning","development"],"SEQUENTIAL"))
+        self.assertEqual(d.history[-1]["update"],"ADD")
 if __name__=="__main__":unittest.main()
