@@ -31,7 +31,9 @@ def verify_tasks(tasks=TASKS):
     if len(ids)!=len(set(ids)) or len(prompts)!=len(set(prompts)):
         raise ValueError("Duplicate evaluation IDs/prompts")
     for r in tasks:
-        if not r["prompt"].endswith("AI: ") or ABILITY.get(r["ability"])!=r["id"][0]:
+        if (ABILITY.get(r["ability"])!=r["id"][0] or
+            (r["ability"]=="continuation" and not r["prompt"].split("\n")[-1].startswith("AI: ")) or
+            (r["ability"]!="continuation" and not r["prompt"].endswith("AI: "))):
             raise ValueError("Bad task: "+r["id"])
     return True
 
