@@ -108,7 +108,7 @@ def main():
     p.add_argument("--tokenizer",default="model/tokenizer-v0.7-bpe.json")
     p.add_argument("--device",choices=("auto","cpu","cuda"),default="auto")
     p.add_argument("--seed",type=int,default=2424)
-    p.add_argument("--count",type=int,20)
+    p.add_argument("--count",type=int,default=20)
     p.add_argument("--out",default="results/copy_output_bias_eos_v023324.json")
     a=p.parse_args()
     if a.count<1:raise ValueError("count must be positive")
