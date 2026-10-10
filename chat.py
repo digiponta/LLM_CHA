@@ -27,6 +27,7 @@ from conversation_intent_v023 import intent_reply as conversation_intent_reply
 from conversation_quality_gate_v022 import quality_check as conversation_quality_check
 
 from character_runtime_v010 import character_command, select_profile, speaker as character_speaker
+from runtime_reference_integration_v023352 import SessionReferenceStore, RuntimeReferenceBridge, handle_reference_input, render_reference_reply
 
 import argparse
 from dataclasses import dataclass, replace
@@ -257,6 +258,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dialogue-history-turns", type=int, default=2, help="Chronological conversational turns (0=legacy mode); factual Semantic Memory is separate.")
     parser.add_argument("--character-dir", default="characters", help="Character profile JSON directory (separate from Semantic Memory).")
     parser.add_argument("--character", default="", help="Optional character profile ID; off by default.")
+    parser.add_argument("--session-reference-memory", action="store_true", help="Opt in to transactional, isolated session reference memory (not factual knowledge).")
+    parser.add_argument("--session-reference-db", default="data/session_reference_memory.sqlite3", help="Path to the opt-in SQLite reference memory.")
+    parser.add_argument("--session-reference-context", default="local-chat", help="Session context namespace for reference memory.")
     parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument(
@@ -3133,6 +3137,8 @@ def checkpoint_trained_fingerprints(
 
 def main() -> None:
     args = parse_args()
+    reference_bridge = (RuntimeReferenceBridge(SessionReferenceStore(args.session_reference_db))
+                        if args.session_reference_memory else None)
     active_character = select_profile(args.character_dir, args.character) if args.character else None
 
     tokenizer_path = resolve_runtime_path(args.tokenizer)
@@ -3350,6 +3356,34 @@ def main() -> None:
 
         if command in ("/exit", "exit", "quit"):
             break
+
+        if reference_bridge is not None:
+            if command == "/refstatus":
+                saved = reference_bridge.memory.lookup(
+                    args.session_reference_context, "experiment", "target"
+                )
+                print(f"[session reference: {saved or 'none'}]")
+                print()
+                continue
+            if command == "/refinvalidate":
+                reference_bridge.invalidate(args.session_reference_context)
+                print("[session reference invalidated]")
+                print()
+                continue
+            if command == "/reset":
+                reference_bridge._resolver(args.session_reference_context).clear()
+                reference_bridge.invalidate(args.session_reference_context)
+            elif not command.startswith("/"):
+                reference_result = handle_reference_input(
+                    reference_bridge, user_text, args.session_reference_context
+                )
+                if reference_result is not None:
+                    message = render_reference_reply(reference_result)
+                    if message is not None:
+                        print("AI>", message)
+                        print()
+                        continue
+                    # A topic switch is handed back to normal chat generation.
 
         if command == "/reset":
             history.clear()
