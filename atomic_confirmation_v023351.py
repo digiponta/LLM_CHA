@@ -4,6 +4,7 @@ SQLite BEGIN IMMEDIATE serializes mutations across connections and processes.
 Standalone experiment, not wired into chat.py or production Semantic Memory.
 """
 import argparse,concurrent.futures,json,sqlite3,tempfile,threading
+from contextlib import contextmanager
 from pathlib import Path
 
 SCHEMA="""CREATE TABLE IF NOT EXISTS candidates(
@@ -19,10 +20,22 @@ class AtomicStore:
     def __init__(self,path):
         self.path=str(path)
         with self._db() as db:db.executescript(SCHEMA)
+    @contextmanager
     def _db(self):
+        # sqlite3.Connection.__exit__ commits/rolls back, but does NOT close.
+        # An open SQLite handle prevents TemporaryDirectory cleanup on Windows.
         db=sqlite3.connect(self.path,timeout=15,isolation_level=None)
-        db.execute("PRAGMA busy_timeout=15000")
-        return db
+        try:
+            db.execute("PRAGMA busy_timeout=15000")
+            yield db
+            if db.in_transaction:
+                db.commit()
+        except BaseException:
+            if db.in_transaction:
+                db.rollback()
+            raise
+        finally:
+            db.close()
     def propose(self,context,subject,slot,value):
         with self._db() as db:
             db.execute("BEGIN IMMEDIATE")
