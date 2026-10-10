@@ -7,6 +7,20 @@ class LanguageBaselineTests(unittest.TestCase):
         self.assertEqual(set(t["ability"] for t in TASKS),set(("continuation","explanation","procedure","context","conditioning","retention")))
     def test_dedup(self):
         with self.assertRaises(ValueError):verify_tasks(TASKS+[TASKS[0]])
+    def test_continuation_accepts_prefilled_answer(self):
+        self.assertTrue(verify_tasks(TASKS[:2]))
+        self.assertTrue(TASKS[0]["prompt"].endswith("AI: 今日は天気がよいので、"))
+
+    def test_regular_answer_must_end_at_ai(self):
+        bad={**TASKS[2],"prompt":TASKS[2]["prompt"]+"誤った書き出し"}
+        with self.assertRaisesRegex(ValueError,"Bad task"):
+            verify_tasks([bad])
+
+    def test_continuation_requires_ai_line(self):
+        bad={**TASKS[0],"prompt":"人: 次の文章を続けて。\n回答: 書き出し"}
+        with self.assertRaisesRegex(ValueError,"Bad task"):
+            verify_tasks([bad])
+
     def test_no_external_semantics(self):
         m=Mock()
         m.generate.return_value={"text":"sample","generated_tokens":1,"elapsed_seconds":.01}
