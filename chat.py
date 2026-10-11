@@ -39,6 +39,7 @@ from multilayer_semantic_audit_v023363 import audit_layers, render_audit
 from semantic_coverage_admission_v023364 import inspect_coverage, render_coverage
 from proposition_candidate_lifecycle_v023365 import CandidateStore, render_candidates
 from corpus_candidate_extraction_v023366 import CorpusCandidateStore, render_corpus_candidates
+from corpus_context_classification_v023367 import MentionStore, render_mentions
 
 import argparse
 from dataclasses import dataclass, replace
@@ -275,6 +276,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reference-mapping-db", default="data/reference_concept_mapping.sqlite3", help="Separate SQLite reference-to-concept mappings.")
     parser.add_argument("--candidate-review-db", default="data/proposition_candidates_v023365.sqlite3", help="Isolated candidate lifecycle SQLite database.")
     parser.add_argument("--corpus-candidate-db", default="data/corpus_candidates_v023366.sqlite3", help="Isolated source-anchored corpus candidate database.")
+    parser.add_argument("--corpus-mention-db", default="data/corpus_mentions_v023367.sqlite3", help="Isolated corpus mention metadata database.")
     parser.add_argument("--multi-evidence-manifest", default="data/multi_evidence_manifest_v023362.json", help="Explicit reviewed evidence manifest (no automatic trust).")
     parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
     parser.add_argument("--model", default=DEFAULT_MODEL)
@@ -3420,6 +3422,35 @@ def main() -> None:
                 token = user_text[len("/refmap approve "):].strip()
                 success = VerifiedConceptMapping(args.reference_mapping_db).approve(args.session_reference_context, token)
                 print("[mapping approved]" if success else "[mapping rejected: stale/expired/wrong context]")
+                print()
+                continue
+            if command.startswith("/refmentions"):
+                try:
+                    ref = reference_bridge.memory.lookup(
+                        args.session_reference_context, "experiment", "target"
+                    )
+                    mapping = (
+                        VerifiedConceptMapping(args.reference_mapping_db).lookup(
+                            args.session_reference_context, ref
+                        ) if ref else None
+                    )
+                    if not mapping:
+                        print("[回答保留] no_approved_reference_or_mapping")
+                    else:
+                        store = MentionStore(args.corpus_mention_db)
+                        concept = mapping["concept"]
+                        if command == "/refmentions scan":
+                            tokens = store.scan(
+                                args.session_reference_context, concept,
+                                resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS)
+                            )
+                            print(f"[Concept Mention] {len(tokens)} occurrences saved (PENDING only)")
+                        elif command == "/refmentions list":
+                            print(render_mentions(store.list(args.session_reference_context,concept)))
+                        else:
+                            print("Usage: /refmentions scan | list")
+                except (OSError,ValueError,UnicodeError) as exc:
+                    print(f"[回答保留] mention_error: {exc}")
                 print()
                 continue
             if command.startswith("/refcorpus") or command == "/refcorpus":
