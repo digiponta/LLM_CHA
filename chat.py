@@ -31,6 +31,7 @@ from runtime_reference_integration_v023352 import SessionReferenceStore, Runtime
 from safe_reference_semantic_bridge_v023354 import SafeReferenceSemanticBridge, render_safe_semantic_result
 from truth_aware_reference_bridge_v023355 import TruthAwareReferenceBridge, render_truth_reference_result
 from verified_reference_concept_v023356 import VerifiedConceptMapping, MappedTruthAwareBridge, render_mapped_result
+from evidence_grounded_reference_v023357 import EvidenceGroundedReferenceBridge, render_grounded_result
 
 import argparse
 from dataclasses import dataclass, replace
@@ -3409,6 +3410,15 @@ def main() -> None:
                 token = user_text[len("/refmap approve "):].strip()
                 success = VerifiedConceptMapping(args.reference_mapping_db).approve(args.session_reference_context, token)
                 print("[mapping approved]" if success else "[mapping rejected: stale/expired/wrong context]")
+                print()
+                continue
+            if command == "/refevidence":
+                evidence = EvidenceGroundedReferenceBridge(
+                    reference_bridge.memory,
+                    VerifiedConceptMapping(args.reference_mapping_db),
+                    semantic_knowledge
+                ).lookup(args.session_reference_context)
+                print(render_grounded_result(evidence))
                 print()
                 continue
             if command == "/refmapped":
