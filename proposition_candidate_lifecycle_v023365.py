@@ -4,6 +4,16 @@ No writes to Semantic Memory, Truth State, model weights, or /sleep. Approval
 records a human decision only; it is NOT a declaration of objective truth.
 """
 import hashlib,re,sqlite3,time,unicodedata
+from contextlib import contextmanager
+
+@contextmanager
+def sqlite_session(path):
+    conn = sqlite3.connect(str(path), timeout=10)
+    try:
+        with conn:
+            yield conn
+    finally:
+        conn.close()
 from pathlib import Path
 from structural_semantic_consistency_v023359 import parse,clean
 
@@ -22,13 +32,11 @@ class CandidateStore:
     def __init__(self,path):
         self.path=Path(path)
         self.path.parent.mkdir(parents=True,exist_ok=True)
-        with self._connect() as db:
+        with sqlite_session(self.path) as db:
             db.execute("""CREATE TABLE IF NOT EXISTS candidates(
                 token TEXT PRIMARY KEY,context TEXT NOT NULL,concept TEXT NOT NULL,
                 statement TEXT NOT NULL,source TEXT NOT NULL,source_digest TEXT NOT NULL,
                 status TEXT NOT NULL,created REAL NOT NULL,reviewed REAL)""")
-    def _connect(self):
-        return sqlite3.connect(str(self.path),timeout=10)
     def propose(self,context,concept,source_text,source):
         if not str(source).strip():raise ValueError("source_required")
         output=[]
@@ -37,7 +45,7 @@ class CandidateStore:
             token="candidate-"+hashlib.sha256(
                 (str(context)+"\0"+str(concept)+"\0"+statement+"\0"+digest).encode("utf8")
             ).hexdigest()[:18]
-            with self._connect() as db:
+            with sqlite_session(self.path) as db:
                 db.execute("""INSERT OR IGNORE INTO candidates
                     (token,context,concept,statement,source,source_digest,status,created)
                     VALUES(?,?,?,?,?,?,'PENDING',?)""",
@@ -45,7 +53,7 @@ class CandidateStore:
             output.append(token)
         return output
     def list(self,context,concept):
-        with self._connect() as db:
+        with sqlite_session(self.path) as db:
             return [{"token":r[0],"statement":r[1],"status":r[2],"source":r[3],
                      "source_digest":r[4]} for r in db.execute(
                 """SELECT token,statement,status,source,source_digest FROM candidates
@@ -53,7 +61,7 @@ class CandidateStore:
                 (context,concept))]
     def review(self,context,concept,token,decision):
         if decision not in {"APPROVED","REJECTED"}:raise ValueError("invalid_review")
-        with self._connect() as db:
+        with sqlite_session(self.path) as db:
             cur=db.execute("""UPDATE candidates SET status=?,reviewed=?
                 WHERE token=? AND context=? AND concept=? AND status='PENDING'""",
                 (decision,time.time(),token,context,concept))
