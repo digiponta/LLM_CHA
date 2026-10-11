@@ -52,6 +52,22 @@ def evaluate_transcript(stdout,returncode):
     return {"process_returncode":returncode,"cases":results,
             "passed":sum(bool(x["passed"]) for x in results),"total":len(results)}
 
+def diagnose_failure(stderr, stdout, returncode, timed_out=False):
+    """Separate setup/runtime failure from genuine policy mismatch."""
+    if timed_out:
+        return {"phase":"TIMEOUT","reason":"subprocess_timeout"}
+    if returncode not in (0,None):
+        if "Traceback (most recent call last)" in stderr:
+            lines=[line.strip() for line in stderr.splitlines() if line.strip()]
+            return {"phase":"STARTUP_OR_RUNTIME_ERROR","reason":"python_exception",
+                    "exception_line":lines[-1] if lines else ""}
+        if "can't open file" in stderr or "No module named" in stderr:
+            return {"phase":"STARTUP_ERROR","reason":"missing_script_or_dependency"}
+        return {"phase":"STARTUP_OR_RUNTIME_ERROR","reason":"nonzero_exit"}
+    if "You>" not in stdout:
+        return {"phase":"STARTUP_ERROR","reason":"no_chat_prompt"}
+    return {"phase":"EVALUATION","reason":"process_completed"}
+
 def run(source,timeout=180):
     root=ensure_source(source)
     with tempfile.TemporaryDirectory(prefix="llm_cha_v023377_") as folder:
@@ -60,6 +76,7 @@ def run(source,timeout=180):
         args=[sys.executable,"-u","chat.py","--session-reference-memory",
               "--max-new-tokens","64"]
         started=time.monotonic()
+        timed_out=False
         try:
             result=subprocess.run(args,input="\n".join(commands)+"\n",text=True,
                  encoding="utf-8",errors="replace",capture_output=True,
@@ -69,12 +86,19 @@ def run(source,timeout=180):
             stderr=result.stderr
             status=result.returncode
         except subprocess.TimeoutExpired as exc:
+            timed_out=True
             stdout=(exc.stdout or b"").decode("utf-8",errors="replace") if isinstance(exc.stdout,bytes) else (exc.stdout or "")
             stderr=(exc.stderr or b"").decode("utf-8",errors="replace") if isinstance(exc.stderr,bytes) else (exc.stderr or "")
             status=None
         # Excerpts intentionally may include model output, not private sources.
         report=evaluate_transcript(stdout,status)
-        report.update({"version":"v0.2.33.77","kind":"isolated-chat-subprocess",
+        report["diagnostic"]=diagnose_failure(stderr,stdout,status,timed_out)
+        if report["diagnostic"]["phase"]!="EVALUATION":
+            for case in report["cases"]:
+                case["passed"]=False
+                case["reason"]="not_evaluated_runtime_failure"
+            report["passed"]=0
+        report.update({"version":"v0.2.33.77.1","kind":"isolated-chat-subprocess",
          "elapsed_seconds":round(time.monotonic()-started,2),
          "stdout_tail":stdout[-12000:],"stderr_tail":stderr[-4000:],
          "limitations":"Not a security boundary; assertions depend on transcript format and local truth states."})
@@ -96,6 +120,9 @@ def main():
     path.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf8")
     print(json.dumps({k:report[k] for k in ("kind","passed","total","process_returncode","elapsed_seconds")},
          ensure_ascii=False,indent=2))
+    print("diagnostic:",json.dumps(report["diagnostic"],ensure_ascii=False))
+    if report["diagnostic"]["phase"]!="EVALUATION":
+        print("stderr_tail:",report["stderr_tail"][-2500:])
     print("report:",path)
     return 0 if report["passed"]==report["total"] and report["process_returncode"]==0 else 1
 if __name__=="__main__":sys.exit(main())
