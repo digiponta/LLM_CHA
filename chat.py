@@ -1285,6 +1285,11 @@ def generate_reply(
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
 
+    if not isinstance(prompt, str):
+        raise TypeError(
+            "generate_reply expected str prompt; "
+            f"received {type(prompt).__name__}"
+        )
     prompt_ids = tokenizer.encode(prompt, add_bos=True)
     generated = list(prompt_ids)
     response_ids: List[int] = []
