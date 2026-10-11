@@ -34,19 +34,21 @@ def isolated_copy(root,target):
     return target
 
 def evaluate_transcript(stdout,returncode):
-    blocks=re.split(r"(?=You>\s)",stdout)
+    # Python input() prints the prompt but piped stdin is not echoed.
+    # Match *ordered* prompt-delimited output, never pretend user text was
+    # present in the captured transcript.
+    turns=re.split(r"You>\s?",stdout)[1:]
     results=[]
-    for cid,query,*patterns in SCENARIOS:
-        block=next((b for b in blocks if b.startswith("You> "+query+"\n")),None)
-        # Process echo from piped stdin may be absent on Windows.
-        if block is None:
+    for index,(cid,query,*patterns) in enumerate(SCENARIOS):
+        if index>=len(turns):
             results.append({"id":cid,"passed":False,"reason":"turn_not_located",
                             "expected_patterns":list(patterns)})
-        else:
-            missing=[p for p in patterns if re.search(p,block) is None]
-            results.append({"id":cid,"passed":not missing,
-                            "reason":"missing_patterns" if missing else "matched",
-                            "missing_patterns":missing})
+            continue
+        block=turns[index]
+        missing=[p for p in patterns if re.search(p,block) is None]
+        results.append({"id":cid,"passed":not missing,
+                        "reason":"missing_patterns" if missing else "matched",
+                        "missing_patterns":missing})
     return {"process_returncode":returncode,"cases":results,
             "passed":sum(bool(x["passed"]) for x in results),"total":len(results)}
 
