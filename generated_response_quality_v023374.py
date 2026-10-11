@@ -24,8 +24,15 @@ def greeting_repair(user_text, candidate, accepted):
     if fallback is None:
         return None,"not_greeting_only"
     clean=(candidate or "").strip()
-    if (not accepted or not clean or len(clean)>32 or
-        not re.search(r"^(?:こんにちは|こんばんは|おはよう|やあ)",clean) or
-        re.search(r"未学習|分からない|理解できない",clean)):
-        return fallback,"greeting_quality_fallback"
-    return None,"generation_preserved"
+    # Standalone greetings have a strict allowlist. Greeting-prefixed
+    # hallucinations (even if accepted by the LM gate) must not pass.
+    allowed = {
+        "こんにちは": {"こんにちは。", "こんにちは！", "こんにちは"},
+        "こんばんは": {"こんばんは。", "こんばんは！", "こんばんは"},
+        "おはよう": {"おはようございます。", "おはよう。", "おはようございます"},
+        "おはようございます": {"おはようございます。", "おはようございます"},
+        "やあ": {"やあ。", "やあ", "こんにちは。"},
+    }[text]
+    if accepted and clean in allowed:
+        return None,"generation_preserved"
+    return fallback,"greeting_quality_fallback"
