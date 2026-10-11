@@ -3420,7 +3420,7 @@ def main() -> None:
                 print("[mapping approved]" if success else "[mapping rejected: stale/expired/wrong context]")
                 print()
                 continue
-            if command.startswith("/refcandidate"):
+            if command.startswith("/refcandidate") or command == "/refcandidates":
                 try:
                     approved_ref = reference_bridge.memory.lookup(
                         args.session_reference_context, "experiment", "target"
@@ -3456,10 +3456,6 @@ def main() -> None:
                             print("Usage: /refcandidate propose STATEMENT | approve TOKEN | reject TOKEN")
                 except (ValueError, OSError) as exc:
                     print(f"[回答保留] candidate_lifecycle_error: {exc}")
-                print()
-                continue
-            if command == "/refcandidates":
-                print("Usage requires approved session reference and concept mapping.")
                 print()
                 continue
             if command == "/refcoverage":
