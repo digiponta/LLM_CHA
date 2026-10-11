@@ -34,6 +34,7 @@ from verified_reference_concept_v023356 import VerifiedConceptMapping, MappedTru
 from evidence_grounded_reference_v023357 import EvidenceGroundedReferenceBridge, render_grounded_result
 from evidence_answer_consistency_v023358 import ConsistencyReferenceBridge, render_consistency
 from structural_semantic_consistency_v023359 import StructuralReferenceBridge, render_structural
+from session_multi_evidence_bridge_v023362 import MultiEvidenceBridge, render_multi_evidence
 
 import argparse
 from dataclasses import dataclass, replace
@@ -268,6 +269,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--session-reference-db", default="data/session_reference_memory.sqlite3", help="Path to the opt-in SQLite reference memory.")
     parser.add_argument("--session-reference-context", default="local-chat", help="Session context namespace for reference memory.")
     parser.add_argument("--reference-mapping-db", default="data/reference_concept_mapping.sqlite3", help="Separate SQLite reference-to-concept mappings.")
+    parser.add_argument("--multi-evidence-manifest", default="data/multi_evidence_manifest_v023362.json", help="Explicit reviewed evidence manifest (no automatic trust).")
     parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument(
@@ -3412,6 +3414,20 @@ def main() -> None:
                 token = user_text[len("/refmap approve "):].strip()
                 success = VerifiedConceptMapping(args.reference_mapping_db).approve(args.session_reference_context, token)
                 print("[mapping approved]" if success else "[mapping rejected: stale/expired/wrong context]")
+                print()
+                continue
+            if command.startswith("/refchain "):
+                candidate = user_text[len("/refchain "):].strip()
+                try:
+                    result = MultiEvidenceBridge(
+                        reference_bridge.memory,
+                        VerifiedConceptMapping(args.reference_mapping_db),
+                        proposition_path,
+                        args.multi_evidence_manifest
+                    ).lookup(args.session_reference_context, candidate)
+                    print(render_multi_evidence(result))
+                except (ValueError, OSError) as exc:
+                    print(f"[回答保留] 証拠データの検証に失敗: {exc}")
                 print()
                 continue
             if command == "/refstructural":
