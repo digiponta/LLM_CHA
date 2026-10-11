@@ -142,6 +142,7 @@ from knowledge_queue_lifecycle_v10115 import (
 from truth_aware_corpus_gate_v023373 import corpus_answer_decision
 from generated_response_quality_v023374 import greeting_repair
 from multi_intent_reference_v023375 import split_input, clarify_reference
+from speech_act_reference_v023380 import route_speech_act
 from retrieval_first_runtime_v1012161 import (
     resolve_subject as retrieval_first_resolve_subject,
     truth_allows_direct_retrieval,
@@ -3375,6 +3376,19 @@ def main() -> None:
             user_text = normalized_user_text
         if not user_text:
             continue
+
+        # v0.2.33.80: speech acts are not unanswered knowledge questions.
+        # Resolve only narrow, unambiguous patterns; keep Truth Gate intact.
+        if not user_text.startswith("/"):
+            speech_route = route_speech_act(user_text)
+            if speech_route is not None:
+                message = speech_route["answer"]
+                print(f"{character_speaker(active_character)}> {message}")
+                print(f"[speech-act={speech_route['kind']}, route=conservative-pre-generation]")
+                print()
+                history.append((user_text, message))
+                last_ai_reply = message
+                continue
 
         # Only rewrite tightly scoped mixed greeting + concept questions.
         # Preserve slash commands and never bypass the existing truth gate.
