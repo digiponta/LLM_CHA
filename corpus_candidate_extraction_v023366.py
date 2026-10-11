@@ -6,6 +6,16 @@ PENDING. A reviewer decision is not verification of objective truth.
 """
 from pathlib import Path
 import hashlib,sqlite3,time,re
+from contextlib import contextmanager
+
+@contextmanager
+def sqlite_session(path):
+    conn = sqlite3.connect(str(path), timeout=10)
+    try:
+        with conn:
+            yield conn
+    finally:
+        conn.close()
 from structural_semantic_consistency_v023359 import parse,clean
 
 def scan_corpus(path,concept,limit=100):
@@ -34,7 +44,7 @@ class CorpusCandidateStore:
     def __init__(self,path):
         self.path=Path(path)
         self.path.parent.mkdir(parents=True,exist_ok=True)
-        with sqlite3.connect(self.path) as conn:
+        with sqlite_session(self.path) as conn:
             conn.execute("""CREATE TABLE IF NOT EXISTS corpus_candidates(
                 token TEXT PRIMARY KEY, context TEXT NOT NULL, concept TEXT NOT NULL,
                 statement TEXT NOT NULL, source_path TEXT NOT NULL,
@@ -44,7 +54,7 @@ class CorpusCandidateStore:
     def propose_from_file(self,context,concept,path,limit=100):
         spans=scan_corpus(path,concept,limit)
         tokens=[]
-        with sqlite3.connect(self.path) as conn:
+        with sqlite_session(self.path) as conn:
             for span in spans:
                 seed="\0".join(str(x) for x in
                     (context,concept,span["source_path"],span["file_sha256"],
@@ -60,7 +70,7 @@ class CorpusCandidateStore:
                 tokens.append(token)
         return tokens
     def list(self,context,concept):
-        with sqlite3.connect(self.path) as conn:
+        with sqlite_session(self.path) as conn:
             rows=conn.execute("""SELECT token,statement,status,source_path,file_sha256,
                 start_byte,end_byte,snippet_sha256 FROM corpus_candidates
                 WHERE context=? AND concept=? ORDER BY start_byte,token""",(context,concept)).fetchall()
@@ -78,7 +88,7 @@ class CorpusCandidateStore:
         record=next((r for r in self.list(context,concept) if r["token"]==token),None)
         if record is None or record["status"]!="PENDING" or not self.verify_source(record):
             return False
-        with sqlite3.connect(self.path) as conn:
+        with sqlite_session(self.path) as conn:
             cur=conn.execute("""UPDATE corpus_candidates SET status=?,reviewed=?
                 WHERE token=? AND context=? AND concept=? AND status='PENDING'""",
                 (decision,time.time(),token,context,concept))
