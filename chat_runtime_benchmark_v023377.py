@@ -70,12 +70,17 @@ def diagnose_failure(stderr, stdout, returncode, timed_out=False):
     return {"phase":"EVALUATION","reason":"process_completed"}
 
 def preflight_failure(checks,reason):
-    return {"version":"v0.2.33.77.2","kind":"isolated-chat-subprocess",
+    return {"version":"v0.2.33.77.5","kind":"isolated-chat-subprocess",
             "process_returncode":None,"passed":0,"total":len(SCENARIOS),
             "cases":[{"id":item[0],"passed":False,"reason":"not_evaluated_preflight_failure"}
                      for item in SCENARIOS],
             "diagnostic":{"phase":"PREFLIGHT_ERROR","reason":reason},
             "preflight":checks,"stdout_tail":"","stderr_tail":""}
+
+def child_environment():
+    """Match subprocess stdin/stdout/stderr to parent's UTF-8 pipes on Windows."""
+    return {**os.environ, "PYTHONDONTWRITEBYTECODE":"1",
+            "PYTHONUTF8":"1", "PYTHONIOENCODING":"utf-8"}
 
 def run(source,timeout=180):
     root=ensure_source(source)
@@ -95,8 +100,7 @@ def run(source,timeout=180):
         try:
             result=subprocess.run(args,input="\n".join(commands)+"\n",text=True,
                  encoding="utf-8",errors="replace",capture_output=True,
-                 cwd=target,timeout=timeout,check=False,env={**os.environ,
-                 "PYTHONDONTWRITEBYTECODE":"1"})
+                 cwd=target,timeout=timeout,check=False,env=child_environment())
             stdout=result.stdout
             stderr=result.stderr
             status=result.returncode
