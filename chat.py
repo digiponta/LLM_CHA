@@ -32,6 +32,7 @@ from safe_reference_semantic_bridge_v023354 import SafeReferenceSemanticBridge, 
 from truth_aware_reference_bridge_v023355 import TruthAwareReferenceBridge, render_truth_reference_result
 from verified_reference_concept_v023356 import VerifiedConceptMapping, MappedTruthAwareBridge, render_mapped_result
 from evidence_grounded_reference_v023357 import EvidenceGroundedReferenceBridge, render_grounded_result
+from evidence_answer_consistency_v023358 import ConsistencyReferenceBridge, render_consistency
 
 import argparse
 from dataclasses import dataclass, replace
@@ -3410,6 +3411,15 @@ def main() -> None:
                 token = user_text[len("/refmap approve "):].strip()
                 success = VerifiedConceptMapping(args.reference_mapping_db).approve(args.session_reference_context, token)
                 print("[mapping approved]" if success else "[mapping rejected: stale/expired/wrong context]")
+                print()
+                continue
+            if command == "/refconsistent":
+                evidence = ConsistencyReferenceBridge(
+                    reference_bridge.memory,
+                    VerifiedConceptMapping(args.reference_mapping_db),
+                    semantic_knowledge
+                ).lookup(args.session_reference_context)
+                print(render_consistency(evidence))
                 print()
                 continue
             if command == "/refevidence":
