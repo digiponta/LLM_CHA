@@ -36,6 +36,7 @@ from evidence_answer_consistency_v023358 import ConsistencyReferenceBridge, rend
 from structural_semantic_consistency_v023359 import StructuralReferenceBridge, render_structural
 from session_multi_evidence_bridge_v023362 import MultiEvidenceBridge, render_multi_evidence
 from multilayer_semantic_audit_v023363 import audit_layers, render_audit
+from semantic_coverage_admission_v023364 import inspect_coverage, render_coverage
 
 import argparse
 from dataclasses import dataclass, replace
@@ -3415,6 +3416,30 @@ def main() -> None:
                 token = user_text[len("/refmap approve "):].strip()
                 success = VerifiedConceptMapping(args.reference_mapping_db).approve(args.session_reference_context, token)
                 print("[mapping approved]" if success else "[mapping rejected: stale/expired/wrong context]")
+                print()
+                continue
+            if command == "/refcoverage":
+                try:
+                    approved_ref = reference_bridge.memory.lookup(
+                        args.session_reference_context, "experiment", "target"
+                    )
+                    mapped = (
+                        VerifiedConceptMapping(args.reference_mapping_db).lookup(
+                            args.session_reference_context, approved_ref
+                        ) if approved_ref else None
+                    )
+                    if mapped is None:
+                        print("[回答保留] no_approved_reference_or_mapping")
+                    else:
+                        report = inspect_coverage(
+                            mapped["concept"], proposition_path, subject_index_path,
+                            typed_subject_index_path, unified_semantic_path,
+                            resolve_runtime_path(args.corpus_memory),
+                            semantic_knowledge, args.multi_evidence_manifest
+                        )
+                        print(render_coverage(report))
+                except (ValueError, OSError) as exc:
+                    print(f"[回答保留] coverage_diagnostic_error: {exc}")
                 print()
                 continue
             if command == "/refaudit":
