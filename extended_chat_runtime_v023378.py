@@ -21,7 +21,7 @@ from runtime_startup_preflight_v0233772 import preflight
 # observations, not claims of semantic correctness or factual truth.
 EXTRA_CASES = (
     ("reference_variant", "あの実験", "acceptance",
-     (r"multi-intent=REFERENCE_CLARIFY",),
+     (r"(?:multi-intent|speech-act)=REFERENCE_CLARIFY",),
      (r"AI>\s*どの実験・話題の続き",)),
     ("mixed_variant", "こんにちは、宇宙とは", "exploratory",
      (r"multi-intent=GREETING_PLUS_KNOWLEDGE",),
