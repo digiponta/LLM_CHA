@@ -102,6 +102,19 @@ class SessionReferenceStore:
                 WHERE c.context=? AND c.subject=? AND c.slot=? AND c.status='approved'
                 ORDER BY c.version DESC LIMIT 1""",(context,subject,slot)).fetchone()
             return row[0] if row and row[2]==row[3] and self.clock()<datetime.fromisoformat(row[1]) else None
+    def recover_pending(self,context):
+        """Discard orphaned unconfirmed candidates after process restart.
+
+        Approved references remain intact. New candidate creation always
+        allocates a newer version, so stale candidate tokens cannot approve.
+        """
+        with self.db() as db:
+            db.execute("BEGIN IMMEDIATE")
+            count=db.execute("""UPDATE reference_candidates SET status='abandoned'
+                WHERE context=? AND status='pending'""",(context,)).rowcount
+            db.commit()
+            return count
+
     def invalidate(self,context,subject,slot):
         with self.db() as db:
             db.execute("BEGIN IMMEDIATE")
