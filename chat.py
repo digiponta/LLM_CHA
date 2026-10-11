@@ -140,6 +140,7 @@ from knowledge_queue_lifecycle_v10115 import (
     revoke_concept_verification,
 )
 from truth_aware_corpus_gate_v023373 import corpus_answer_decision
+from generated_response_quality_v023374 import greeting_repair
 from retrieval_first_runtime_v1012161 import (
     resolve_subject as retrieval_first_resolve_subject,
     truth_allows_direct_retrieval,
@@ -5706,6 +5707,12 @@ def main() -> None:
         reply = primary.text if accepted else UNKNOWN_REPLY
         if context_quality_rejected and args.conversation_repair:
             reply = repair_reply(user_text, has_context=bool(selected_history))
+        # Limited surface-level repair: exact greetings only, never knowledge.
+        greeting_override, greeting_quality_reason = greeting_repair(
+            user_text, reply, accepted
+        )
+        if greeting_override is not None:
+            reply = greeting_override
         new_tokens = sum(r.token_count for r in results)
 
         if device.type == "cuda":
@@ -5718,6 +5725,8 @@ def main() -> None:
             reply = UNKNOWN_REPLY if args.unknown_rejection else "(no response)"
 
         print(f"{character_speaker(active_character)}> {reply}")
+        if greeting_override is not None:
+            print(f"[response-quality=REPAIRED, reason={greeting_quality_reason}, route=greeting-only]")
 
         if args.show_risk and args.unknown_rejection and not accepted:
             print(f"[candidate={primary.text}]")
