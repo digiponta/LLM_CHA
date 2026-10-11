@@ -37,6 +37,7 @@ from structural_semantic_consistency_v023359 import StructuralReferenceBridge, r
 from session_multi_evidence_bridge_v023362 import MultiEvidenceBridge, render_multi_evidence
 from multilayer_semantic_audit_v023363 import audit_layers, render_audit
 from semantic_coverage_admission_v023364 import inspect_coverage, render_coverage
+from proposition_candidate_lifecycle_v023365 import CandidateStore, render_candidates
 
 import argparse
 from dataclasses import dataclass, replace
@@ -271,6 +272,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--session-reference-db", default="data/session_reference_memory.sqlite3", help="Path to the opt-in SQLite reference memory.")
     parser.add_argument("--session-reference-context", default="local-chat", help="Session context namespace for reference memory.")
     parser.add_argument("--reference-mapping-db", default="data/reference_concept_mapping.sqlite3", help="Separate SQLite reference-to-concept mappings.")
+    parser.add_argument("--candidate-review-db", default="data/proposition_candidates_v023365.sqlite3", help="Isolated candidate lifecycle SQLite database.")
     parser.add_argument("--multi-evidence-manifest", default="data/multi_evidence_manifest_v023362.json", help="Explicit reviewed evidence manifest (no automatic trust).")
     parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
     parser.add_argument("--model", default=DEFAULT_MODEL)
@@ -3416,6 +3418,48 @@ def main() -> None:
                 token = user_text[len("/refmap approve "):].strip()
                 success = VerifiedConceptMapping(args.reference_mapping_db).approve(args.session_reference_context, token)
                 print("[mapping approved]" if success else "[mapping rejected: stale/expired/wrong context]")
+                print()
+                continue
+            if command.startswith("/refcandidate"):
+                try:
+                    approved_ref = reference_bridge.memory.lookup(
+                        args.session_reference_context, "experiment", "target"
+                    )
+                    mapped = (
+                        VerifiedConceptMapping(args.reference_mapping_db).lookup(
+                            args.session_reference_context, approved_ref
+                        ) if approved_ref else None
+                    )
+                    if mapped is None:
+                        print("[回答保留] no_approved_reference_or_mapping")
+                    else:
+                        concept = mapped["concept"]
+                        store = CandidateStore(args.candidate_review_db)
+                        if command == "/refcandidates":
+                            print(render_candidates(store.list(args.session_reference_context, concept)))
+                        elif command.startswith("/refcandidate propose "):
+                            statement = user_text[len("/refcandidate propose "):].strip()
+                            tokens = store.propose(args.session_reference_context, concept, statement,
+                                                   "user-submitted-explicit-text")
+                            print("[候補作成] "+(", ".join(tokens) if tokens else "none: unsupported grammar"))
+                        elif command.startswith("/refcandidate approve "):
+                            token = user_text[len("/refcandidate approve "):].strip()
+                            print("[審査] APPROVED (not TRUE)" if store.review(
+                                args.session_reference_context,concept,token,"APPROVED"
+                            ) else "[審査] rejected: wrong/stale token")
+                        elif command.startswith("/refcandidate reject "):
+                            token = user_text[len("/refcandidate reject "):].strip()
+                            print("[審査] REJECTED" if store.review(
+                                args.session_reference_context,concept,token,"REJECTED"
+                            ) else "[審査] rejected: wrong/stale token")
+                        else:
+                            print("Usage: /refcandidate propose STATEMENT | approve TOKEN | reject TOKEN")
+                except (ValueError, OSError) as exc:
+                    print(f"[回答保留] candidate_lifecycle_error: {exc}")
+                print()
+                continue
+            if command == "/refcandidates":
+                print("Usage requires approved session reference and concept mapping.")
                 print()
                 continue
             if command == "/refcoverage":
