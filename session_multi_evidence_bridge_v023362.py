@@ -35,10 +35,10 @@ class MultiEvidenceBridge:
         entries=manifest.get("evidence")
         if not isinstance(entries,list):
             return {"status":"blocked","reason":"invalid_evidence_manifest","path":[]}
-        # Atomic propositions v10.9 model simple X-is-Y; the typed inclusion
-        # grammar is not persisted here. Fail closed unless a stored atomic
-        # proposition is literally identical to the evidence statement.
-        stored={clean(f"{p.subject}は{p.value}である") for p in load_propositions(self.proposition_path)}
+        # Atomic proposition values can preserve a typed relation phrase.
+        # Match precisely against the stored subject + relation value, without
+        # assigning TRUE to unrelated raw statements.
+        stored={clean(f"{p.subject}は{p.value}") for p in load_propositions(self.proposition_path)}
         evidence=[];seen_ids=set()
         for entry in entries:
             if not isinstance(entry,dict):
