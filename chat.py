@@ -29,6 +29,7 @@ from conversation_quality_gate_v022 import quality_check as conversation_quality
 from character_runtime_v010 import character_command, select_profile, speaker as character_speaker
 from runtime_reference_integration_v023352 import SessionReferenceStore, RuntimeReferenceBridge, handle_reference_input, render_reference_reply
 from safe_reference_semantic_bridge_v023354 import SafeReferenceSemanticBridge, render_safe_semantic_result
+from truth_aware_reference_bridge_v023355 import TruthAwareReferenceBridge, render_truth_reference_result
 
 import argparse
 from dataclasses import dataclass, replace
@@ -3375,6 +3376,13 @@ def main() -> None:
                     reference_bridge.memory, args.propositions
                 ).lookup(args.session_reference_context)
                 print(render_safe_semantic_result(evidence))
+                print()
+                continue
+            if command == "/reftruth":
+                evidence = TruthAwareReferenceBridge(
+                    reference_bridge.memory, semantic_knowledge
+                ).lookup(args.session_reference_context)
+                print(render_truth_reference_result(evidence))
                 print()
                 continue
             if command == "/refinvalidate":
