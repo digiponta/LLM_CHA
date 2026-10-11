@@ -96,15 +96,24 @@ class BPETokenizer:
             )
         backend = self._require_backend()
         try:
-            ids = backend.encode(
-                text,
-                add_special_tokens=False,
-            ).ids
+            ids = backend.encode(text, add_special_tokens=False).ids
         except TypeError as exc:
-            raise TypeError(
-                "BPETokenizer backend rejected a str input "
-                f"(type={type(text).__name__}, length={len(text)}): {exc}"
-            ) from exc
+            # Some installed tokenizers backends reject the scalar API even
+            # for a verified Python str. Try the equivalent one-item batch
+            # API, preserving the original error if that also fails.
+            if "TextInputSequence must be str" not in str(exc):
+                raise
+            try:
+                batch = backend.encode_batch([text], add_special_tokens=False)
+                if len(batch) != 1:
+                    raise RuntimeError("Tokenizer batch fallback returned unexpected row count")
+                ids = batch[0].ids
+            except Exception as batch_exc:
+                raise RuntimeError(
+                    "Tokenizer scalar encode and one-item batch fallback failed "
+                    f"(input_type=str, length={len(text)}, "
+                    f"scalar_error={exc}, batch_error={batch_exc})"
+                ) from batch_exc
         result: List[int] = []
         if add_bos:
             result.append(self.bos_id)
