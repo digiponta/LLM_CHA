@@ -139,6 +139,7 @@ from knowledge_queue_lifecycle_v10115 import (
     mark_concept_verified,
     revoke_concept_verification,
 )
+from truth_aware_corpus_gate_v023373 import corpus_answer_decision
 from retrieval_first_runtime_v1012161 import (
     resolve_subject as retrieval_first_resolve_subject,
     truth_allows_direct_retrieval,
@@ -5124,9 +5125,21 @@ def main() -> None:
                     truth_store_path,
                     retrieval_focus,
                 )
-                direct_retrieval_allowed = truth_allows_direct_retrieval(
-                    retrieval_truth.state
-                )
+                corpus_decision = corpus_answer_decision(retrieval_truth.state, True)
+                if corpus_decision == "BLOCK_UNVERIFIED_CORPUS":
+                    print(
+                        f"[truth-aware-corpus=BLOCK, concept={retrieval.subject!r}, "
+                        f"truth_state={retrieval_truth.state}, "
+                        f"provenance={retrieval.provenance}, "
+                        "reason=corpus_text_is_not_verified_evidence]"
+                    )
+                    print(f"{character_speaker(active_character)}> 未学習です")
+                    print("[0 generated probe tokens, truth-aware corpus block]")
+                    print()
+                    history.append((user_text, "未学習です"))
+                    last_ai_reply = "未学習です"
+                    continue
+                direct_retrieval_allowed = corpus_decision == "ALLOW_VERIFIED_STATE"
                 if direct_retrieval_allowed:
                     print(f"{character_speaker(active_character)}> {retrieval.answer}")
                     function_part = ""
