@@ -142,7 +142,7 @@ from knowledge_queue_lifecycle_v10115 import (
 from truth_aware_corpus_gate_v023373 import corpus_answer_decision
 from generated_response_quality_v023374 import greeting_repair
 from multi_intent_reference_v023375 import split_input, clarify_reference
-from speech_act_reference_v023380 import route_speech_act
+from speech_act_reference_v023380 import route_speech_act, extract_topic
 from retrieval_first_runtime_v1012161 import (
     resolve_subject as retrieval_first_resolve_subject,
     truth_allows_direct_retrieval,
@@ -3358,6 +3358,7 @@ def main() -> None:
     learning_enabled = bool(args.learn)
     last_user_text: str | None = None
     last_ai_reply: str | None = None
+    last_topic: str | None = None
 
     while True:
         try:
@@ -3380,7 +3381,11 @@ def main() -> None:
         # v0.2.33.80: speech acts are not unanswered knowledge questions.
         # Resolve only narrow, unambiguous patterns; keep Truth Gate intact.
         if not user_text.startswith("/"):
-            speech_route = route_speech_act(user_text)
+            speech_route = route_speech_act(user_text, previous_user=last_topic)
+            if speech_route is not None and speech_route["kind"] == "FOLLOWUP_TOPIC_ROUTE":
+                user_text = speech_route["routed_query"]
+                print(f"[speech-act=FOLLOWUP_TOPIC_ROUTE, topic={speech_route['topic']!r}, route=existing-truth-aware-pipeline]")
+                speech_route = None
             if speech_route is not None:
                 message = speech_route["answer"]
                 print(f"{character_speaker(active_character)}> {message}")
@@ -3389,6 +3394,11 @@ def main() -> None:
                 history.append((user_text, message))
                 last_ai_reply = message
                 continue
+
+        if not user_text.startswith("/"):
+            explicit_topic = extract_topic(user_text)
+            if explicit_topic is not None:
+                last_topic = explicit_topic
 
         # Only rewrite tightly scoped mixed greeting + concept questions.
         # Preserve slash commands and never bypass the existing truth gate.
