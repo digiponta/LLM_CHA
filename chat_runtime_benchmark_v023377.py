@@ -7,6 +7,7 @@ Not a security boundary (Python can execute arbitrary side effects).
 """
 import argparse,json,os,re,shutil,subprocess,sys,tempfile,time
 from pathlib import Path
+from runtime_startup_preflight_v0233772 import preflight
 
 SCENARIOS=(
     ("greeting","こんにちは",r"AI>\s*こんにちは。",r"response-quality=REPAIRED"),
@@ -68,10 +69,24 @@ def diagnose_failure(stderr, stdout, returncode, timed_out=False):
         return {"phase":"STARTUP_ERROR","reason":"no_chat_prompt"}
     return {"phase":"EVALUATION","reason":"process_completed"}
 
+def preflight_failure(checks,reason):
+    return {"version":"v0.2.33.77.2","kind":"isolated-chat-subprocess",
+            "process_returncode":None,"passed":0,"total":len(SCENARIOS),
+            "cases":[{"id":item[0],"passed":False,"reason":"not_evaluated_preflight_failure"}
+                     for item in SCENARIOS],
+            "diagnostic":{"phase":"PREFLIGHT_ERROR","reason":reason},
+            "preflight":checks,"stdout_tail":"","stderr_tail":""}
+
 def run(source,timeout=180):
     root=ensure_source(source)
+    startup_checks=preflight(root)
+    if not startup_checks["ok"]:
+        return preflight_failure(startup_checks,"required_asset_or_dependency_missing")
     with tempfile.TemporaryDirectory(prefix="llm_cha_v023377_") as folder:
         target=isolated_copy(root,Path(folder)/"checkout")
+        copied_checks=preflight(target)
+        if not copied_checks["ok"]:
+            return preflight_failure(copied_checks,"copied_assets_missing")
         commands=[x[1] for x in SCENARIOS]+["/exit"]
         args=[sys.executable,"-u","chat.py","--session-reference-memory",
               "--max-new-tokens","64"]
@@ -98,7 +113,8 @@ def run(source,timeout=180):
                 case["passed"]=False
                 case["reason"]="not_evaluated_runtime_failure"
             report["passed"]=0
-        report.update({"version":"v0.2.33.77.1","kind":"isolated-chat-subprocess",
+        report.update({"version":"v0.2.33.77.2","kind":"isolated-chat-subprocess",
+         "preflight":copied_checks,
          "elapsed_seconds":round(time.monotonic()-started,2),
          "stdout_tail":stdout[-12000:],"stderr_tail":stderr[-4000:],
          "limitations":"Not a security boundary; assertions depend on transcript format and local truth states."})
@@ -121,6 +137,7 @@ def main():
     print(json.dumps({k:report[k] for k in ("kind","passed","total","process_returncode","elapsed_seconds")},
          ensure_ascii=False,indent=2))
     print("diagnostic:",json.dumps(report["diagnostic"],ensure_ascii=False))
+    print("preflight:",json.dumps(report.get("preflight"),ensure_ascii=False))
     if report["diagnostic"]["phase"]!="EVALUATION":
         print("stderr_tail:",report["stderr_tail"][-2500:])
     print("report:",path)
