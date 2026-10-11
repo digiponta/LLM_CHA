@@ -89,11 +89,22 @@ class BPETokenizer:
         add_bos: bool = False,
         add_eos: bool = False,
     ) -> List[int]:
+        if not isinstance(text, str):
+            raise TypeError(
+                "BPETokenizer.encode expected str; "
+                f"received {type(text).__name__}"
+            )
         backend = self._require_backend()
-        ids = backend.encode(
-            text,
-            add_special_tokens=False,
-        ).ids
+        try:
+            ids = backend.encode(
+                text,
+                add_special_tokens=False,
+            ).ids
+        except TypeError as exc:
+            raise TypeError(
+                "BPETokenizer backend rejected a str input "
+                f"(type={type(text).__name__}, length={len(text)}): {exc}"
+            ) from exc
         result: List[int] = []
         if add_bos:
             result.append(self.bos_id)
