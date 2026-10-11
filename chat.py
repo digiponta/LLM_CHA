@@ -3139,6 +3139,10 @@ def main() -> None:
     args = parse_args()
     reference_bridge = (RuntimeReferenceBridge(SessionReferenceStore(args.session_reference_db))
                         if args.session_reference_memory else None)
+    if reference_bridge is not None:
+        abandoned = reference_bridge.memory.recover_pending(args.session_reference_context)
+        if abandoned:
+            print(f"[session reference: abandoned {abandoned} unconfirmed candidate(s) from a previous run]")
     active_character = select_profile(args.character_dir, args.character) if args.character else None
 
     tokenizer_path = resolve_runtime_path(args.tokenizer)
