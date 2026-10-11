@@ -35,6 +35,7 @@ from evidence_grounded_reference_v023357 import EvidenceGroundedReferenceBridge,
 from evidence_answer_consistency_v023358 import ConsistencyReferenceBridge, render_consistency
 from structural_semantic_consistency_v023359 import StructuralReferenceBridge, render_structural
 from session_multi_evidence_bridge_v023362 import MultiEvidenceBridge, render_multi_evidence
+from multilayer_semantic_audit_v023363 import audit_layers, render_audit
 
 import argparse
 from dataclasses import dataclass, replace
@@ -3414,6 +3415,32 @@ def main() -> None:
                 token = user_text[len("/refmap approve "):].strip()
                 success = VerifiedConceptMapping(args.reference_mapping_db).approve(args.session_reference_context, token)
                 print("[mapping approved]" if success else "[mapping rejected: stale/expired/wrong context]")
+                print()
+                continue
+            if command == "/refaudit":
+                try:
+                    approved_ref = reference_bridge.memory.lookup(
+                        args.session_reference_context, "experiment", "target"
+                    )
+                    mapped = (
+                        VerifiedConceptMapping(args.reference_mapping_db).lookup(
+                            args.session_reference_context, approved_ref
+                        )
+                        if approved_ref else None
+                    )
+                    if not mapped:
+                        print("[回答保留] no_approved_reference_or_mapping")
+                    else:
+                        result = audit_layers(
+                            proposition_path,
+                            subject_index_path,
+                            typed_subject_index_path,
+                            unified_semantic_path,
+                            concept=mapped["concept"]
+                        )
+                        print(render_audit(result))
+                except (ValueError, OSError) as exc:
+                    print(f"[回答保留] 多層監査失敗: {exc}")
                 print()
                 continue
             if command.startswith("/refchain "):
