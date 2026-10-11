@@ -30,6 +30,7 @@ from character_runtime_v010 import character_command, select_profile, speaker as
 from runtime_reference_integration_v023352 import SessionReferenceStore, RuntimeReferenceBridge, handle_reference_input, render_reference_reply
 from safe_reference_semantic_bridge_v023354 import SafeReferenceSemanticBridge, render_safe_semantic_result
 from truth_aware_reference_bridge_v023355 import TruthAwareReferenceBridge, render_truth_reference_result
+from verified_reference_concept_v023356 import VerifiedConceptMapping, MappedTruthAwareBridge, render_mapped_result
 
 import argparse
 from dataclasses import dataclass, replace
@@ -263,6 +264,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--session-reference-memory", action="store_true", help="Opt in to transactional, isolated session reference memory (not factual knowledge).")
     parser.add_argument("--session-reference-db", default="data/session_reference_memory.sqlite3", help="Path to the opt-in SQLite reference memory.")
     parser.add_argument("--session-reference-context", default="local-chat", help="Session context namespace for reference memory.")
+    parser.add_argument("--reference-mapping-db", default="data/reference_concept_mapping.sqlite3", help="Separate SQLite reference-to-concept mappings.")
     parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument(
@@ -3383,6 +3385,37 @@ def main() -> None:
                     reference_bridge.memory, semantic_knowledge
                 ).lookup(args.session_reference_context)
                 print(render_truth_reference_result(evidence))
+                print()
+                continue
+            if command.startswith("/refmap propose "):
+                payload = user_text[len("/refmap propose "):]
+                if "=>" not in payload:
+                    print("Usage: /refmap propose CONCEPT => PROVENANCE")
+                else:
+                    concept, provenance = (s.strip() for s in payload.split("=>", 1))
+                    active = reference_bridge.memory.lookup(args.session_reference_context, "experiment", "target")
+                    if not active:
+                        print("[no approved reference]")
+                    else:
+                        try:
+                            mapping_token = VerifiedConceptMapping(args.reference_mapping_db).propose(
+                                args.session_reference_context, active, concept, provenance)
+                            print(f"[mapping pending: {mapping_token}; approve explicitly via /refmap approve TOKEN]")
+                        except ValueError as exc:
+                            print(f"[invalid mapping: {exc}]")
+                print()
+                continue
+            if command.startswith("/refmap approve "):
+                token = user_text[len("/refmap approve "):].strip()
+                success = VerifiedConceptMapping(args.reference_mapping_db).approve(args.session_reference_context, token)
+                print("[mapping approved]" if success else "[mapping rejected: stale/expired/wrong context]")
+                print()
+                continue
+            if command == "/refmapped":
+                evidence = MappedTruthAwareBridge(
+                    reference_bridge.memory, VerifiedConceptMapping(args.reference_mapping_db), semantic_knowledge
+                ).lookup(args.session_reference_context)
+                print(render_mapped_result(evidence))
                 print()
                 continue
             if command == "/refinvalidate":
