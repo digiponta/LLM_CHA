@@ -47,7 +47,9 @@ def evaluate():
         c.receive("昨日の実験の続きをやって","C")
         c.receive("cursor","C")
         reboot=create()
+        abandoned=reboot.memory.recover_pending("C")
         check("pending_not_autoapproved_on_restart",
+              abandoned==1 and
               reboot.memory.lookup("C","experiment","target") is None and
               handle_reference_input(reboot,"はい","C") is None)
         clock.advance(3600)
