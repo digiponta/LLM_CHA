@@ -141,6 +141,7 @@ from knowledge_queue_lifecycle_v10115 import (
 )
 from truth_aware_corpus_gate_v023373 import corpus_answer_decision
 from generated_response_quality_v023374 import greeting_repair
+from multi_intent_reference_v023375 import split_input, clarify_reference
 from retrieval_first_runtime_v1012161 import (
     resolve_subject as retrieval_first_resolve_subject,
     truth_allows_direct_retrieval,
@@ -3370,6 +3371,24 @@ def main() -> None:
         if not user_text:
             continue
 
+        # Only rewrite tightly scoped mixed greeting + concept questions.
+        # Preserve slash commands and never bypass the existing truth gate.
+        if not user_text.startswith("/"):
+            routed_text, intent_route = split_input(user_text)
+            if intent_route == "REFERENCE_CLARIFY" and (
+                reference_bridge is None or
+                not reference_bridge._resolver(args.session_reference_context).pending
+            ):
+                message = clarify_reference()
+                print(f"{character_speaker(active_character)}> {message}")
+                print("[multi-intent=REFERENCE_CLARIFY, route=explicit-clarification]")
+                print()
+                history.append((user_text, message))
+                last_ai_reply = message
+                continue
+            if intent_route == "GREETING_PLUS_KNOWLEDGE":
+                print(f"[multi-intent=GREETING_PLUS_KNOWLEDGE, target={routed_text!r}, route=existing-truth-aware-pipeline]")
+                user_text = routed_text
         command = user_text.lower()
         handled, active_character, character_message = character_command(user_text, args.character_dir, active_character)
         if handled:
