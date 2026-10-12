@@ -33,24 +33,24 @@ def execute(mode,corpus,overlay,timeout,python):
         env=env,timeout=timeout,check=False)
     return process.returncode,process.stdout
 
-def segment(output,command):
-    marker="You> "+command
-    lines=output.splitlines()
-    starts=[i for i,line in enumerate(lines) if marker in line]
-    if not starts:return None
-    i=starts[-1]
-    end=next((j for j in range(i+1,len(lines)) if "You> " in lines[j]),len(lines))
-    return "\n".join(lines[i:end])
-
-def diagnostic(output):
+def segments(output):
+    # input() prints "You> " but does NOT echo piped stdin.
+    # Match prompts by command order, not by searching input text in stdout.
     import re
-    # Pull JSON directly from the segment following /retention-stats.
-    marker="You> /retention-stats"
-    lines=output.splitlines()
-    positions=[i for i,l in enumerate(lines) if marker in l]
-    if not positions:return None
-    for line in lines[positions[0]+1:]:
-        if "You>" in line:break
+    blocks=re.split(r"(?m)^You> ",output)
+    return blocks[1:]
+
+def segment(output,command,occurrence=0):
+    indices=[i for i,c in enumerate(COMMANDS) if c==command]
+    if occurrence>=len(indices):return None
+    blocks=segments(output)
+    index=indices[occurrence]
+    return blocks[index] if index<len(blocks) else None
+
+def diagnostic(output,occurrence=0):
+    block=segment(output,"/retention-stats",occurrence)
+    if block is None:return None
+    for line in block.splitlines():
         if line.lstrip().startswith("{"):
             try:return json.loads(line.strip())
             except json.JSONDecodeError:return None
@@ -87,7 +87,7 @@ def run(source:Path,timeout=240,python=sys.executable):
     checks["pinned_gpu"]=bool(diag) and "GPU" in diag.get("pins",[])
     checks["topic_evicted"]=bool(diag) and diag.get("evictions",0)>0
     checks["return_works"]="[topic route: 宇宙]" in (segment(active["transcript"],"宇宙の話に戻って") or "")
-    checks["reset_stats_empty"]=bool(segment(active["transcript"],"/reset")) and '"topics": []' in active["transcript"]
+    checks["reset_stats_empty"]=bool(segment(active["transcript"],"/reset")) and (diagnostic(active["transcript"],1) or {}).get("topics")==[]
     checks["ambiguous_after_reset"]="参照できる話題がありません" in (segment(active["transcript"],"それについて") or "")
     checks["shadow_stats"]=reports["shadow"]["diagnostic"] is not None and reports["shadow"]["diagnostic"].get("mode")=="shadow"
     checks["off_stats_disabled"]="[adaptive retention shadow disabled]" in reports["off"]["transcript"]
