@@ -3294,6 +3294,7 @@ def main() -> None:
             f"{baseline_count} existing trusted pair(s) marked as trained]"
         )
         print()
+    learning_enabled = bool(args.learn)
     # v0.2.33.82.4: opt-in transient context; no persistent knowledge writes.
     import os
     from conversation_topic_adapter_v0233822 import ConversationTopicAdapter
