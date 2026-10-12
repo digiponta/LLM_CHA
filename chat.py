@@ -3295,6 +3295,20 @@ def main() -> None:
         )
         print()
     learning_enabled = bool(args.learn)
+    # v0.2.33.82.4: opt-in transient context; no persistent knowledge writes.
+    import os
+    from conversation_topic_adapter_v0233822 import ConversationTopicAdapter
+    topic_adapter = (
+        ConversationTopicAdapter()
+        if os.environ.get("LLM_CHA_MULTITOPIC", "0") == "1"
+        else None
+    )
+    if topic_adapter is not None:
+        from grounded_expansion_v0233826 import PropositionCursor
+        proposition_cursor = PropositionCursor()
+        from proposition_truth_v0233827 import TruthOverlay
+        proposition_truth = TruthOverlay(os.environ.get("LLM_CHA_PROPOSITION_TRUTH"))
+        print("[multi-topic context enabled; Truth Gate unchanged]")
     last_user_text: str | None = None
     last_ai_reply: str | None = None
 
@@ -3322,6 +3336,9 @@ def main() -> None:
             break
 
         if command == "/reset":
+            if topic_adapter is not None:
+                topic_adapter.context.reset()
+                proposition_cursor.reset()
             history.clear()
             print("[conversation history cleared]")
             print()
@@ -4642,6 +4659,20 @@ def main() -> None:
             print()
             continue
 
+        # Context routing occurs AFTER slash command handling but BEFORE
+        # retrieval and Truth Gate. No topic result is treated as a fact.
+        if topic_adapter is not None:
+            topic_route = topic_adapter.process_user_turn(raw_user_text)
+            if topic_route.action in ("CLARIFY", "NO_TOPIC"):
+                print(f"AI> {topic_route.response}")
+                print("[0 generated probe tokens, topic resolution]")
+                print()
+                last_ai_reply = None
+                continue
+            if topic_route.action == "READY" and topic_route.rewritten_query:
+                if topic_route.rewritten_query != raw_user_text:
+                    print(f"[topic route: {topic_route.topic or '-'}]")
+                    user_text = topic_route.rewritten_query
         last_user_text = user_text
         internalized_record = None
 
@@ -4724,6 +4755,67 @@ def main() -> None:
             last_ai_reply = None
             continue
 
+        # v0.2.33.82.5: grounded multi-topic follow-up only.
+        # Follow-ups must not enter unconstrained generation. Truth State is
+        # evaluated using the original source topic, never the rewritten text.
+        if (topic_adapter is not None and topic_route.action == "READY"
+                and topic_route.topic
+                and raw_user_text.strip().rstrip("。！？!? ") in
+                ("もう少し詳しく", "詳しく教えて", "もっと詳しく", "続き", "それについて")):
+            followup_subject = topic_route.topic
+            followup_memory_path = resolve_runtime_path(args.corpus_memory)
+            followup_hit = retrieval_first_resolve_subject(
+                followup_memory_path, followup_subject
+            )
+            followup_truth = effective_truth_record(
+                truth_store_path, followup_subject
+            )
+            if (followup_hit.hit and truth_allows_direct_retrieval(
+                    followup_truth.state)):
+                if followup_truth.state == "UNVERIFIED":
+                    print(f"[truth warning: state=UNVERIFIED, concept={followup_subject!r}]")
+                proposition, seen_count, total_count = proposition_cursor.next(
+                    followup_subject, followup_hit.answer
+                )
+                # Skip explicitly blocked individual propositions, but never
+                # override the subject-level Truth Gate.
+                while proposition is not None:
+                    decision = proposition_truth.decide(
+                        followup_subject, proposition, followup_hit.provenance,
+                        followup_truth.state, True
+                    )
+                    if decision.allowed:
+                        break
+                    print(f"[proposition truth=BLOCK, id={decision.proposition_id}, state={decision.state}]")
+                    proposition, seen_count, total_count = proposition_cursor.next(
+                        followup_subject, followup_hit.answer
+                    )
+                if proposition is None:
+                    print("AI> この話題について、未提示の記録はありません。")
+                    print(f"[grounded-expansion=EXHAUSTED, topic={followup_subject!r}]")
+                    print()
+                    last_ai_reply = None
+                    continue
+                warning_prefix = "【未検証の記録】" if decision.state == "UNVERIFIED" else ""
+                print(f"[proposition-id={decision.proposition_id}, truth_state={decision.state}, provenance={decision.source}]")
+                print(f"AI> {warning_prefix}{proposition}")
+                print(f"[grounded-expansion=NEXT, seen={seen_count}, total={total_count}]")
+                print(f"[grounded-followup=HIT, topic={followup_subject!r}, "
+                      f"truth_state={followup_truth.state}, "
+                      f"provenance={followup_hit.provenance}]")
+                print("[0 generated probe tokens, grounded follow-up retrieval]")
+                history.append((user_text, proposition))
+                last_ai_reply = proposition
+            else:
+                print("AI> この話題について、検証可能な追加情報がありません。")
+                print(f"[grounded-followup=BLOCK, topic={followup_subject!r}, "
+                      f"truth_state={followup_truth.state}, "
+                      f"memory_hit={followup_hit.hit}]")
+                print("[0 generated probe tokens, grounded follow-up fallback]")
+                last_ai_reply = None
+            print()
+            continue
+
         # v10.16.1 Conditional Semantic Retrieval.
         conditional_query, conditional_answer = answer_conditional_query(
             conditional_proposition_path,
@@ -4774,7 +4866,38 @@ def main() -> None:
                     retrieval_truth.state
                 )
                 if direct_retrieval_allowed:
-                    print(f"AI> {retrieval.answer}")
+                    if topic_adapter is not None and topic_route.topic == retrieval_focus:
+                        shown, shown_count, total_count = proposition_cursor.next(
+                            retrieval_focus, retrieval.answer
+                        )
+                        # Restrict each fragment with the read-only overlay.
+                        while shown is not None:
+                            decision = proposition_truth.decide(
+                                retrieval_focus, shown, retrieval.provenance,
+                                retrieval_truth.state, True
+                            )
+                            if decision.allowed:
+                                break
+                            print(f"[proposition truth=BLOCK, id={decision.proposition_id}, state={decision.state}]")
+                            shown, shown_count, total_count = proposition_cursor.next(
+                                retrieval_focus, retrieval.answer
+                            )
+                        if shown is None:
+                            print("AI> この話題について提示できる記録はありません。")
+                            print("[grounded-expansion=BLOCKED]")
+                            print()
+                            last_ai_reply = None
+                            continue
+                        print(f"[proposition-id={decision.proposition_id}, truth_state={decision.state}, provenance={decision.source}]")
+                        display_answer = (
+                            "【未検証の記録】" + shown
+                            if decision.state == "UNVERIFIED" else shown
+                        )
+                        print(f"AI> {display_answer}")
+                        print(f"[grounded-expansion=INITIAL, shown={shown_count}, total={total_count}]")
+                    else:
+                        shown = retrieval.answer
+                        print(f"AI> {shown}")
                     function_part = ""
                     if retrieval.function_structure is not None:
                         fs = retrieval.function_structure
@@ -4790,8 +4913,8 @@ def main() -> None:
                     )
                     print("[0 generated probe tokens, corpus-memory retrieval]")
                     print()
-                    history.append((user_text, retrieval.answer))
-                    last_ai_reply = retrieval.answer
+                    history.append((user_text, shown))
+                    last_ai_reply = shown
                     continue
                 else:
                     print(
