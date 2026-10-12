@@ -20,14 +20,17 @@ class AutoPinProtectionTests(unittest.TestCase):
         trace=[Event("observe","宇宙",True)]+[Event("observe",f"他{i}",True) for i in range(12)]
         self.assertIn("宇宙",evaluate(trace,4,explicit_topics=("宇宙",))["final_topics"])
     def test_stale_auto_reallocation(self):
-        trace=[Event("observe","旧",True)]
+        # Capacity 4 defaults to TWO auto-pin slots. Fill both first;
+        # with only one old auto-pin, the new topic uses the free slot
+        # and no demotion is required.
+        trace=[Event("observe","旧A",True),Event("observe","旧B",True)]
         trace += [Event("observe",f"一時{i}") for i in range(10)]
         trace += [Event("observe","新",True)]
         record=evaluate(trace,capacity=4,min_age_for_reallocation=4)
-        # With a full cache a pinned item is preserved; incoming topic enters
-        # a non-pinned slot, then exchanges stale auto protection.
         self.assertEqual(record["auto_demotions"],1)
         self.assertIn("新",record["auto_pins"])
+        self.assertEqual(len(record["auto_pins"]),2)
+        self.assertEqual(len(set(record["auto_pins"]) & {"旧A","旧B"}),1)
     def test_recent_auto_not_demoted(self):
         trace=[Event("observe","旧",True),Event("observe","新",True)]
         record=evaluate(trace,capacity=2,min_age_for_reallocation=8)
