@@ -44,6 +44,23 @@ class GroundedRevisitTests(unittest.TestCase):
         source=Path("chat.py").read_text(encoding="utf-8")
         self.assertIn("proposition_cursor.seen.pop(stale_subject, None)",source)
         self.assertIn("if active_retention_requested:",source)
+    def test_ambiguous_about_after_reset_fails_closed(self):
+        a=ConversationTopicAdapter(ActiveTopicContext(),grounded_topic_only=True)
+        a.process_user_turn("宇宙について")
+        a.process_user_turn("/reset")
+        route=a.process_user_turn("それについて")
+        self.assertEqual(route.action,"NO_TOPIC")
+        self.assertIsNone(route.topic)
+        self.assertNotIn("それ",a.context.topics)
+
+    def test_ambiguous_about_with_multiple_topics_requires_clarification(self):
+        a=ConversationTopicAdapter(ActiveTopicContext(),grounded_topic_only=True)
+        a.process_user_turn("宇宙について")
+        a.process_user_turn("GPUとは")
+        route=a.process_user_turn("それについて")
+        self.assertEqual(route.action,"CLARIFY")
+        self.assertNotIn("それ",a.context.topics)
+
     def test_followup_existing_adapter(self):
         a=ConversationTopicAdapter(ActiveTopicContext(),grounded_topic_only=True)
         a.process_user_turn("宇宙について")
