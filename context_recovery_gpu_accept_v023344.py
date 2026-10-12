@@ -25,6 +25,8 @@ def execute(commands, corpus, checkpoint, overlay, timeout, python):
     env.update({
         "LLM_CHA_MULTITOPIC":"1",
         "LLM_CHA_CONTEXT_RECOVERY":"1",
+        "LLM_CHA_RETENTION_ACTIVE":"0",
+        "LLM_CHA_RETENTION_PINS":"",
         "LLM_CHA_CONTEXT_PATH":str(checkpoint),
         "LLM_CHA_PROPOSITION_TRUTH":str(overlay),
         "PYTHONIOENCODING":"utf-8",
