@@ -37,7 +37,6 @@ def acceptance(transcript: str, propositions: list[str]) -> dict[str, bool]:
     false_id = ids.get(propositions[0]) if propositions else ""
     true_id = ids.get(propositions[1]) if len(propositions) > 1 else ""
     results = {
-        "process_completed": "You> /exit" in transcript,
         "initial_false_blocked": f"proposition truth=BLOCK, id={false_id}, state=FALSE" in transcript,
         "true_proposition_displayed": bool(true_id and f"proposition-id={true_id}, truth_state=TRUE" in transcript),
         "unverified_label": "【未検証の記録】" in transcript,
