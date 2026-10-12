@@ -1,3 +1,72 @@
+# LLM_CHA — Multi-Topic Truth-Aware Conversation (v0.2.33.82 Stable Candidate)
+
+**Status: Stable Candidate / validation complete for the scoped 94 regression tests and 8 GPU smoke checks; NOT yet a formal stable release.**
+
+This repository currently incorporates the earlier LLM_TRY v10.16.5 runtime. The section below describes the **LLM_CHA experimental extension**; the legacy LLM_TRY documentation follows after this section.
+
+## Architecture
+
+```text
+User turn -> slash command guard -> Multi-Topic Context Adapter
+                                      |
+                              subject / follow-up resolution
+                                      |
+                              subject-keyed Corpus Memory
+                                      |
+                              Grounded Proposition Cursor
+                                      |
+                              subject Truth Gate
+                                      |
+                         Proposition Truth Overlay (read-only)
+                          /                     \
+                allowed proposition         blocked proposition
+                     |                              |
+             state/provenance label           skip / fail closed
+                     |
+              no unconstrained generation
+```
+
+- Transient topic tracking, topic switch/return, conservative clarification and `/reset`.
+- Grounded follow-up selects distinct existing propositions; exhausted context never synthesizes unsupported details.
+- Stable 24-hex proposition IDs from subject + literal proposition + source provenance.
+- Truth states: TRUE, FALSE, UNVERIFIED, OUTDATED, CONTESTED. An explicit blocked subject stays blocked even if a proposition says TRUE.
+- UNVERIFIED text is marked `【未検証の記録】`; a displayed proposition is **not** proof of its scientific validity.
+- Optional review overlay is loaded read-only by the runtime; a separate manual CLI records review metadata.
+- Original model, weights, corpus and Semantic Memory are not rewritten by these new context/retrieval code paths.
+
+## Enable / verify
+
+PowerShell (on a machine with installed model/tokenizer/data):
+
+```powershell
+$env:LLM_CHA_MULTITOPIC="1"
+python chat.py
+```
+
+The feature is disabled by default. For manually reviewed proposition truth overlay use:
+```powershell
+$env:LLM_CHA_PROPOSITION_TRUTH="data/proposition_truth_review.jsonl"
+```
+The referenced file must exist and contain validated review records.
+
+Regression suite: `python -m unittest -v test_multi_topic_context_v0233821.py test_conversation_topic_adapter_v0233822.py test_multi_topic_chat_runtime_v0233823.py test_truth_aware_chat_integration_v0233824.py test_learning_init_v02338241.py test_grounded_followup_v0233825.py test_grounded_expansion_v0233826.py test_expansion_integration_v0233826.py test_proposition_truth_v0233827.py test_truth_integration_v0233827.py test_proposition_review_v0233828.py test_mixed_state_e2e_v0233829.py test_mixed_state_gpu_accept_v02338210.py`
+
+GPU smoke: `python mixed_state_gpu_accept_v02338210.py --timeout 240` (test fixture; labels synthetic). Report: `results/mixed_state_gpu_accept_v02338210.json`.
+
+**Observed on RTX 3070 Ti:** prior 90 regression tests PASS, four new runner tests PASS, and eight GPU smoke checks PASS (exit code 0). These are cumulative runs rather than a single fresh 94-test execution.
+
+## Limitations / release gate
+
+- The GPU smoke runner isolates a corpus **copy** and an overlay, not every other runtime file. Do not claim comprehensive filesystem or learning-state isolation.
+- Synthetic review labels are solely for checking filtering behavior, never scientific verification.
+- Most regression tests are component/static checks; full legacy runtime regressions and stress/performance tests remain to be assessed for formal release.
+- Grounding here retrieves pre-existing corpus propositions; it does **not** establish neural internalization, semantic compositional explanation, or per-proposition factual truth.
+- Stable candidate branch `v0.2.33.82-stable-candidate` is intentionally separate from `main`; merging/tagging requires a subsequent release decision.
+
+See [RELEASE_NOTES_v0.2.33.82_RC.md](RELEASE_NOTES_v0.2.33.82_RC.md) for verification scope.
+
+---
+
 # LLM_TRY v10.16.5 — Conditional Semantic Runtime Stable
 
 **Status: Stable Release — v10.16 conditional-semantic series merged into main after 48/48 component regression cases and 6/6 stable integration checks PASS.**
