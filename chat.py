@@ -3305,7 +3305,11 @@ def main() -> None:
         raise ValueError("active retention requires LLM_CHA_MULTITOPIC=1")
     if active_retention_requested:
         from active_topic_context_v0363 import ActiveTopicContext
-        topic_adapter = ConversationTopicAdapter(ActiveTopicContext())
+        explicit_pins = tuple(
+            part.strip() for part in os.environ.get("LLM_CHA_RETENTION_PINS", "").split(",")
+            if part.strip()
+        )
+        topic_adapter = ConversationTopicAdapter(ActiveTopicContext(pinned_topics=explicit_pins))
         print("[adaptive retention ACTIVE enabled; Truth Gate unchanged]")
     else:
         topic_adapter = (
