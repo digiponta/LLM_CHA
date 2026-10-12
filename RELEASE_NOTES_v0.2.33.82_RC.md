@@ -57,3 +57,13 @@ git pull --ff-only origin v0.2.33.82-stable-candidate
 python -m unittest -v test_multi_topic_context_v0233821.py test_conversation_topic_adapter_v0233822.py test_multi_topic_chat_runtime_v0233823.py test_truth_aware_chat_integration_v0233824.py test_learning_init_v02338241.py test_grounded_followup_v0233825.py test_grounded_expansion_v0233826.py test_expansion_integration_v0233826.py test_proposition_truth_v0233827.py test_truth_integration_v0233827.py test_proposition_review_v0233828.py test_mixed_state_e2e_v0233829.py test_mixed_state_gpu_accept_v02338210.py
 python mixed_state_gpu_accept_v02338210.py --timeout 240
 ```
+
+## Final legacy compatibility check (2026-10-12)
+
+User-run `python verify_conditional_runtime_stable_v10165.py` completed successfully:
+- Historical conditional cases: **48/48** through component regressions.
+- Stable integration checks: **6/6 PASS**; failed **0/6**.
+- `STATUS : CONDITIONAL_SEMANTIC_RUNTIME_STABLE_V10165_PASS`.
+- Local `git status --short` shows only **untracked** data/model/results paths and no tracked modifications. Do not run `git add .`, `git clean -fd`, or commit these files without individual review. These local generated files are outside the branch merge diff.
+
+This provides evidence of backward compatibility for the conditional runtime suite, not comprehensive all-feature compatibility. RC remains unmerged pending release approval.
