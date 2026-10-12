@@ -39,6 +39,21 @@ class ActiveTopicTests(unittest.TestCase):
     def test_invalid_pins(self):
         with self.assertRaises(ValueError):
             ActiveTopicContext(max_topics=1,pinned_topics=("A","B"))
+    def test_adapter_rejects_when_fully_pinned(self):
+        c=ActiveTopicContext(max_topics=1,pinned_topics=("宇宙",))
+        a=ConversationTopicAdapter(c)
+        self.assertEqual(a.process_user_turn("宇宙とは").action,"READY")
+        denied=a.process_user_turn("数学とは")
+        self.assertEqual(denied.action,"NO_TOPIC")
+        self.assertEqual(c.active_topic,"宇宙")
+
+    def test_adapter_does_not_invent_rejected_topic(self):
+        c=ActiveTopicContext(max_topics=1,pinned_topics=("宇宙",))
+        a=ConversationTopicAdapter(c)
+        a.process_user_turn("宇宙とは")
+        a.process_user_turn("数学とは")
+        self.assertNotIn("数学",c.topics)
+
     def test_expired_topic_missing(self):
         c=ActiveTopicContext(max_topics=2,ttl_turns=1)
         c.observe("A")
