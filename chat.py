@@ -3363,6 +3363,21 @@ def main() -> None:
         if command in ("/exit", "exit", "quit"):
             break
 
+        if command.startswith("/persona "):
+            # v0.3.7.1: attributed source quotation, NOT factual promotion.
+            from persona_semantic_memory_v0371 import persona_reply
+            concept=user_text[len("/persona "):].strip()
+            try:
+                reply,entries=persona_reply(resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS),concept)
+                print(f"AI> {reply}")
+                for entry in entries:
+                    print(f"[persona-evidence id={entry.id}, line={entry.line}, "
+                          f"state={entry.epistemic_type}, factual_truth={entry.factual_truth}]")
+            except (OSError,ValueError) as exc:
+                print(f"[persona-evidence=ERROR, reason={exc}]")
+            print()
+            continue
+
         if command == "/retention-stats":
             import json
             if active_retention_requested and topic_adapter is not None:
