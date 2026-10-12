@@ -3306,6 +3306,8 @@ def main() -> None:
     if topic_adapter is not None:
         from grounded_expansion_v0233826 import PropositionCursor
         proposition_cursor = PropositionCursor()
+        from proposition_truth_v0233827 import TruthOverlay
+        proposition_truth = TruthOverlay(os.environ.get("LLM_CHA_PROPOSITION_TRUTH"))
         print("[multi-topic context enabled; Truth Gate unchanged]")
     last_user_text: str | None = None
     last_ai_reply: str | None = None
@@ -4775,13 +4777,27 @@ def main() -> None:
                 proposition, seen_count, total_count = proposition_cursor.next(
                     followup_subject, followup_hit.answer
                 )
+                # Skip explicitly blocked individual propositions, but never
+                # override the subject-level Truth Gate.
+                while proposition is not None:
+                    decision = proposition_truth.decide(
+                        followup_subject, proposition, followup_hit.provenance,
+                        followup_truth.state, True
+                    )
+                    if decision.allowed:
+                        break
+                    print(f"[proposition truth=BLOCK, id={decision.proposition_id}, state={decision.state}]")
+                    proposition, seen_count, total_count = proposition_cursor.next(
+                        followup_subject, followup_hit.answer
+                    )
                 if proposition is None:
                     print("AI> この話題について、未提示の記録はありません。")
                     print(f"[grounded-expansion=EXHAUSTED, topic={followup_subject!r}]")
                     print()
                     last_ai_reply = None
                     continue
-                warning_prefix = "【未検証の記録】" if followup_truth.state == "UNVERIFIED" else ""
+                warning_prefix = "【未検証の記録】" if decision.state == "UNVERIFIED" else ""
+                print(f"[proposition-id={decision.proposition_id}, truth_state={decision.state}, provenance={decision.source}]")
                 print(f"AI> {warning_prefix}{proposition}")
                 print(f"[grounded-expansion=NEXT, seen={seen_count}, total={total_count}]")
                 print(f"[grounded-followup=HIT, topic={followup_subject!r}, "
@@ -4854,11 +4870,28 @@ def main() -> None:
                         shown, shown_count, total_count = proposition_cursor.next(
                             retrieval_focus, retrieval.answer
                         )
+                        # Restrict each fragment with the read-only overlay.
+                        while shown is not None:
+                            decision = proposition_truth.decide(
+                                retrieval_focus, shown, retrieval.provenance,
+                                retrieval_truth.state, True
+                            )
+                            if decision.allowed:
+                                break
+                            print(f"[proposition truth=BLOCK, id={decision.proposition_id}, state={decision.state}]")
+                            shown, shown_count, total_count = proposition_cursor.next(
+                                retrieval_focus, retrieval.answer
+                            )
                         if shown is None:
-                            shown = retrieval.answer
+                            print("AI> この話題について提示できる記録はありません。")
+                            print("[grounded-expansion=BLOCKED]")
+                            print()
+                            last_ai_reply = None
+                            continue
+                        print(f"[proposition-id={decision.proposition_id}, truth_state={decision.state}, provenance={decision.source}]")
                         display_answer = (
                             "【未検証の記録】" + shown
-                            if retrieval_truth.state == "UNVERIFIED" else shown
+                            if decision.state == "UNVERIFIED" else shown
                         )
                         print(f"AI> {display_answer}")
                         print(f"[grounded-expansion=INITIAL, shown={shown_count}, total={total_count}]")
