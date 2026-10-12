@@ -3294,7 +3294,16 @@ def main() -> None:
             f"{baseline_count} existing trusted pair(s) marked as trained]"
         )
         print()
-    learning_enabled = bool(args.learn)
+    # v0.2.33.82.4: opt-in transient context; no persistent knowledge writes.
+    import os
+    from conversation_topic_adapter_v0233822 import ConversationTopicAdapter
+    topic_adapter = (
+        ConversationTopicAdapter()
+        if os.environ.get("LLM_CHA_MULTITOPIC", "0") == "1"
+        else None
+    )
+    if topic_adapter is not None:
+        print("[multi-topic context enabled; Truth Gate unchanged]")
     last_user_text: str | None = None
     last_ai_reply: str | None = None
 
@@ -3322,6 +3331,8 @@ def main() -> None:
             break
 
         if command == "/reset":
+            if topic_adapter is not None:
+                topic_adapter.context.reset()
             history.clear()
             print("[conversation history cleared]")
             print()
@@ -4642,6 +4653,20 @@ def main() -> None:
             print()
             continue
 
+        # Context routing occurs AFTER slash command handling but BEFORE
+        # retrieval and Truth Gate. No topic result is treated as a fact.
+        if topic_adapter is not None:
+            topic_route = topic_adapter.process_user_turn(raw_user_text)
+            if topic_route.action in ("CLARIFY", "NO_TOPIC"):
+                print(f"AI> {topic_route.response}")
+                print("[0 generated probe tokens, topic resolution]")
+                print()
+                last_ai_reply = None
+                continue
+            if topic_route.action == "READY" and topic_route.rewritten_query:
+                if topic_route.rewritten_query != raw_user_text:
+                    print(f"[topic route: {topic_route.topic or '-'}]")
+                    user_text = topic_route.rewritten_query
         last_user_text = user_text
         internalized_record = None
 
