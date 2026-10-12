@@ -3309,7 +3309,7 @@ def main() -> None:
             part.strip() for part in os.environ.get("LLM_CHA_RETENTION_PINS", "").split(",")
             if part.strip()
         )
-        topic_adapter = ConversationTopicAdapter(ActiveTopicContext(pinned_topics=explicit_pins))
+        topic_adapter = ConversationTopicAdapter(ActiveTopicContext(pinned_topics=explicit_pins), grounded_topic_only=True)
         print("[adaptive retention ACTIVE enabled; Truth Gate unchanged]")
     else:
         topic_adapter = (
@@ -4738,6 +4738,12 @@ def main() -> None:
         # retrieval and Truth Gate. No topic result is treated as a fact.
         if topic_adapter is not None:
             topic_route = topic_adapter.process_user_turn(raw_user_text)
+            if active_retention_requested:
+                # Only presented-content cursor bookkeeping; no knowledge writes.
+                live_topics = set(topic_adapter.context.topics)
+                for stale_subject in tuple(proposition_cursor.seen):
+                    if stale_subject not in live_topics:
+                        proposition_cursor.seen.pop(stale_subject, None)
             if retention_shadow is not None:
                 retention_shadow.observe_route(topic_route)
             if topic_route.action in ("CLARIFY", "NO_TOPIC"):
