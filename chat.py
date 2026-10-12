@@ -3309,6 +3309,14 @@ def main() -> None:
         from proposition_truth_v0233827 import TruthOverlay
         proposition_truth = TruthOverlay(os.environ.get("LLM_CHA_PROPOSITION_TRUTH"))
         print("[multi-topic context enabled; Truth Gate unchanged]")
+    # v0.2.34.3: explicit, opt-in context recovery only.
+    context_recovery_path = (
+        os.environ.get("LLM_CHA_CONTEXT_PATH")
+        if topic_adapter is not None and os.environ.get("LLM_CHA_CONTEXT_RECOVERY", "0") == "1"
+        else None
+    )
+    if context_recovery_path:
+        print("[context recovery available: /context-save, /context-load]")
     last_user_text: str | None = None
     last_ai_reply: str | None = None
 
@@ -3334,6 +3342,38 @@ def main() -> None:
 
         if command in ("/exit", "exit", "quit"):
             break
+
+        if command in ("/context-save", "/context-load"):
+            if not context_recovery_path or topic_adapter is None:
+                print("[context recovery disabled; set LLM_CHA_MULTITOPIC=1, LLM_CHA_CONTEXT_RECOVERY=1, LLM_CHA_CONTEXT_PATH]")
+                print()
+                continue
+            try:
+                from context_recovery_v023343 import save as context_save, load as context_load
+                corpus_for_recovery = resolve_runtime_path(args.corpus_memory)
+                if command == "/context-save":
+                    count = context_save(
+                        context_recovery_path, topic_adapter.context,
+                        proposition_cursor, corpus_for_recovery
+                    )
+                    print(f"[context-save=OK, topics={count}]")
+                else:
+                    report = context_load(
+                        context_recovery_path, topic_adapter, proposition_cursor,
+                        corpus_for_recovery,
+                        lambda subject: (
+                            (lambda record: (record.state, truth_allows_direct_retrieval(record.state)))(
+                                effective_truth_record(truth_store_path, subject)
+                            )
+                        ),
+                        # Load the current overlay; never trust an old cached decision.
+                        TruthOverlay(os.environ.get("LLM_CHA_PROPOSITION_TRUTH"))
+                    )
+                    print(f"[context-load=OK, retained={report.retained}, rejected={report.rejected}]")
+            except (OSError, ValueError, TypeError) as exc:
+                print(f"[context-recovery=ERROR, reason={exc}]")
+            print()
+            continue
 
         if command == "/reset":
             if topic_adapter is not None:
