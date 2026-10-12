@@ -3349,6 +3349,15 @@ def main() -> None:
         if command in ("/exit", "exit", "quit"):
             break
 
+        if command == "/retention-stats":
+            if retention_shadow is None:
+                print("[adaptive retention shadow disabled]")
+            else:
+                import json
+                print(json.dumps(retention_shadow.stats(), ensure_ascii=False, sort_keys=True))
+            print()
+            continue
+
         if command in ("/context-save", "/context-load"):
             if not context_recovery_path or topic_adapter is None:
                 print("[context recovery disabled; set LLM_CHA_MULTITOPIC=1, LLM_CHA_CONTEXT_RECOVERY=1, LLM_CHA_CONTEXT_PATH]")
