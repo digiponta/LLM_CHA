@@ -4750,6 +4750,42 @@ def main() -> None:
             last_ai_reply = None
             continue
 
+        # v0.2.33.82.5: grounded multi-topic follow-up only.
+        # Follow-ups must not enter unconstrained generation. Truth State is
+        # evaluated using the original source topic, never the rewritten text.
+        if (topic_adapter is not None and topic_route.action == "READY"
+                and topic_route.topic
+                and raw_user_text.strip().rstrip("。！？!? ") in
+                ("もう少し詳しく", "詳しく教えて", "もっと詳しく", "続き", "それについて")):
+            followup_subject = topic_route.topic
+            followup_memory_path = resolve_runtime_path(args.corpus_memory)
+            followup_hit = retrieval_first_resolve_subject(
+                followup_memory_path, followup_subject
+            )
+            followup_truth = effective_truth_record(
+                truth_store_path, followup_subject
+            )
+            if (followup_hit.hit and truth_allows_direct_retrieval(
+                    followup_truth.state)):
+                if followup_truth.state == "UNVERIFIED":
+                    print(f"[truth warning: state=UNVERIFIED, concept={followup_subject!r}]")
+                print(f"AI> {followup_hit.answer}")
+                print(f"[grounded-followup=HIT, topic={followup_subject!r}, "
+                      f"truth_state={followup_truth.state}, "
+                      f"provenance={followup_hit.provenance}]")
+                print("[0 generated probe tokens, grounded follow-up retrieval]")
+                history.append((user_text, followup_hit.answer))
+                last_ai_reply = followup_hit.answer
+            else:
+                print("AI> この話題について、検証可能な追加情報がありません。")
+                print(f"[grounded-followup=BLOCK, topic={followup_subject!r}, "
+                      f"truth_state={followup_truth.state}, "
+                      f"memory_hit={followup_hit.hit}]")
+                print("[0 generated probe tokens, grounded follow-up fallback]")
+                last_ai_reply = None
+            print()
+            continue
+
         # v10.16.1 Conditional Semantic Retrieval.
         conditional_query, conditional_answer = answer_conditional_query(
             conditional_proposition_path,
