@@ -56,7 +56,8 @@ class ConversationTopicAdapter:
 
         # Opt-in active routing: an explicit bare "Xについて" is a topic
         # question, not a free-generation prompt. Do not synthesize facts.
-        topic_only = self.grounded_topic_only and normalized.endswith("について")
+        topic_only = (self.grounded_topic_only and normalized.endswith("について")
+                      and normalized not in FOLLOWUPS)
         topic = (normalized[:-len("について")].strip(" 「」") if topic_only else None)
         if not topic:
             topic = self.extract_topic(text)
