@@ -55,7 +55,9 @@ class ConversationTopicAdapter:
 
         topic = self.extract_topic(text)
         if topic:
-            self.context.observe(topic)
+            admission = self.context.observe(topic)
+            if admission.status != "RESOLVED":
+                return Route("NO_TOPIC", response="話題の保持容量が不足しています。")
             return Route("READY", rewritten_query=text, topic=topic)
 
         if normalized in FOLLOWUPS:
