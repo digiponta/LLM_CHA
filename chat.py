@@ -3298,11 +3298,21 @@ def main() -> None:
     # v0.2.33.82.4: opt-in transient context; no persistent knowledge writes.
     import os
     from conversation_topic_adapter_v0233822 import ConversationTopicAdapter
-    topic_adapter = (
-        ConversationTopicAdapter()
-        if os.environ.get("LLM_CHA_MULTITOPIC", "0") == "1"
-        else None
-    )
+    active_retention_requested = os.environ.get("LLM_CHA_RETENTION_ACTIVE", "0") == "1"
+    if active_retention_requested and os.environ.get("LLM_CHA_CONTEXT_RECOVERY", "0") == "1":
+        raise ValueError("active retention and context recovery cannot be combined in v0.3.6.3")
+    if active_retention_requested and os.environ.get("LLM_CHA_MULTITOPIC", "0") != "1":
+        raise ValueError("active retention requires LLM_CHA_MULTITOPIC=1")
+    if active_retention_requested:
+        from active_topic_context_v0363 import ActiveTopicContext
+        topic_adapter = ConversationTopicAdapter(ActiveTopicContext())
+        print("[adaptive retention ACTIVE enabled; Truth Gate unchanged]")
+    else:
+        topic_adapter = (
+            ConversationTopicAdapter()
+            if os.environ.get("LLM_CHA_MULTITOPIC", "0") == "1"
+            else None
+        )
     if topic_adapter is not None:
         from grounded_expansion_v0233826 import PropositionCursor
         proposition_cursor = PropositionCursor()
@@ -3350,11 +3360,13 @@ def main() -> None:
             break
 
         if command == "/retention-stats":
-            if retention_shadow is None:
-                print("[adaptive retention shadow disabled]")
-            else:
-                import json
+            import json
+            if active_retention_requested and topic_adapter is not None:
+                print(json.dumps(topic_adapter.context.metrics(), ensure_ascii=False, sort_keys=True))
+            elif retention_shadow is not None:
                 print(json.dumps(retention_shadow.stats(), ensure_ascii=False, sort_keys=True))
+            else:
+                print("[adaptive retention disabled]")
             print()
             continue
 
