@@ -3370,7 +3370,7 @@ def main() -> None:
             elif retention_shadow is not None:
                 print(json.dumps(retention_shadow.stats(), ensure_ascii=False, sort_keys=True))
             else:
-                print("[adaptive retention disabled]")
+                print("[adaptive retention shadow disabled]")
             print()
             continue
 
