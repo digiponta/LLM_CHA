@@ -23,8 +23,9 @@ class Route:
     response: Optional[str] = None
 
 class ConversationTopicAdapter:
-    def __init__(self, context: Optional[MultiTopicContext] = None):
+    def __init__(self, context: Optional[MultiTopicContext] = None, grounded_topic_only: bool = False):
         self.context = context if context is not None else MultiTopicContext()
+        self.grounded_topic_only = grounded_topic_only
 
     @staticmethod
     def extract_topic(utterance: str) -> Optional[str]:
@@ -53,12 +54,17 @@ class ConversationTopicAdapter:
                     return Route("READY", rewritten_query=target + "について教えて", topic=target)
                 return Route("NO_TOPIC", response=UNKNOWN_TOPIC)
 
-        topic = self.extract_topic(text)
+        # Opt-in active routing: an explicit bare "Xについて" is a topic
+        # question, not a free-generation prompt. Do not synthesize facts.
+        topic_only = self.grounded_topic_only and normalized.endswith("について")
+        topic = (normalized[:-len("について")].strip(" 「」") if topic_only else None)
+        if not topic:
+            topic = self.extract_topic(text)
         if topic:
             admission = self.context.observe(topic)
             if admission.status != "RESOLVED":
                 return Route("NO_TOPIC", response="話題の保持容量が不足しています。")
-            return Route("READY", rewritten_query=text, topic=topic)
+            return Route("READY", rewritten_query=topic + "について教えて" if topic_only else text, topic=topic)
 
         if normalized in FOLLOWUPS:
             result = self.context.resolve(ambiguous_reference=
