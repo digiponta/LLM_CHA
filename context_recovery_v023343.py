@@ -6,6 +6,8 @@ No automatic persistence, no truth writes, no model updates.
 """
 from __future__ import annotations
 from pathlib import Path
+import os
+import tempfile
 from longterm_context_v02340 import ContextCheckpoint
 from corpus_restore_adapter_v023342 import restore_from_corpus
 from proposition_truth_v0233827 import TruthOverlay, proposition_id
@@ -33,12 +35,24 @@ def save(path, topic_context, proposition_cursor, corpus_path):
     output=Path(path)
     if not output.parent.is_dir():
         raise FileNotFoundError(output.parent)
-    output.write_text(data,encoding="utf-8")
+    fd, pending = tempfile.mkstemp(prefix=".llm-cha-context-", suffix=".tmp", dir=str(output.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(pending, output)
+    finally:
+        if os.path.exists(pending):
+            os.unlink(pending)
     return len(ContextCheckpoint.restore(data).topics)
 
 def load(path, topic_adapter, proposition_cursor, corpus_path, subject_gate, overlay:TruthOverlay):
     # Read and validate before mutating live session.
-    snapshot=Path(path).read_text(encoding="utf-8")
+    source=Path(path)
+    if source.stat().st_size>131072:
+        raise ValueError("checkpoint too large")
+    snapshot=source.read_text(encoding="utf-8")
     if len(snapshot)>131072:
         raise ValueError("checkpoint too large")
     report=restore_from_corpus(snapshot,corpus_path,subject_gate,overlay)
