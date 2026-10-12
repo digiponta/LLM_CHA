@@ -3317,6 +3317,12 @@ def main() -> None:
     )
     if context_recovery_path:
         print("[context recovery available: /context-save, /context-load]")
+    # v0.3.6: opt-in shadow metrics ONLY. Never changes routing or Truth Gate.
+    retention_shadow = None
+    if topic_adapter is not None and os.environ.get("LLM_CHA_RETENTION_SHADOW", "0") == "1":
+        from retention_shadow_v0360 import RetentionShadow
+        retention_shadow = RetentionShadow(capacity=topic_adapter.context.max_topics)
+        print("[adaptive retention shadow enabled; routing unchanged]")
     last_user_text: str | None = None
     last_ai_reply: str | None = None
 
@@ -3370,6 +3376,8 @@ def main() -> None:
                         TruthOverlay(os.environ.get("LLM_CHA_PROPOSITION_TRUTH"))
                     )
                     print(f"[context-load=OK, retained={report.retained}, rejected={report.rejected}]")
+                    if retention_shadow is not None:
+                        retention_shadow.reset()  # restored IDs are not shadow observations
             except (OSError, ValueError, TypeError) as exc:
                 print(f"[context-recovery=ERROR, reason={exc}]")
             print()
@@ -3379,6 +3387,8 @@ def main() -> None:
             if topic_adapter is not None:
                 topic_adapter.context.reset()
                 proposition_cursor.reset()
+                if retention_shadow is not None:
+                    retention_shadow.reset()
             history.clear()
             print("[conversation history cleared]")
             print()
@@ -4703,6 +4713,8 @@ def main() -> None:
         # retrieval and Truth Gate. No topic result is treated as a fact.
         if topic_adapter is not None:
             topic_route = topic_adapter.process_user_turn(raw_user_text)
+            if retention_shadow is not None:
+                retention_shadow.observe_route(topic_route)
             if topic_route.action in ("CLARIFY", "NO_TOPIC"):
                 print(f"AI> {topic_route.response}")
                 print("[0 generated probe tokens, topic resolution]")
