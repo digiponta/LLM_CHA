@@ -3304,6 +3304,8 @@ def main() -> None:
         else None
     )
     if topic_adapter is not None:
+        from grounded_expansion_v0233826 import PropositionCursor
+        proposition_cursor = PropositionCursor()
         print("[multi-topic context enabled; Truth Gate unchanged]")
     last_user_text: str | None = None
     last_ai_reply: str | None = None
@@ -3334,6 +3336,7 @@ def main() -> None:
         if command == "/reset":
             if topic_adapter is not None:
                 topic_adapter.context.reset()
+                proposition_cursor.reset()
             history.clear()
             print("[conversation history cleared]")
             print()
@@ -4769,13 +4772,24 @@ def main() -> None:
                     followup_truth.state)):
                 if followup_truth.state == "UNVERIFIED":
                     print(f"[truth warning: state=UNVERIFIED, concept={followup_subject!r}]")
-                print(f"AI> {followup_hit.answer}")
+                proposition, seen_count, total_count = proposition_cursor.next(
+                    followup_subject, followup_hit.answer
+                )
+                if proposition is None:
+                    print("AI> この話題について、未提示の記録はありません。")
+                    print(f"[grounded-expansion=EXHAUSTED, topic={followup_subject!r}]")
+                    print()
+                    last_ai_reply = None
+                    continue
+                warning_prefix = "【未検証の記録】" if followup_truth.state == "UNVERIFIED" else ""
+                print(f"AI> {warning_prefix}{proposition}")
+                print(f"[grounded-expansion=NEXT, seen={seen_count}, total={total_count}]")
                 print(f"[grounded-followup=HIT, topic={followup_subject!r}, "
                       f"truth_state={followup_truth.state}, "
                       f"provenance={followup_hit.provenance}]")
                 print("[0 generated probe tokens, grounded follow-up retrieval]")
-                history.append((user_text, followup_hit.answer))
-                last_ai_reply = followup_hit.answer
+                history.append((user_text, proposition))
+                last_ai_reply = proposition
             else:
                 print("AI> この話題について、検証可能な追加情報がありません。")
                 print(f"[grounded-followup=BLOCK, topic={followup_subject!r}, "
@@ -4836,7 +4850,21 @@ def main() -> None:
                     retrieval_truth.state
                 )
                 if direct_retrieval_allowed:
-                    print(f"AI> {retrieval.answer}")
+                    if topic_adapter is not None and topic_route.topic == retrieval_focus:
+                        shown, shown_count, total_count = proposition_cursor.next(
+                            retrieval_focus, retrieval.answer
+                        )
+                        if shown is None:
+                            shown = retrieval.answer
+                        display_answer = (
+                            "【未検証の記録】" + shown
+                            if retrieval_truth.state == "UNVERIFIED" else shown
+                        )
+                        print(f"AI> {display_answer}")
+                        print(f"[grounded-expansion=INITIAL, shown={shown_count}, total={total_count}]")
+                    else:
+                        shown = retrieval.answer
+                        print(f"AI> {shown}")
                     function_part = ""
                     if retrieval.function_structure is not None:
                         fs = retrieval.function_structure
@@ -4852,8 +4880,8 @@ def main() -> None:
                     )
                     print("[0 generated probe tokens, corpus-memory retrieval]")
                     print()
-                    history.append((user_text, retrieval.answer))
-                    last_ai_reply = retrieval.answer
+                    history.append((user_text, shown))
+                    last_ai_reply = shown
                     continue
                 else:
                     print(
