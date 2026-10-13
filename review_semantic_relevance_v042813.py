@@ -34,7 +34,13 @@ def summarize(data, reviews):
         if key not in known or key in seen:raise ValueError("unknown/duplicate review "+str(key))
         seen.add(key)
         original=known[key]
-        if (r["question"]!=original["question"] or r["final_answer"]!=("" if original["final_answer"] is None else str(original["final_answer"]))\n            or r["gate_resolution"]!=str(original["gate_resolution"])\n            or r["candidate_alignment"]!=str(original["candidate_alignment"])\n            or r["literal_probe_identity"]!=("" if original["literal_probe_identity"] is None else str(original["literal_probe_identity"]))):
+        if (
+            r["question"] != original["question"]
+            or r["final_answer"] != ("" if original["final_answer"] is None else str(original["final_answer"]))
+            or r["gate_resolution"] != str(original["gate_resolution"])
+            or r["candidate_alignment"] != str(original["candidate_alignment"])
+            or r["literal_probe_identity"] != ("" if original["literal_probe_identity"] is None else str(original["literal_probe_identity"]))
+        ):
             raise ValueError("review/source mismatch "+str(key))
         labels={}
         for f in BOOL_FIELDS:
