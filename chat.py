@@ -5269,6 +5269,40 @@ def main() -> None:
                         last_ai_reply = persona_answer
                         continue
 
+        # v0.4.4: disabled-by-default UNKNOWN literal-persona quotation.
+        # Never convert an excerpt into a canonical definition or a fact.
+        if (
+            os.environ.get("LLM_CHA_UNKNOWN_PERSONA_QUOTE", "0") == "1"
+            and dispatch.action == "BLOCK"
+            and dispatch.state == "UNKNOWN"
+            and not force_internalized_verification
+            and not (truth_result is not None and truth_result.runtime_status == "BLOCK")
+        ):
+            from persona_unknown_quote_v0404 import unknown_persona_quote
+            unknown_focus = (dispatch.focus or "").strip()
+            if unknown_focus:
+                unknown_truth = effective_truth_record(truth_store_path, unknown_focus)
+                if truth_allows_direct_retrieval(unknown_truth.state):
+                    try:
+                        unknown_quote = unknown_persona_quote(
+                            resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS),
+                            raw_user_text, unknown_focus
+                        )
+                    except (OSError, ValueError) as _unknown_error:
+                        unknown_quote = None
+                        print("[persona-unknown-quote=ERROR]")
+                    if unknown_quote is not None:
+                        print(f'persona> {unknown_quote["answer"]}')
+                        print(
+                            f'[persona-unknown-quote=HIT, mode={unknown_quote["mode"]}, '
+                            f'focus={unknown_focus!r}, lines={unknown_quote["source_lines"]}, '
+                            f'factual_truth=NOT_ASSESSED]'
+                        )
+                        print()
+                        history.append((resolver_query, unknown_quote["answer"]))
+                        last_ai_reply = unknown_quote["answer"]
+                        continue
+
         if dispatch.action == "BLOCK" and not force_internalized_verification:
             truth_block = (
                 truth_result is not None
