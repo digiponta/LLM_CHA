@@ -90,6 +90,7 @@ def main():
             print(json.dumps({"ready":True,"groups":len(groups),"prompts":64,
                               "execute":False,"use_--run":True},ensure_ascii=False))
             return
+        before_model_sha=sha(model)
         results=[]
         with tempfile.TemporaryDirectory(prefix="llm-cha-benchmark-") as folder:
             root=Path(folder)/"LLM_CHA"
@@ -116,6 +117,8 @@ def main():
                                 "status":status,"returncode":rc,
                                 "turns":read_turns(transcript,prompts),
                                 "transcript":transcript})
+        after_model_sha=sha(model)
+        if before_model_sha!=after_model_sha:raise ValueError("source checkpoint changed during evaluation")
         report={"version":"v0.4.28.3","evaluation":"DEVELOPMENT_ONLY_NOT_HOLDOUT",
                 "isolated_copy":True,"training_commands_sent":False,
                 "checkpoint_sha256":sha(model),"tokenizer_sha256":sha(tokenizer),
