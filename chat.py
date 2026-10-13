@@ -5325,21 +5325,23 @@ def main() -> None:
             and not (truth_result is not None and truth_result.runtime_status == "BLOCK")
             and os.environ.get("LLM_CHA_AUTO_WIKIPEDIA", "1") == "1"
         ):
-            from unknown_wikipedia_fallback_v0416 import automatic_wikipedia_answer
-            try:
-                wiki_answer = automatic_wikipedia_answer(
-                    raw_user_text, focus=dispatch.focus
-                )
-            except (OSError, ValueError, KeyError, TypeError, TimeoutError) as wiki_error:
-                wiki_answer = None
-                print(f"[wiki-lookup=FAILED, reason={type(wiki_error).__name__}]")
-            if wiki_answer is not None:
+            from wikipedia_retrieval_diagnostics_v0417 import diagnose
+            wiki_diagnostic = diagnose(raw_user_text, focus=dispatch.focus)
+            if wiki_diagnostic["status"] == "HIT":
                 print("[wiki-lookup=HIT, source=Wikipedia, factual_truth=UNVERIFIED]")
-                print(wiki_answer)
+                print(wiki_diagnostic["answer"])
                 print("[wiki-lookup=READ_ONLY, training=False, semantic_memory_writes=0]")
                 print()
                 last_ai_reply = None
                 continue
+            print(
+                f"[wiki-lookup={wiki_diagnostic['status']}, "
+                f"reason={wiki_diagnostic['reason']}, "
+                f"topic={wiki_diagnostic['topic']!r}, "
+                f"article_obtained={wiki_diagnostic['article_obtained']}, "
+                f"propositions={wiki_diagnostic['proposition_count']}, "
+                f"boundary={','.join(wiki_diagnostic['boundary_classes']) or '-'}]"
+            )
 
         if dispatch.action == "BLOCK" and not force_internalized_verification:
             truth_block = (
