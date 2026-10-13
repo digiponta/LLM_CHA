@@ -44,7 +44,7 @@ class AutoWikiTests(unittest.TestCase):
     def test_chat_integration(self):
         chat=(Path(__file__).parent/"chat.py").read_text(encoding="utf-8")
         self.assertIn('os.environ.get("LLM_CHA_AUTO_WIKIPEDIA", "1")',chat)
-        self.assertIn("wiki_answer = automatic_wikipedia_answer(",chat)
-        self.assertLess(chat.index("wiki_answer = automatic_wikipedia_answer("),
+        self.assertIn("wiki_diagnostic = diagnose(raw_user_text, focus=dispatch.focus)",chat)
+        self.assertLess(chat.index("wiki_diagnostic = diagnose(raw_user_text, focus=dispatch.focus)"),
                         chat.index('if dispatch.action == "BLOCK" and not force_internalized_verification:'))
 if __name__=="__main__":unittest.main()
