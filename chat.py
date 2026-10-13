@@ -4965,6 +4965,31 @@ def main() -> None:
                 continue
             print(f'[persona-means=BLOCK, truth_state={means_truth.state}]')
 
+        # v0.3.7.7: normalized extraction fallback for source candidates.
+        # Never fabricate causatives from unreviewed text.
+        if means_result is None:
+            from persona_normalized_means_v0377 import lookup as normalized_means_lookup
+            normalized_means = normalized_means_lookup(
+                resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS), raw_user_text
+            )
+            if normalized_means is not None:
+                normalized_truth = effective_truth_record(
+                    truth_store_path, normalized_means["focus"]
+                )
+                if truth_allows_direct_retrieval(normalized_truth.state):
+                    print(f'persona> {normalized_means["answer"]}')
+                    print(
+                        f'[persona-means=HIT, relation=MEANS_OF, '
+                        f'role={normalized_means["role"]}, mode={normalized_means["mode"]}, '
+                        f'certainty={normalized_means["certainty"]}, '
+                        f'line={normalized_means["line"]}, '
+                        f'factual_truth={normalized_means["factual_truth"]}]'
+                    )
+                    print()
+                    history.append((raw_user_text, normalized_means["answer"]))
+                    last_ai_reply = normalized_means["answer"]
+                    continue
+
         # v10.12.16.1 Retrieval-First Runtime.
         # Exact Subject-Keyed Corpus Memory lookup precedes UNKNOWN/generation
         # for explicit or bare concept queries. Explicit FALSE/OUTDATED/
