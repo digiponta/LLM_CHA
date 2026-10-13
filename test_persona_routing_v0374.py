@@ -28,6 +28,12 @@ class PersonaRoutingTests(unittest.TestCase):
         self.assertIn("answer_prefix(followup_hit.provenance)",code)
         self.assertIn("answer_prefix(retrieval.provenance)",code)
         self.assertIn("ranked_persona_reply(",code)
+    def test_answer_prefix_bound_before_grounded_followup(self):
+        code=Path("chat.py").read_text(encoding="utf-8")
+        bind=code.index("    from persona_routing_v0374 import answer_prefix")
+        use=code.index("answer_prefix(followup_hit.provenance)")
+        self.assertLess(bind,use)
+
     def test_truth_gate_unchanged(self):
         code=Path("chat.py").read_text(encoding="utf-8")
         self.assertIn("truth_allows_direct_retrieval(",code)
