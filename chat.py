@@ -4940,6 +4940,31 @@ def main() -> None:
                     f"condition={conditional_query.condition!r}]"
                 )
 
+        # v0.3.7.5: only explicit means/agent questions use source-backed
+        # bidirectional persona lookup. Ordinary definitions remain untouched.
+        from persona_means_index_v0375 import lookup as persona_means_lookup
+        means_result = persona_means_lookup(
+            resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS), raw_user_text
+        )
+        if means_result is not None:
+            means_truth = effective_truth_record(
+                truth_store_path, means_result["focus"]
+            )
+            if truth_allows_direct_retrieval(means_truth.state):
+                print(f'persona> {means_result["answer"]}')
+                print(
+                    f'[persona-means=HIT, relation=MEANS_OF, '
+                    f'role={means_result["role"]}, focus={means_result["focus"]!r}, '
+                    f'line={means_result["line"]}, '
+                    f'factual_truth={means_result["factual_truth"]}, '
+                    f'origin=source-paraphrase]'
+                )
+                print()
+                history.append((raw_user_text, means_result["answer"]))
+                last_ai_reply = means_result["answer"]
+                continue
+            print(f'[persona-means=BLOCK, truth_state={means_truth.state}]')
+
         # v10.12.16.1 Retrieval-First Runtime.
         # Exact Subject-Keyed Corpus Memory lookup precedes UNKNOWN/generation
         # for explicit or bare concept queries. Explicit FALSE/OUTDATED/
