@@ -15,6 +15,12 @@ def reconcile(captures, prior_labels=(), annotations=()):
     prepared=prepare(captures)
     rows=prepared["rows"]
     by_id={r["id"]:r for r in rows}
+    seen_pairs=set()
+    for item in rows:
+        pair=(item["question"].strip(),item["answer"].strip())
+        if pair in seen_pairs:
+            raise ValueError("duplicate question-answer pair; deduplicate capture ledger first")
+        seen_pairs.add(pair)
     prior={}
     for labeled in prior_labels:
         validate(labeled)
