@@ -29,13 +29,34 @@ def align(evidence):
     topic=evidence["concept"].strip()
     # Avoid a substring match, e.g., '小説家' must not stand in for '小説'.
     # Parenthetical pronunciations immediately after the topic are permitted.
-    head=re.compile(r"^"+re.escape(topic)+r"(?:（[^）\n]{1,100}）)?は[、\s]*")
+    def predicate_start(sentence):
+        if not sentence.startswith(topic):
+            return None
+        pos=len(topic)
+        # Optional balanced parenthetical pronunciation/translation metadata.
+        if pos<len(sentence) and sentence[pos]=="（":
+            depth=0
+            while pos<len(sentence):
+                ch=sentence[pos]
+                if ch=="（":depth+=1
+                elif ch=="）":
+                    depth-=1
+                    if depth==0:
+                        pos+=1
+                        break
+                pos+=1
+                if pos>250:return None
+            if depth!=0:return None
+        if pos>=len(sentence) or sentence[pos]!="は":return None
+        pos+=1
+        while pos<len(sentence) and sentence[pos] in "、 \t":pos+=1
+        return pos
     matches=[]
     for sentence_match in re.finditer(r"[^。！？\n]+(?:[。！？]|$)",lead):
         sentence=sentence_match.group()
-        m=head.match(sentence.strip())
-        if not m:continue
-        predicate=sentence.strip()[m.end():].rstrip("。！？").strip()
+        offset=predicate_start(sentence.strip())
+        if offset is None:continue
+        predicate=sentence.strip()[offset:].rstrip("。！？").strip()
         if not (predicate.endswith("である") or predicate.endswith("だ")):continue
         if not 2<=len(predicate)<=200:continue
         # Exact source span, not a regenerated assertion.
