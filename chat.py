@@ -4940,55 +4940,104 @@ def main() -> None:
                     f"condition={conditional_query.condition!r}]"
                 )
 
-        # v0.3.7.5: only explicit means/agent questions use source-backed
-        # bidirectional persona lookup. Ordinary definitions remain untouched.
-        from persona_means_index_v0375 import lookup as persona_means_lookup
-        means_result = persona_means_lookup(
-            resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS), raw_user_text
-        )
-        if means_result is not None:
-            means_truth = effective_truth_record(
-                truth_store_path, means_result["focus"]
-            )
-            if truth_allows_direct_retrieval(means_truth.state):
-                print(f'persona> {means_result["answer"]}')
-                print(
-                    f'[persona-means=HIT, relation=MEANS_OF, '
-                    f'role={means_result["role"]}, focus={means_result["focus"]!r}, '
-                    f'line={means_result["line"]}, '
-                    f'factual_truth={means_result["factual_truth"]}, '
-                    f'origin=source-paraphrase]'
+        # v0.4.1: opt-in reviewed-only means retrieval.
+        # When enabled, legacy unreviewed means routes are NOT used.
+        import os as _persona_os
+        reviewed_means_mode = _persona_os.environ.get(
+            "LLM_CHA_REVIEWED_MEANS_ONLY", "0"
+        ) == "1"
+        if reviewed_means_mode:
+            from persona_reviewed_retrieval_v0401 import reviewed_lookup
+            from pathlib import Path as _PersonaPath
+            reviewed_source = resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS)
+            reviewed_csv = _PersonaPath(
+                _persona_os.environ.get(
+                    "LLM_CHA_REVIEW_CSV", "results/persona_review_v0378.csv"
                 )
-                print()
-                history.append((raw_user_text, means_result["answer"]))
-                last_ai_reply = means_result["answer"]
-                continue
-            print(f'[persona-means=BLOCK, truth_state={means_truth.state}]')
-
-        # v0.3.7.7: normalized extraction fallback for source candidates.
-        # Never fabricate causatives from unreviewed text.
-        if means_result is None:
-            from persona_normalized_means_v0377 import lookup as normalized_means_lookup
-            normalized_means = normalized_means_lookup(
-                resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS), raw_user_text
             )
-            if normalized_means is not None:
-                normalized_truth = effective_truth_record(
-                    truth_store_path, normalized_means["focus"]
+            try:
+                reviewed_means = reviewed_lookup(
+                    reviewed_source, reviewed_csv, raw_user_text
                 )
-                if truth_allows_direct_retrieval(normalized_truth.state):
-                    print(f'persona> {normalized_means["answer"]}')
+            except (ValueError, OSError, KeyError, TypeError) as _review_error:
+                reviewed_means = None
+                print('[persona-reviewed=BLOCK, reason=invalid-or-missing-review]')
+            if reviewed_means is not None:
+                # Preserve the existing Truth Gate and block either subject
+                # or means when its truth state prohibits direct retrieval.
+                reviewed_focus_truth = effective_truth_record(
+                    truth_store_path, reviewed_means["focus"]
+                )
+                reviewed_subject_truth = effective_truth_record(
+                    truth_store_path, reviewed_means["subject"]
+                )
+                reviewed_means_truth = effective_truth_record(
+                    truth_store_path, reviewed_means["means"]
+                )
+                if all(truth_allows_direct_retrieval(rec.state) for rec in (
+                    reviewed_focus_truth, reviewed_subject_truth, reviewed_means_truth
+                )):
+                    print(f'persona> {reviewed_means["answer"]}')
                     print(
-                        f'[persona-means=HIT, relation=MEANS_OF, '
-                        f'role={normalized_means["role"]}, mode={normalized_means["mode"]}, '
-                        f'certainty={normalized_means["certainty"]}, '
-                        f'line={normalized_means["line"]}, '
-                        f'factual_truth={normalized_means["factual_truth"]}]'
+                        f'[persona-reviewed=HIT, mode=REVIEWED_SOURCE_QUOTE, '
+                        f'role={reviewed_means["role"]}, line={reviewed_means["line"]}, '
+                        f'factual_truth=NOT_ASSESSED]'
                     )
                     print()
-                    history.append((raw_user_text, normalized_means["answer"]))
-                    last_ai_reply = normalized_means["answer"]
+                    history.append((raw_user_text, reviewed_means["answer"]))
+                    last_ai_reply = reviewed_means["answer"]
                     continue
+                print('[persona-reviewed=BLOCK, reason=truth-gate]')
+        else:
+            # v0.3.7.5: only explicit means/agent questions use source-backed
+            # bidirectional persona lookup. Ordinary definitions remain untouched.
+            from persona_means_index_v0375 import lookup as persona_means_lookup
+            means_result = persona_means_lookup(
+                resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS), raw_user_text
+            )
+            if means_result is not None:
+                means_truth = effective_truth_record(
+                    truth_store_path, means_result["focus"]
+                )
+                if truth_allows_direct_retrieval(means_truth.state):
+                    print(f'persona> {means_result["answer"]}')
+                    print(
+                        f'[persona-means=HIT, relation=MEANS_OF, '
+                        f'role={means_result["role"]}, focus={means_result["focus"]!r}, '
+                        f'line={means_result["line"]}, '
+                        f'factual_truth={means_result["factual_truth"]}, '
+                        f'origin=source-paraphrase]'
+                    )
+                    print()
+                    history.append((raw_user_text, means_result["answer"]))
+                    last_ai_reply = means_result["answer"]
+                    continue
+                print(f'[persona-means=BLOCK, truth_state={means_truth.state}]')
+
+            # v0.3.7.7: normalized extraction fallback for source candidates.
+            # Never fabricate causatives from unreviewed text.
+            if means_result is None:
+                from persona_normalized_means_v0377 import lookup as normalized_means_lookup
+                normalized_means = normalized_means_lookup(
+                    resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS), raw_user_text
+                )
+                if normalized_means is not None:
+                    normalized_truth = effective_truth_record(
+                        truth_store_path, normalized_means["focus"]
+                    )
+                    if truth_allows_direct_retrieval(normalized_truth.state):
+                        print(f'persona> {normalized_means["answer"]}')
+                        print(
+                            f'[persona-means=HIT, relation=MEANS_OF, '
+                            f'role={normalized_means["role"]}, mode={normalized_means["mode"]}, '
+                            f'certainty={normalized_means["certainty"]}, '
+                            f'line={normalized_means["line"]}, '
+                            f'factual_truth={normalized_means["factual_truth"]}]'
+                        )
+                        print()
+                        history.append((raw_user_text, normalized_means["answer"]))
+                        last_ai_reply = normalized_means["answer"]
+                        continue
 
         # v10.12.16.1 Retrieval-First Runtime.
         # Exact Subject-Keyed Corpus Memory lookup precedes UNKNOWN/generation
