@@ -93,6 +93,7 @@ def main():
     ap.add_argument("--output",required=True)
     ap.add_argument("--timeout-per-group",type=int,default=240)
     ap.add_argument("--run",action="store_true",help="explicit opt-in to execute isolated benchmark")
+    ap.add_argument("--trace-stages",action="store_true",help="opt-in record pre-Gate generation candidates inside isolated copy")
     args=ap.parse_args()
     try:
         base=Path(__file__).resolve().parent
@@ -116,7 +117,8 @@ def main():
             for group in groups:
                 prompts=group["prompts"]
                 payload="\n".join(prompts+["/exit"])+"\n"
-                cmd=[sys.executable,str(root/"chat.py"),
+                trace_path=root/"results"/("stage_trace_"+str(group["id"])+".jsonl")
+                cmd=[sys.executable,str(root/("trace_chat_runtime_v042810.py" if args.trace_stages else "chat.py")),
                      "--model",str(model),"--tokenizer",str(tokenizer),
                      "--no-learn"]
                 try:
@@ -124,7 +126,8 @@ def main():
                         errors="strict",cwd=root,stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,timeout=args.timeout_per_group,
                         env={**os.environ,"PYTHONDONTWRITEBYTECODE":"1",
-                             "PYTHONIOENCODING":"utf-8", "PYTHONUTF8":"1"})
+                             "PYTHONIOENCODING":"utf-8", "PYTHONUTF8":"1",
+                             **({"LLM_CHA_STAGE_TRACE":str(trace_path)} if args.trace_stages else {})})
                     transcript=proc.stdout
                     rc=proc.returncode
                     status="FINISHED" if rc==0 else "PROCESS_FAILED"
@@ -135,18 +138,26 @@ def main():
                 turns=read_turns(transcript,prompts)
                 failure,warnings,captured=inspect_capture(transcript,status,turns)
                 if status=="FINISHED" and failure is not None:status="CAPTURE_FAILED"
+                events=[]
+                if args.trace_stages and trace_path.exists():
+                    for line in trace_path.read_text(encoding="utf-8").splitlines():
+                        event=json.loads(line)
+                        if event.get("event")!="GENERATION_CANDIDATE":raise ValueError("unexpected stage trace event")
+                        events.append(event)
                 results.append({"id":group["id"],"mode":group["mode"],
                                 "status":status,"returncode":rc,"failure_category":failure,
                                 "diagnostic_warnings":warnings,"all_answers_captured":captured,
                                 "turns":turns,
+                                "stage_trace":{"generation_candidates":events,"retrieval_status":"NOT_OBSERVED"} if args.trace_stages else None,
                                 "transcript":transcript})
                 if len(results)==1 and status!="FINISHED":
                     print("first-case preflight failed; remaining cases skipped",file=sys.stderr)
                     break
         after_model_sha=sha(model)
         if before_model_sha!=after_model_sha:raise ValueError("source checkpoint changed during evaluation")
-        report={"version":"v0.4.28.5","evaluation":"DEVELOPMENT_ONLY_NOT_HOLDOUT",
+        report={"version":"v0.4.28.10" if args.trace_stages else "v0.4.28.5","evaluation":"DEVELOPMENT_ONLY_NOT_HOLDOUT",
                 "isolated_copy":True,"training_commands_sent":False,
+                "stage_trace_enabled":args.trace_stages,
                 "checkpoint_sha256":sha(model),"tokenizer_sha256":sha(tokenizer),
                 "manifest_sha256":sha(manifest),"checkpoint_path":str(model),
                 "runtime":"chat.py --no-learn","groups":results,
