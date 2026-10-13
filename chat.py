@@ -4894,7 +4894,7 @@ def main() -> None:
                     continue
                 warning_prefix = "【未検証の記録】" if decision.state == "UNVERIFIED" else ""
                 print(f"[proposition-id={decision.proposition_id}, truth_state={decision.state}, provenance={decision.source}]")
-                print(f"AI> {warning_prefix}{proposition}")
+                print(f"{answer_prefix(followup_hit.provenance)} {warning_prefix}{proposition}")
                 print(f"[grounded-expansion=NEXT, seen={seen_count}, total={total_count}]")
                 print(f"[grounded-followup=HIT, topic={followup_subject!r}, "
                       f"truth_state={followup_truth.state}, "
@@ -4937,6 +4937,8 @@ def main() -> None:
                     f"subject={conditional_query.subject!r}, "
                     f"condition={conditional_query.condition!r}]"
                 )
+
+        from persona_routing_v0374 import answer_prefix
 
         # v10.12.16.1 Retrieval-First Runtime.
         # Exact Subject-Keyed Corpus Memory lookup precedes UNKNOWN/generation
@@ -4989,11 +4991,11 @@ def main() -> None:
                             "【未検証の記録】" + shown
                             if decision.state == "UNVERIFIED" else shown
                         )
-                        print(f"AI> {display_answer}")
+                        print(f"{answer_prefix(retrieval.provenance)} {display_answer}")
                         print(f"[grounded-expansion=INITIAL, shown={shown_count}, total={total_count}]")
                     else:
                         shown = retrieval.answer
-                        print(f"AI> {shown}")
+                        print(f"{answer_prefix(retrieval.provenance)} {shown}")
                     function_part = ""
                     if retrieval.function_structure is not None:
                         fs = retrieval.function_structure
@@ -5131,11 +5133,11 @@ def main() -> None:
             and not force_internalized_verification
             and not (truth_result is not None and truth_result.runtime_status == "BLOCK")
         ):
-            from persona_semantic_memory_v0371 import persona_reply
+            from persona_routing_v0374 import ranked_persona_reply
             persona_focus = (dispatch.focus or "").strip()
             if persona_focus:
                 try:
-                    persona_answer, persona_entries = persona_reply(
+                    persona_answer, persona_entries = ranked_persona_reply(
                         resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS),
                         persona_focus,
                     )
