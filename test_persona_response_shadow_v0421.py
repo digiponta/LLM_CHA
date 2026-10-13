@@ -25,8 +25,11 @@ class ShadowEvaluationTests(unittest.TestCase):
         self.assertTrue(r["decision_unchanged"])
         self.assertIn("ABSTENTION",r["flags"])
     def test_bad_scores(self):
-        with self.assertRaises(ValueError):
-            evaluate("q","a",agreement=-1,semantic_agreement=.9,accepted=True)
+        r=evaluate("q","a",agreement=-1,semantic_agreement=.9,accepted=True)
+        self.assertIn("INVALID_DIAGNOSTIC_SCORE",r["flags"])
+        self.assertTrue(r["needs_review"])
+        self.assertTrue(r["decision_unchanged"])
+        self.assertFalse(r["truth_gate_modified"])
     def test_bad_accepted(self):
         with self.assertRaises(ValueError):
             evaluate("q","a",agreement=.9,semantic_agreement=.9,accepted=1)
