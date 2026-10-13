@@ -5723,6 +5723,20 @@ def main() -> None:
         if not reply:
             reply = UNKNOWN_REPLY if args.unknown_rejection else "(no response)"
 
+        # v0.4.19: read-only quality signal; do not relax acceptance gates.
+        from persona_answer_relevance_v0419 import diagnose_relevance
+        relevance = diagnose_relevance(
+            user_text, reply, agreement=agreement,
+            semantic_agreement=semantic_agreement,
+        )
+        if relevance["relevance_warning"]:
+            print(
+                "[persona-relevance=REVIEW, "
+                f"low_probe_agreement={relevance['low_probe_agreement']}, "
+                f"identity_matched={relevance['identity_matched']}, "
+                "truth_gate_modified=False]"
+            )
+
         print(f"AI> {reply}")
 
         if args.show_risk and args.unknown_rejection and not accepted:
