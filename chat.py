@@ -3365,6 +3365,17 @@ def main() -> None:
         if command in ("/exit", "exit", "quit"):
             break
 
+        # v0.4.20: incomplete dialogue asks for continuation instead of
+        # searching persona corpus for incidental surface words.
+        from persona_dialogue_intent_v0420 import classify_dialogue_intent
+        dialogue_intent = classify_dialogue_intent(raw_user_text)
+        if dialogue_intent["action"] == "ASK_CONTINUATION":
+            print(f"persona> {dialogue_intent['answer']}")
+            print("[persona-dialogue=INCOMPLETE, action=ASK_CONTINUATION, learning=False]")
+            print()
+            last_ai_reply = None
+            continue
+
         # v0.4.19: narrow persona identity response before topic/knowledge
         # routing. Identity is configuration, not externally verified knowledge.
         from persona_identity_guard_v0419 import identity_answer
