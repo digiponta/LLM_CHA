@@ -34,8 +34,10 @@ class PersonaMemoryTests(unittest.TestCase):
         before=self.path.read_bytes()
         persona_reply(self.path,"量子力学")
         self.assertEqual(before,self.path.read_bytes())
-    def test_chat_command_wired(self):
+    def test_automatic_persona_route_wired(self):
         source=Path("chat.py").read_text(encoding="utf-8")
-        self.assertIn('if command.startswith("/persona "):',source)
+        self.assertIn('dispatch.state == "RAW_CORPUS_ONLY"',source)
+        self.assertIn('print(f"persona> {persona_answer}")',source)
+        self.assertNotIn('if command.startswith("/persona "):',source)
         self.assertIn("factual_truth={entry.factual_truth}",source)
 if __name__=="__main__":unittest.main()
