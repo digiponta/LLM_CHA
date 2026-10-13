@@ -3365,6 +3365,18 @@ def main() -> None:
         if command in ("/exit", "exit", "quit"):
             break
 
+        # v0.4.15: explicitly requested, unverified Wikipedia article evidence.
+        # Standalone display route: no semantic-memory write, no learning/history.
+        if command.startswith("/wiki "):
+            from wikipedia_chat_route_v0415 import render_wikipedia_evidence
+            wiki_path = user_text[len("/wiki "):].strip()
+            try:
+                print(render_wikipedia_evidence(wiki_path))
+            except (OSError, ValueError, KeyError, TypeError) as wiki_error:
+                print(f"[wiki-route=BLOCKED, reason={type(wiki_error).__name__}: {wiki_error}]")
+            print()
+            continue
+
         if command.startswith("/means "):
             from means_centric_semantics_v0372 import transform
             result = transform(user_text[len("/means "):].strip())
