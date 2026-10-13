@@ -3340,6 +3340,8 @@ def main() -> None:
     last_user_text: str | None = None
     last_ai_reply: str | None = None
 
+    from persona_routing_v0374 import answer_prefix
+
     while True:
         try:
             user_text = input("You> ").strip()
@@ -4937,8 +4939,6 @@ def main() -> None:
                     f"subject={conditional_query.subject!r}, "
                     f"condition={conditional_query.condition!r}]"
                 )
-
-        from persona_routing_v0374 import answer_prefix
 
         # v10.12.16.1 Retrieval-First Runtime.
         # Exact Subject-Keyed Corpus Memory lookup precedes UNKNOWN/generation
