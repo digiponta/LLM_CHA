@@ -8,6 +8,8 @@ from wikipedia_article_evidence_v0409 import fetch_article
 from article_proposition_alignment_v0412 import align
 from wikipedia_answer_prefix_v04141 import from_article_alignment
 from definition_property_boundary_v0414 import classify
+from article_proposition_alignment_v0418 import align as nominal_align
+from wikipedia_answer_prefix_v04141 import format_wiki_answer
 
 def diagnose(question, *, focus=None, fetcher=fetch_article):
     result={"version":"v0.4.17","status":"NOT_APPLICABLE","reason":"NOT_DEFINITION_QUERY",
@@ -51,6 +53,18 @@ def diagnose(question, *, focus=None, fetcher=fetch_article):
         aligned=align(evidence)
         result["proposition_count"]=aligned["proposition_count"]
         if not aligned["propositions"]:
+            nominal=nominal_align(evidence)
+            if nominal["propositions"]:
+                p=nominal["propositions"][0]
+                result["proposition_count"]=nominal["proposition_count"]
+                result["answer"]=format_wiki_answer(
+                    p["proposition_literal"],source="WIKIPEDIA_EXTRACTIVE_CANDIDATE",
+                    article_url=evidence["article_url"],
+                    factual_truth=p["factual_truth"],
+                    eligible_for_training=p["eligible_for_training"],
+                    explicit_source_request=True)
+                result.update(status="HIT",reason="EXTRACTIVE_NOMINAL_DEFINITION")
+                return result
             result["boundary_classes"]=[x["classification"] for x in classify(evidence)["items"]]
             result.update(status="NO_ANSWER",reason="NO_DEFINITION")
             return result
