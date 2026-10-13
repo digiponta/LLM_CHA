@@ -67,6 +67,14 @@ def read_turns(output,prompts):
                       "captured":bool(body)})
     return turns
 
+def classify_failure(transcript, status):
+    if "UnicodeDecodeError" in transcript or "UnicodeEncodeError" in transcript or "TextInputSequence must be str" in transcript or "\ufffd" in transcript:
+        return "ENCODING_ERROR"
+    if status == "TIMEOUT":return "TIMEOUT"
+    if status == "PROCESS_FAILED":return "RUNTIME_ERROR"
+    if not re.search(r"(?m)^(AI|persona|wiki)> ",transcript):return "NO_ANSWER"
+    return None
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--manifest",required=True)
@@ -103,9 +111,10 @@ def main():
                      "--no-learn"]
                 try:
                     proc=subprocess.run(cmd,input=payload,text=True,encoding="utf-8",
-                        errors="replace",cwd=root,stdout=subprocess.PIPE,
+                        errors="strict",cwd=root,stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,timeout=args.timeout_per_group,
-                        env={**os.environ,"PYTHONDONTWRITEBYTECODE":"1"})
+                        env={**os.environ,"PYTHONDONTWRITEBYTECODE":"1",
+                             "PYTHONIOENCODING":"utf-8", "PYTHONUTF8":"1"})
                     transcript=proc.stdout
                     rc=proc.returncode
                     status="FINISHED" if rc==0 else "PROCESS_FAILED"
@@ -113,13 +122,18 @@ def main():
                     transcript=(exc.stdout or b"")
                     if isinstance(transcript,bytes):transcript=transcript.decode("utf-8","replace")
                     rc=None;status="TIMEOUT"
+                failure=classify_failure(transcript,status)
+                if status=="FINISHED" and failure is not None:status="CAPTURE_FAILED"
                 results.append({"id":group["id"],"mode":group["mode"],
-                                "status":status,"returncode":rc,
+                                "status":status,"returncode":rc,"failure_category":failure,
                                 "turns":read_turns(transcript,prompts),
                                 "transcript":transcript})
+                if len(results)==1 and status!="FINISHED":
+                    print("first-case preflight failed; remaining cases skipped",file=sys.stderr)
+                    break
         after_model_sha=sha(model)
         if before_model_sha!=after_model_sha:raise ValueError("source checkpoint changed during evaluation")
-        report={"version":"v0.4.28.3","evaluation":"DEVELOPMENT_ONLY_NOT_HOLDOUT",
+        report={"version":"v0.4.28.4","evaluation":"DEVELOPMENT_ONLY_NOT_HOLDOUT",
                 "isolated_copy":True,"training_commands_sent":False,
                 "checkpoint_sha256":sha(model),"tokenizer_sha256":sha(tokenizer),
                 "manifest_sha256":sha(manifest),"checkpoint_path":str(model),
