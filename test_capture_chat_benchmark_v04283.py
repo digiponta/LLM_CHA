@@ -13,11 +13,11 @@ class CaptureTests(unittest.TestCase):
         return {"count":64,"groups":groups}
     def test_windows_encoding_error_classification(self):
         self.assertEqual(classify_failure("TypeError: TextInputSequence must be str","PROCESS_FAILED"),"TRANSPORT_ENCODING_ERROR")
-        self.assertEqual(classify_failure("UnicodeDecodeError: bad bytes","PROCESS_FAILED"),"ENCODING_ERROR")
+        self.assertEqual(classify_failure("UnicodeDecodeError: bad bytes","PROCESS_FAILED"),"TRANSPORT_ENCODING_ERROR")
         self.assertEqual(classify_failure("runtime failure","PROCESS_FAILED"),"RUNTIME_ERROR")
         self.assertEqual(classify_failure("AI> こんにちは。","FINISHED"),None)
     def test_replacement_character_only_warns(self):
-        transcript="You> AI> 未学習です\\n[raw candidate=abc�def]\\nYou> "
+        transcript="You> AI> 未学習です\n[raw candidate=abc�def]\nYou> "
         turns=read_turns(transcript,["質問"])
         failure,warnings,captured=inspect_capture(transcript,"FINISHED",turns)
         self.assertIsNone(failure)
@@ -25,13 +25,13 @@ class CaptureTests(unittest.TestCase):
         self.assertIn("REPLACEMENT_CHARACTER_DETECTED",warnings)
         self.assertNotIn("ANSWER_REPLACEMENT_CHARACTER",warnings)
     def test_replacement_in_answer(self):
-        transcript="You> AI> 不正�文字\\nYou> "
+        transcript="You> AI> 不正�文字\nYou> "
         failure,warnings,captured=inspect_capture(transcript,"FINISHED",read_turns(transcript,["質問"]))
         self.assertIsNone(failure)
         self.assertTrue(captured)
         self.assertIn("ANSWER_REPLACEMENT_CHARACTER",warnings)
     def test_no_answer_capture_failure(self):
-        transcript="You> [gate=UNKNOWN]\\nYou> "
+        transcript="You> [gate=UNKNOWN]\nYou> "
         failure,warnings,captured=inspect_capture(transcript,"FINISHED",read_turns(transcript,["質問"]))
         self.assertEqual(failure,"NO_ANSWER")
         self.assertFalse(captured)
