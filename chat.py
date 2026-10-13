@@ -5748,6 +5748,19 @@ def main() -> None:
                 "truth_gate_modified=False]"
             )
 
+        # v0.4.21: shadow-only diagnostics; no answer replacement or gate change.
+        from persona_response_shadow_v0421 import evaluate as evaluate_persona_shadow
+        shadow = evaluate_persona_shadow(
+            user_text, reply, agreement=agreement,
+            semantic_agreement=semantic_agreement, accepted=bool(accepted),
+        )
+        if shadow["needs_review"]:
+            print(
+                f"[persona-shadow=REVIEW, flags={','.join(shadow['flags'])}, "
+                f"intent={shadow['intent']}, runtime_accepted={shadow['accepted_by_runtime']}, "
+                "decision_unchanged=True]"
+            )
+
         print(f"AI> {reply}")
 
         if args.show_risk and args.unknown_rejection and not accepted:
