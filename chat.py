@@ -5315,6 +5315,32 @@ def main() -> None:
                         last_ai_reply = unknown_quote["answer"]
                         continue
 
+        # v0.4.16: UNKNOWN definition fallback, after existing trusted/persona
+        # routes but before the normal UNKNOWN rejection. Search results never
+        # become model training, Semantic Memory or a VERIFIED truth state.
+        if (
+            dispatch.action == "BLOCK"
+            and dispatch.state == "UNKNOWN"
+            and not force_internalized_verification
+            and not (truth_result is not None and truth_result.runtime_status == "BLOCK")
+            and os.environ.get("LLM_CHA_AUTO_WIKIPEDIA", "1") == "1"
+        ):
+            from unknown_wikipedia_fallback_v0416 import automatic_wikipedia_answer
+            try:
+                wiki_answer = automatic_wikipedia_answer(
+                    raw_user_text, focus=dispatch.focus
+                )
+            except (OSError, ValueError, KeyError, TypeError, TimeoutError) as wiki_error:
+                wiki_answer = None
+                print(f"[wiki-lookup=FAILED, reason={type(wiki_error).__name__}]")
+            if wiki_answer is not None:
+                print("[wiki-lookup=HIT, source=Wikipedia, factual_truth=UNVERIFIED]")
+                print(wiki_answer)
+                print("[wiki-lookup=READ_ONLY, training=False, semantic_memory_writes=0]")
+                print()
+                last_ai_reply = None
+                continue
+
         if dispatch.action == "BLOCK" and not force_internalized_verification:
             truth_block = (
                 truth_result is not None
