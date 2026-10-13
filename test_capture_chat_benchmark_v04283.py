@@ -1,6 +1,6 @@
 """Synthetic structural tests for opt-in benchmark capture."""
 import unittest
-from capture_chat_benchmark_v04283 import validate,read_turns,classify_failure
+from capture_chat_benchmark_v04283 import validate,read_turns,classify_failure,inspect_capture
 
 class CaptureTests(unittest.TestCase):
     def fixture(self):
@@ -12,10 +12,29 @@ class CaptureTests(unittest.TestCase):
             groups.append({"id":f"F{i}","mode":"MULTI","prompts":[f"続き {i}-{j}" for j in range(3)]})
         return {"count":64,"groups":groups}
     def test_windows_encoding_error_classification(self):
-        self.assertEqual(classify_failure("TypeError: TextInputSequence must be str","PROCESS_FAILED"),"ENCODING_ERROR")
+        self.assertEqual(classify_failure("TypeError: TextInputSequence must be str","PROCESS_FAILED"),"TRANSPORT_ENCODING_ERROR")
         self.assertEqual(classify_failure("UnicodeDecodeError: bad bytes","PROCESS_FAILED"),"ENCODING_ERROR")
         self.assertEqual(classify_failure("runtime failure","PROCESS_FAILED"),"RUNTIME_ERROR")
         self.assertEqual(classify_failure("AI> こんにちは。","FINISHED"),None)
+    def test_replacement_character_only_warns(self):
+        transcript="You> AI> 未学習です\\n[raw candidate=abc�def]\\nYou> "
+        turns=read_turns(transcript,["質問"])
+        failure,warnings,captured=inspect_capture(transcript,"FINISHED",turns)
+        self.assertIsNone(failure)
+        self.assertTrue(captured)
+        self.assertIn("REPLACEMENT_CHARACTER_DETECTED",warnings)
+        self.assertNotIn("ANSWER_REPLACEMENT_CHARACTER",warnings)
+    def test_replacement_in_answer(self):
+        transcript="You> AI> 不正�文字\\nYou> "
+        failure,warnings,captured=inspect_capture(transcript,"FINISHED",read_turns(transcript,["質問"]))
+        self.assertIsNone(failure)
+        self.assertTrue(captured)
+        self.assertIn("ANSWER_REPLACEMENT_CHARACTER",warnings)
+    def test_no_answer_capture_failure(self):
+        transcript="You> [gate=UNKNOWN]\\nYou> "
+        failure,warnings,captured=inspect_capture(transcript,"FINISHED",read_turns(transcript,["質問"]))
+        self.assertEqual(failure,"NO_ANSWER")
+        self.assertFalse(captured)
     def test_capture_environment_settings(self):
         from pathlib import Path
         s=(Path(__file__).parent/"capture_chat_benchmark_v04283.py").read_text(encoding="utf-8")
