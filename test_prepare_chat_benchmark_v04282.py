@@ -32,6 +32,10 @@ class BenchmarkParserTests(unittest.TestCase):
         groups=[x for x in result["groups"] if x["category"]=="F"]
         self.assertEqual(len(groups),4)
         self.assertTrue(all(len(x["prompts"])==3 for x in groups))
+    def test_real_benchmark_headings_with_space(self):
+        s=fixture().replace("## A: fixture / SINGLE (12)","## A: Daily conversation / SINGLE (12)")
+        s=s.replace("## F: fixture / MULTI (12)","## F: Context retention / MULTI (4 dialogues; keep order within each sequence)")
+        self.assertEqual(parse(s)["count"],64)
     def test_missing_input_rejected(self):
         with self.assertRaises(ValueError):parse(fixture().replace("質問 A01",""))
     def test_duplicate_id_rejected(self):
