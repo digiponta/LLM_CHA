@@ -1,0 +1,2 @@
+{"id":"historical-good-divergent","split":"development","question":"今日は何をしていたの","answer":"特に変化はない。","gold_inappropriate":false,"agreement":0.333,"semantic_agreement":0.85,"runtime_accepted":true,"label_source":"DEVELOPMENT_EXAMPLE"}
+{"id":"historical-bad-fragment","split":"development","question":"貴方は誰","answer":"連載後半は対話。 |読切・","gold_inappropriate":true,"agreement":0.032,"semantic_agreement":0.881,"runtime_accepted":true,"label_source":"DEVELOPMENT_EXAMPLE"}
