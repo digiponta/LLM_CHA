@@ -3365,6 +3365,17 @@ def main() -> None:
         if command in ("/exit", "exit", "quit"):
             break
 
+        # v0.4.19: narrow persona identity response before topic/knowledge
+        # routing. Identity is configuration, not externally verified knowledge.
+        from persona_identity_guard_v0419 import identity_answer
+        identity_reply = identity_answer(raw_user_text)
+        if identity_reply is not None:
+            print(f"persona> {identity_reply}")
+            print("[persona-identity=CONFIGURED, route=EXACT_INTENT, learning=False]")
+            print()
+            last_ai_reply = None
+            continue
+
         # v0.4.15: explicitly requested, unverified Wikipedia article evidence.
         # Standalone display route: no semantic-memory write, no learning/history.
         if command.startswith("/wiki "):
