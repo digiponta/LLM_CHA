@@ -19,6 +19,7 @@ def evaluate(question, answer, *, agreement, semantic_agreement, accepted):
     divergent=(relevance["diagnostic_scores_valid"] and agreement<0.35 and semantic_agreement>=0.82)
     identity_mismatch=relevance["identity_question"] and not relevance["identity_matched"]
     flags=[]
+    if not relevance["diagnostic_scores_valid"]:flags.append("INVALID_DIAGNOSTIC_SCORE")
     if divergent:flags.append("AGREEMENT_DIVERGENCE")
     if fragments:flags.append("OUTPUT_FRAGMENT_MARKERS")
     if identity_mismatch:flags.append("IDENTITY_MISMATCH")
