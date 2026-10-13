@@ -3376,21 +3376,6 @@ def main() -> None:
             print()
             continue
 
-        if command.startswith("/persona "):
-            # v0.3.7.1: attributed source quotation, NOT factual promotion.
-            from persona_semantic_memory_v0371 import persona_reply
-            concept=user_text[len("/persona "):].strip()
-            try:
-                reply,entries=persona_reply(resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS),concept)
-                print(f"AI> {reply}")
-                for entry in entries:
-                    print(f"[persona-evidence id={entry.id}, line={entry.line}, "
-                          f"state={entry.epistemic_type}, factual_truth={entry.factual_truth}]")
-            except (OSError,ValueError) as exc:
-                print(f"[persona-evidence=ERROR, reason={exc}]")
-            print()
-            continue
-
         if command == "/retention-stats":
             import json
             if active_retention_requested and topic_adapter is not None:
@@ -5136,6 +5121,37 @@ def main() -> None:
             history.append((resolver_query, dispatch.answer))
             last_ai_reply = dispatch.answer
             continue
+
+        # v0.3.7.3: Persona evidence is available in ordinary conversation.
+        # Only rescue RAW_CORPUS_ONLY. Explicit truth blocks and verified
+        # factual/corpus routes retain their established priority.
+        if (
+            dispatch.action == "BLOCK"
+            and dispatch.state == "RAW_CORPUS_ONLY"
+            and not force_internalized_verification
+            and not (truth_result is not None and truth_result.runtime_status == "BLOCK")
+        ):
+            from persona_semantic_memory_v0371 import persona_reply
+            persona_focus = (dispatch.focus or "").strip()
+            if persona_focus:
+                try:
+                    persona_answer, persona_entries = persona_reply(
+                        resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS),
+                        persona_focus,
+                    )
+                except (OSError, ValueError) as exc:
+                    print(f"[persona-evidence=ERROR, reason={exc}]")
+                else:
+                    if persona_entries:
+                        print(f"persona> {persona_answer}")
+                        for entry in persona_entries:
+                            print(f"[persona-evidence id={entry.id}, line={entry.line}, "
+                                  f"state={entry.epistemic_type}, factual_truth={entry.factual_truth}]")
+                        print("[persona-route=RAW_CORPUS_ONLY, source-grounded, factual-truth-unchanged]")
+                        print()
+                        history.append((resolver_query, persona_answer))
+                        last_ai_reply = persona_answer
+                        continue
 
         if dispatch.action == "BLOCK" and not force_internalized_verification:
             truth_block = (
