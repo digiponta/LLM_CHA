@@ -9,7 +9,7 @@ from pathlib import Path
 
 HEADING=re.compile(r"^## ([A-G]):.*?/(SINGLE|MULTI)")
 CASE=re.compile(r"^# ([A-EG][0-9]{2})$")
-MULTI=re.compile(r"^# (F[1-4]) (START|END)(?:\\b|$)")
+MULTI=re.compile(r"^# (F[1-4]) (START|END)(?: .*)?$")
 EXPECTED={"A":12,"B":12,"C":8,"D":8,"E":8,"F":12,"G":4}
 
 def parse(text):
