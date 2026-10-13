@@ -27,7 +27,7 @@ def diagnose(question, *, focus=None, fetcher=fetch_article):
         "concept":topic,"title":topic,
         "url":"https://ja.wikipedia.org/wiki/"+quote(topic.replace(" ","_"),safe="")}
     try:
-        evidence=fetcher(candidate,timeout=5)
+        evidence=fetcher(candidate,5)
     except (HTTPError,URLError,TimeoutError,OSError) as exc:
         result.update(status="FAILED",reason="FETCH_ERROR",error_type=type(exc).__name__)
         return result
