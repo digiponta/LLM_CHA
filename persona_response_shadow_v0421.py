@@ -16,7 +16,7 @@ def evaluate(question, answer, *, agreement, semantic_agreement, accepted):
     normalized=answer.strip()
     abstention=(not normalized or normalized in {"未学習です","(no response)"})
     fragments=bool(re.search(r"[|｜]|読切・",normalized))
-    divergent=(agreement<0.35 and semantic_agreement>=0.82)
+    divergent=(relevance["diagnostic_scores_valid"] and agreement<0.35 and semantic_agreement>=0.82)
     identity_mismatch=relevance["identity_question"] and not relevance["identity_matched"]
     flags=[]
     if divergent:flags.append("AGREEMENT_DIVERGENCE")
