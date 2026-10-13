@@ -3342,6 +3342,9 @@ def main() -> None:
 
     from persona_routing_v0374 import answer_prefix
 
+    from persona_quality_capture_v0424 import QualityCapture
+    quality_capture = QualityCapture()
+
     while True:
         try:
             user_text = input("You> ").strip()
@@ -3364,6 +3367,15 @@ def main() -> None:
 
         if command in ("/exit", "exit", "quit"):
             break
+
+        if command in ("/capture on", "/capture off", "/capture status"):
+            try:
+                capture_state = quality_capture.command(command)
+                print(f"[capture={'ON' if capture_state['enabled'] else 'OFF'}, "
+                      f"file={capture_state['path']}, records={capture_state['records']}]")
+            except (OSError, ValueError, UnicodeError) as exc:
+                print(f"[capture=ERROR, reason={type(exc).__name__}, conversation_unchanged=True]")
+            continue
 
         # v0.4.20: incomplete dialogue asks for continuation instead of
         # searching persona corpus for incidental surface words.
@@ -5762,6 +5774,19 @@ def main() -> None:
             )
 
         print(f"AI> {reply}")
+        # v0.4.24: opt-in, generation-only, read-only quality capture.
+        if quality_capture.enabled:
+            try:
+                capture_id = quality_capture.record(
+                    raw_user_text, reply, agreement=agreement,
+                    semantic_agreement=semantic_agreement,
+                    runtime_accepted=bool(accepted),
+                )
+                if capture_id:
+                    print(f"[capture=SAVED, id={capture_id}]")
+            except (OSError, ValueError, UnicodeError) as exc:
+                print(f"[capture=ERROR, reason={type(exc).__name__}, conversation_unchanged=True]")
+
 
         if args.show_risk and args.unknown_rejection and not accepted:
             print(f"[candidate={primary.text}]")
