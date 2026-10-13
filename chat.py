@@ -3363,6 +3363,19 @@ def main() -> None:
         if command in ("/exit", "exit", "quit"):
             break
 
+        if command.startswith("/means "):
+            from means_centric_semantics_v0372 import transform
+            result = transform(user_text[len("/means "):].strip())
+            print(f"[means-semantic={result['status']}]")
+            if result["derived"] is not None:
+                print(f"AI> {result['derived']}")
+                print(f"[semantic-relation=MEANS_OF, factual_truth=NOT_ASSESSED, "
+                      f"attribution=PARAPHRASE_NOT_NEW_FACT]")
+            else:
+                print(f"[means-semantic reason={result['reason']}]")
+            print()
+            continue
+
         if command.startswith("/persona "):
             # v0.3.7.1: attributed source quotation, NOT factual promotion.
             from persona_semantic_memory_v0371 import persona_reply
