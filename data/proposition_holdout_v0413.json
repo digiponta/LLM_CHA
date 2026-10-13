@@ -1,0 +1,218 @@
+{
+  "version": "v0.4.13",
+  "fixture_kind": "AUTHOR_CREATED_POST_V0412_FROZEN_DIAGNOSTIC",
+  "independent_blind": false,
+  "source": "HAND_AUTHORED_NOT_WIKIPEDIA",
+  "cases": [
+    {
+      "id": "h01",
+      "concept": "量子力学",
+      "text": "量子力学は物理学の分野である。",
+      "expected_extract": true,
+      "category": "positive"
+    },
+    {
+      "id": "h02",
+      "concept": "GPU",
+      "text": "GPUとは並列処理装置である。",
+      "expected_extract": true,
+      "category": "positive"
+    },
+    {
+      "id": "h03",
+      "concept": "CPU",
+      "text": "CPUは中央処理装置です。",
+      "expected_extract": true,
+      "category": "positive"
+    },
+    {
+      "id": "h04",
+      "concept": "機械学習",
+      "text": "機械学習はデータから規則を学ぶ方法を指す。",
+      "expected_extract": true,
+      "category": "positive"
+    },
+    {
+      "id": "h05",
+      "concept": "天文学",
+      "text": "天文学は天体を研究する学問の一つ。",
+      "expected_extract": true,
+      "category": "positive"
+    },
+    {
+      "id": "h06",
+      "concept": "音楽",
+      "text": "芸術の形式の一つが音楽である。",
+      "expected_extract": true,
+      "category": "positive"
+    },
+    {
+      "id": "h07",
+      "concept": "細胞",
+      "text": "細胞（cell）は生物の構成単位である。",
+      "expected_extract": true,
+      "category": "positive"
+    },
+    {
+      "id": "h08",
+      "concept": "数学",
+      "text": "数学は数量や構造を扱う学問だ。",
+      "expected_extract": true,
+      "category": "positive"
+    },
+    {
+      "id": "h09",
+      "concept": "哲学",
+      "text": "哲学を体系的な思考の営みという。",
+      "expected_extract": true,
+      "category": "positive"
+    },
+    {
+      "id": "h10",
+      "concept": "惑星",
+      "text": "惑星は恒星の周囲を公転する天体とされる。",
+      "expected_extract": true,
+      "category": "positive"
+    },
+    {
+      "id": "h11",
+      "concept": "天文学",
+      "text": "天文学では観測を行う。",
+      "expected_extract": false,
+      "category": "related"
+    },
+    {
+      "id": "h12",
+      "concept": "量子力学",
+      "text": "量子力学者は科学者である。",
+      "expected_extract": false,
+      "category": "other-subject"
+    },
+    {
+      "id": "h13",
+      "concept": "GPU",
+      "text": "GPUはCPUではないのである。",
+      "expected_extract": false,
+      "category": "negation"
+    },
+    {
+      "id": "h14",
+      "concept": "数学",
+      "text": "数学は科学ではない。",
+      "expected_extract": false,
+      "category": "negation"
+    },
+    {
+      "id": "h15",
+      "concept": "音楽",
+      "text": "「音楽は芸術である。」という説明がある。",
+      "expected_extract": false,
+      "category": "quotation"
+    },
+    {
+      "id": "h16",
+      "concept": "細胞",
+      "text": "細胞は生命の基本単位であると仮定する。",
+      "expected_extract": false,
+      "category": "hypothetical"
+    },
+    {
+      "id": "h17",
+      "concept": "哲学",
+      "text": "哲学は学問であるか？",
+      "expected_extract": false,
+      "category": "question"
+    },
+    {
+      "id": "h18",
+      "concept": "惑星",
+      "text": "惑星は天体であるらしい。",
+      "expected_extract": false,
+      "category": "hedging"
+    },
+    {
+      "id": "h19",
+      "concept": "CPU",
+      "text": "CPUは演算装置である。しかし、別の説もある。",
+      "expected_extract": false,
+      "category": "multi-sentence-context"
+    },
+    {
+      "id": "h20",
+      "concept": "音楽",
+      "text": "音楽は文化の一部であると考えられている。",
+      "expected_extract": false,
+      "category": "attribution"
+    },
+    {
+      "id": "h21",
+      "concept": "数学",
+      "text": "数学は学問ではないわけではないのである。",
+      "expected_extract": false,
+      "category": "double-negation"
+    },
+    {
+      "id": "h22",
+      "concept": "機械学習",
+      "text": "機械学習は技術である、という仮説を立てる。",
+      "expected_extract": false,
+      "category": "embedded-hypothesis"
+    },
+    {
+      "id": "h23",
+      "concept": "GPU",
+      "text": "GPUは多数の計算を同時に扱える。",
+      "expected_extract": false,
+      "category": "property-not-definition"
+    },
+    {
+      "id": "h24",
+      "concept": "細胞",
+      "text": "細胞には核がある。",
+      "expected_extract": false,
+      "category": "property-not-definition"
+    },
+    {
+      "id": "h25",
+      "concept": "音楽",
+      "text": "音楽は芸術である。音楽では音が用いられる。",
+      "expected_extract": true,
+      "category": "multi-sentence"
+    },
+    {
+      "id": "h26",
+      "concept": "CPU",
+      "text": "中央処理装置がCPUである。",
+      "expected_extract": true,
+      "category": "reverse"
+    },
+    {
+      "id": "h27",
+      "concept": "GPU",
+      "text": "GPUは、画像処理向けの装置である。",
+      "expected_extract": true,
+      "category": "punctuation"
+    },
+    {
+      "id": "h28",
+      "concept": "物理学",
+      "text": "物理学とは自然現象を研究する学問である。",
+      "expected_extract": true,
+      "category": "new-subject"
+    },
+    {
+      "id": "h29",
+      "concept": "宇宙",
+      "text": "宇宙は広大である。",
+      "expected_extract": false,
+      "category": "non-taxonomic-property"
+    },
+    {
+      "id": "h30",
+      "concept": "GPU",
+      "text": "GPUとは略語である。",
+      "expected_extract": true,
+      "category": "positive"
+    }
+  ]
+}
