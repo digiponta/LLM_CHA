@@ -1,6 +1,6 @@
 """Synthetic structural tests for opt-in benchmark capture."""
 import unittest
-from capture_chat_benchmark_v04283 import validate,read_turns
+from capture_chat_benchmark_v04283 import validate,read_turns,classify_failure
 
 class CaptureTests(unittest.TestCase):
     def fixture(self):
@@ -11,6 +11,18 @@ class CaptureTests(unittest.TestCase):
         for i in range(1,5):
             groups.append({"id":f"F{i}","mode":"MULTI","prompts":[f"続き {i}-{j}" for j in range(3)]})
         return {"count":64,"groups":groups}
+    def test_windows_encoding_error_classification(self):
+        self.assertEqual(classify_failure("TypeError: TextInputSequence must be str","PROCESS_FAILED"),"ENCODING_ERROR")
+        self.assertEqual(classify_failure("UnicodeDecodeError: bad bytes","PROCESS_FAILED"),"ENCODING_ERROR")
+        self.assertEqual(classify_failure("runtime failure","PROCESS_FAILED"),"RUNTIME_ERROR")
+        self.assertEqual(classify_failure("AI> こんにちは。","FINISHED"),None)
+    def test_capture_environment_settings(self):
+        from pathlib import Path
+        s=(Path(__file__).parent/"capture_chat_benchmark_v04283.py").read_text(encoding="utf-8")
+        self.assertIn('"PYTHONIOENCODING":"utf-8"',s)
+        self.assertIn('"PYTHONUTF8":"1"',s)
+        self.assertIn('errors="strict"',s)
+        self.assertIn("first-case preflight failed",s)
     def test_valid(self):
         self.assertEqual(len(validate(self.fixture())),56)
     def test_comments_and_commands_denied(self):
