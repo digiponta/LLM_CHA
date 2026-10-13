@@ -5143,21 +5143,6 @@ def main() -> None:
         truth_record = semantic_result.truth
         truth_result = semantic_result.truth_result
 
-        # v0.4.3: opt-in, read-only routing trace after semantic dispatch.
-        # This does not alter truth decisions, route priority or model weights.
-        if os.environ.get("LLM_CHA_PERSONA_ROUTE_TRACE", "0") == "1":
-            from persona_route_trace_v0403 import diagnose as persona_route_diagnose
-            import json as _persona_trace_json
-            persona_route_diag = persona_route_diagnose(
-                resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS),
-                dispatch.action, dispatch.state, dispatch.focus,
-                truth_result.runtime_status if truth_result is not None else None,
-                False,  # verification override is resolved below; see follow-up marker
-            )
-            print("[persona-route-trace=" +
-                  _persona_trace_json.dumps(persona_route_diag, ensure_ascii=False)
-                  + "]")
-
         if truth_result is not None and truth_result.warning:
             print(
                 f"[truth warning: state={truth_record.state}, "
@@ -5176,6 +5161,21 @@ def main() -> None:
         force_internalized_verification = (
             verification_override_record is not None
         )
+        # v0.4.3: opt-in, read-only routing trace after semantic dispatch.
+        # This does not alter truth decisions, route priority or model weights.
+        if os.environ.get("LLM_CHA_PERSONA_ROUTE_TRACE", "0") == "1":
+            from persona_route_trace_v0403 import diagnose as persona_route_diagnose
+            import json as _persona_trace_json
+            persona_route_diag = persona_route_diagnose(
+                resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS),
+                dispatch.action, dispatch.state, dispatch.focus,
+                truth_result.runtime_status if truth_result is not None else None,
+                force_internalized_verification,
+            )
+            print("[persona-route-trace=" +
+                  _persona_trace_json.dumps(persona_route_diag, ensure_ascii=False)
+                  + "]")
+
         if (
             force_internalized_verification
             and dispatch.action == "RETRIEVE"
