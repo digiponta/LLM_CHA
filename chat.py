@@ -43,6 +43,7 @@ from user_context_recovery_v0508 import UserContext
 from interactive_unknown_learning_v0510 import UnknownTeaching, concept_from
 from truth_aware_teaching_retrieval_v0511 import review as cha_teaching_review
 from definition_grounding_v05111 import definition_grounded as cha_definition_grounded
+from knowledge_candidate_review_v0512 import inspect as cha_review_inspect, approve as cha_review_approve
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3176,6 +3177,8 @@ def main() -> None:
     print("  /cha-load ID  load completed conversation for read-only recall")
     print("  /cha-recall Q recall recorded USER utterances with turn IDs")
     print("  /cha-unknown X show unverified user-taught candidate entries")
+    print("  /cha-review X inspect candidate differences and review state")
+    print("  /cha-ack ID  acknowledge review (does not verify, promote or train)")
     print("  /cancel      cancel pending UNKNOWN teaching")
     print("  /cha-status   show conversation memory status")
     print("  /cha-close    close current conversation record")
@@ -3361,6 +3364,24 @@ def main() -> None:
             continue
         if user_text.lower() == "/cancel":
             print("[no pending UNKNOWN teaching]")
+            print()
+            continue
+        if user_text.startswith("/cha-review "):
+            concept = user_text.split(None, 1)[1].strip()
+            try:
+                print(json.dumps(cha_review_inspect(cha_unknown_teacher.path, concept),
+                                 ensure_ascii=False, indent=2))
+            except (OSError, ValueError, KeyError) as exc:
+                print(f"[candidate review error: {exc}]")
+            print()
+            continue
+        if user_text.startswith("/cha-ack "):
+            try:
+                candidate_id = int(user_text.split(None, 1)[1].strip())
+                print(json.dumps(cha_review_approve(cha_unknown_teacher.path, candidate_id),
+                                 ensure_ascii=False, indent=2))
+            except (OSError, ValueError, KeyError) as exc:
+                print(f"[candidate acknowledgement error: {exc}]")
             print()
             continue
         if user_text.startswith("/cha-unknown "):
