@@ -5230,6 +5230,12 @@ def main() -> None:
             if internalized_record is not None
             else normalize_identity_query(user_text)
         )
+        if cha_bridge.enabled:
+            try:
+                cha_bridge.record_user(raw_user_text)
+            except (OSError, ValueError, KeyError) as exc:
+                cha_bridge.enabled = False
+                print(f"[CHA memory capture stopped: {exc}]")
         cha_user_context.observe(raw_user_text)
         generation_user_text = cha_resolve_context(generation_user_text, cha_recent_topic)
         user_topic = cha_topic_for(user_text)
@@ -5606,7 +5612,7 @@ def main() -> None:
             history.append((user_text, reply))
             if cha_bridge.enabled:
                 try:
-                    cha_bridge.record_accepted(raw_user_text, reply)
+                    cha_bridge.record_assistant(reply)
                 except (OSError, ValueError, KeyError) as exc:
                     cha_bridge.enabled = False
                     print(f"[CHA memory capture stopped: {exc}]")
