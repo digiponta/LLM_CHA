@@ -44,7 +44,7 @@ from interactive_unknown_learning_v0510 import UnknownTeaching, concept_from
 from truth_aware_teaching_retrieval_v0511 import review as cha_teaching_review
 from definition_grounding_v05111 import definition_grounded as cha_definition_grounded
 from knowledge_candidate_review_v0512 import inspect as cha_review_inspect, approve as cha_review_approve
-from usage_confidence_v0513 import update as cha_usage_update, summary as cha_usage_summary
+from usage_confidence_v0513 import update as cha_usage_update, summary as cha_usage_summary, FeedbackSession, classify_feedback
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3344,6 +3344,7 @@ def main() -> None:
     cha_bridge = ConversationBridge(resolve_runtime_path(args.cha_memory_root))
     cha_user_context = UserContext()
     cha_unknown_teacher = UnknownTeaching(resolve_runtime_path("data/cha_unknown_candidates_v0510.json"))
+    cha_feedback_session = FeedbackSession()
     cha_recent_topic: str | None = None
     last_user_text: str | None = None
     last_ai_reply: str | None = None
@@ -3370,6 +3371,21 @@ def main() -> None:
             print("[no pending UNKNOWN teaching]")
             print()
             continue
+        if cha_feedback_session.candidate_id is not None:
+            try:
+                feedback_result = cha_feedback_session.respond(
+                    user_text, cha_unknown_teacher.path
+                )
+                if feedback_result is not None:
+                    print(json.dumps(feedback_result, ensure_ascii=False, indent=2))
+                    print("[feedback=EXPLICIT_USER, duplicate_prevented=True]")
+                    print()
+                    continue
+            except (OSError, ValueError, KeyError) as exc:
+                cha_feedback_session.clear()
+                print(f"[natural feedback error: {exc}]")
+            # Feedback applies only to the immediately following user turn.
+            cha_feedback_session.clear()
         if user_text.startswith("/cha-usage "):
             try:
                 number = int(user_text.split(None,1)[1].strip())
@@ -3421,12 +3437,17 @@ def main() -> None:
         taught_reply = cha_teaching_review(cha_unknown_teacher, user_text)
         if taught_reply is not None:
             print(f"AI> {taught_reply['answer']}")
+            cha_feedback_session.offered([
+                evidence["record_number"] for evidence in taught_reply["records"]
+            ])
             for evidence in taught_reply["records"]:
                 try:
                     cha_usage_update(cha_unknown_teacher.path, evidence["record_number"], "used")
                 except (OSError,ValueError,KeyError) as exc:
                     print(f"[usage recording error: {exc}]")
             print("[route=TEACHING_RETRIEVAL, truth_state=USER_REPORTED_UNVERIFIED, trusted=False, train_ready=False]")
+            if cha_feedback_session.candidate_id is not None:
+                print("[feedback_prompt=この説明は正しいですか？ 正しいです／違います]")
             print()
             continue
 
