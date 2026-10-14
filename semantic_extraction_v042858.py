@@ -11,8 +11,8 @@ from conversation_semantic_memory_v042857 import new_memory, update
 VERSION="v0.4.28.58"
 # Ordered explicit rules. A match must include the actual user statement.
 RULES=[
- ("owns","car",False,re.compile(r"(?:私|僕|わたし|自分)(?:は|も)?[^。\n]{0,35}?車(?:を|は)?持って(?:いない|ない|ません)")),
- ("owns","car",True,re.compile(r"(?:私|僕|わたし|自分)(?:は|も)?[^。\n]{0,35}?車(?:を|は)?持って(?:いる|ます|る)")),
+ ("owns","car",False,re.compile(r"(?:私|僕|わたし|自分)(?:は|も)?[^。\n]{0,35}?車(?:を|は)?持って(?:いない|いません|ない|ません)")),
+ ("owns","car",True,re.compile(r"(?:私|僕|わたし|自分)(?:は|も)?[^。\n]{0,35}?車(?:を|は)?持って(?:いる|います|ます|る)")),
  ("likes","movie",True,re.compile(r"(?:私|僕|わたし|自分)(?:は|も)?[^。\n]{0,25}?映画(?:が|は)?好き")),
  ("likes","movie",False,re.compile(r"(?:私|僕|わたし|自分)(?:は|も)?[^。\n]{0,25}?映画(?:が|は)?好き(?:ではない|じゃない)")),
 ]
