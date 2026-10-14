@@ -42,6 +42,7 @@ from context_aware_validation_v0507 import grounded as cha_topic_grounded, topic
 from user_context_recovery_v0508 import UserContext
 from interactive_unknown_learning_v0510 import UnknownTeaching, concept_from
 from truth_aware_teaching_retrieval_v0511 import review as cha_teaching_review
+from definition_grounding_v05111 import definition_grounded as cha_definition_grounded
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -5395,6 +5396,15 @@ def main() -> None:
             elif reason == "accepted":
                 reason = semantic_reason
             # Preserve diagnostic reasons such as "semantic probe agreement".
+
+        # Do not accept a definition that does not mention the requested concept.
+        if accepted and args.unknown_rejection and internalized_record is None:
+            definition_ok, definition_reason = cha_definition_grounded(
+                raw_user_text, primary.text
+            )
+            if not definition_ok:
+                accepted = False
+                reason = definition_reason
 
         if accepted and internalized_record is None and args.semantic_consistency:
             grounded_ok, grounding_reason = cha_topic_grounded(
