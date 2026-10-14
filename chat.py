@@ -38,6 +38,7 @@ import torch.nn.functional as F
 from model import LanguageModel
 from tokenizer_bpe import Tokenizer
 from chat_conversation_bridge_v0506 import ConversationBridge
+from context_aware_validation_v0507 import grounded as cha_topic_grounded, topic_for as cha_topic_for, resolve_context as cha_resolve_context
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3326,6 +3327,7 @@ def main() -> None:
     if context_recovery_path:
         print("[context recovery available: /context-save, /context-load]")
     cha_bridge = ConversationBridge(resolve_runtime_path(args.cha_memory_root))
+    cha_recent_topic: str | None = None
     last_user_text: str | None = None
     last_ai_reply: str | None = None
 
@@ -3406,6 +3408,7 @@ def main() -> None:
                 topic_adapter.context.reset()
                 proposition_cursor.reset()
             history.clear()
+            cha_recent_topic = None
             print("[conversation history cleared]")
             print()
             continue
@@ -5216,6 +5219,10 @@ def main() -> None:
             if internalized_record is not None
             else normalize_identity_query(user_text)
         )
+        generation_user_text = cha_resolve_context(generation_user_text, cha_recent_topic)
+        user_topic = cha_topic_for(user_text)
+        if user_topic:
+            cha_recent_topic = user_topic
         prompt, selected_history = build_prompt(
             history=history,
             user_text=generation_user_text,
@@ -5337,6 +5344,14 @@ def main() -> None:
             elif reason == "accepted":
                 reason = semantic_reason
             # Preserve diagnostic reasons such as "semantic probe agreement".
+
+        if accepted and internalized_record is None and args.semantic_consistency:
+            grounded_ok, grounding_reason = cha_topic_grounded(
+                generation_user_text, primary.text, cha_recent_topic
+            )
+            if not grounded_ok:
+                accepted = False
+                reason = grounding_reason
 
         internalized_fidelity = -1.0
         internalized_lexical_coverage = -1.0
