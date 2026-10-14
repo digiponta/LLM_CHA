@@ -24,7 +24,7 @@ def main():
         rows=worksheet(json.loads(src.read_text(encoding="utf-8")))
         dst.parent.mkdir(parents=True,exist_ok=True)
         with dst.open("x",encoding="utf-8-sig",newline="") as f:
-            w=csv.DictWriter(f,fieldnames=FIELDS+["review_guidance"])
+            w=csv.DictWriter(f,fieldnames=FIELDS)
             w.writeheader();w.writerows(rows)
         print(json.dumps({"rows":len(rows),"unlabeled":sum(not x["final_relevant"] for x in rows),"path":str(dst)},ensure_ascii=False))
     except (OSError,ValueError,json.JSONDecodeError) as e:p.exit(1,f"worksheet failed: {e}\n")
