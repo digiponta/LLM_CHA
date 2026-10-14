@@ -13,6 +13,7 @@ from conversation_resource_memory_v042866 import new_conversation,append_turn,cl
 from checkpoint_optimization_v0504 import commit as incremental_commit
 from benchmark_compact_evidence_v0502 import pack,verify
 from safe_storage_migration_v0506 import migrate
+from conversation_retrieval_v0509 import retrieve,restore_user_context
 
 VERSION="v0.5.6-chat-bridge"
 
@@ -34,6 +35,24 @@ class ConversationBridge:
         self.source=source
         self.enabled=True
         return cid
+
+    def load_closed(self,conversation_id):
+        if self.enabled:raise ValueError("close active conversation first")
+        if not conversation_id or not all(c.isalnum() or c in "-_" for c in conversation_id):
+            raise ValueError("invalid conversation ID")
+        path=self.root/(conversation_id+".conversation.json")
+        if not path.is_file() or path.is_symlink():raise ValueError("conversation not found")
+        record=json.loads(path.read_text(encoding="utf-8-sig"))
+        validate(record)
+        if record["conversation_id"]!=conversation_id or record["active"]:
+            raise ValueError("only completed conversations may be loaded")
+        self.source=path
+        self.enabled=False
+        return self.status()
+
+    def recall(self,query,limit=3):
+        if self.source is None:return []
+        return retrieve(self.source,query,limit=limit)
 
     def _load(self):
         if self.source is None:raise ValueError("no conversation started")
