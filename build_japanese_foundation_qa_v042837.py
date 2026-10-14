@@ -23,7 +23,7 @@ def extract(lines):
         if not 2<=len(topic)<=24 or any(x in topic for x in ("あなた","それ","これ","あれ","私","僕","わたし")):
             continue
         answer=raw
-        question="あなたが好きなものは何ですか。"
+        question=f"あなたは{topic}が好きですか。"
         candidates.append({"id":f"JF-{line_no:05d}","question":question,
           "answer":answer,"topic":topic,"label":True,
           "label_kind":"SYNTHETIC_POSITIVE_CANDIDATE",
