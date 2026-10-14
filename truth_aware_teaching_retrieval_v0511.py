@@ -13,7 +13,7 @@ def review(teacher,question):
     if not records:return None
     explanations=[]
     for index,record in enumerate(records,1):
-        if record.get("status")!="PENDING_REVIEW" or record.get("train_ready") is not False:
+        if record.get("status") not in ("PENDING_REVIEW","REVIEW_ACKNOWLEDGED") or record.get("train_ready") is not False:
             continue
         explanation=record.get("user_explanation")
         if not isinstance(explanation,str) or not explanation.strip():
