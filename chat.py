@@ -3170,6 +3170,8 @@ def main() -> None:
 
     print("Commands:")
     print("  /cha-start    begin opt-in conversation memory capture (accepted replies only)")
+    print("  /cha-load ID  load completed conversation for read-only recall")
+    print("  /cha-recall Q recall recorded USER utterances with turn IDs")
     print("  /cha-status   show conversation memory status")
     print("  /cha-close    close current conversation record")
     print("  /cha-sleep    update incremental checkpoint (no model training)")
@@ -3353,10 +3355,16 @@ def main() -> None:
 
         command = user_text.lower()
 
-        if command in ("/cha-start", "/cha-status", "/cha-close", "/cha-sleep", "/cha-migrate"):
+        if command.startswith("/cha-load ") or command.startswith("/cha-recall ") or command in ("/cha-start", "/cha-status", "/cha-close", "/cha-sleep", "/cha-migrate"):
             try:
                 if command == "/cha-start":
                     print(f"[CHA memory started: {cha_bridge.start()}]")
+                elif command.startswith("/cha-load "):
+                    print(json.dumps(cha_bridge.load_closed(user_text.split(None, 1)[1].strip()), ensure_ascii=False))
+                    cha_user_context = UserContext()
+                    cha_recent_topic = None
+                elif command.startswith("/cha-recall "):
+                    print(json.dumps(cha_bridge.recall(user_text.split(None, 1)[1].strip()), ensure_ascii=False, indent=2))
                 elif command == "/cha-status":
                     print(json.dumps(cha_bridge.status(), ensure_ascii=False))
                 elif command == "/cha-close":
@@ -5469,7 +5477,24 @@ def main() -> None:
                 route_result += f"; verification resolved={verified}"
 
         recovery_reply = None
+        recovery_evidence = []
         if not accepted and args.unknown_rejection and internalized_record is None:
+            if cha_bridge.source is not None and (
+                cha_user_context.continuation(raw_user_text)
+                or cha_topic_for(raw_user_text) is not None
+            ):
+                try:
+                    from conversation_retrieval_v0509 import restore_user_context
+                    stored_context, recovery_evidence = restore_user_context(
+                        cha_bridge.source, raw_user_text
+                    )
+                    if stored_context is not None and (
+                        cha_user_context.topic is None
+                        or cha_user_context.continuation(raw_user_text)
+                    ):
+                        cha_user_context = stored_context
+                except (OSError, ValueError, KeyError) as exc:
+                    print(f"[CHA retrieval unavailable: {exc}]")
             recovery_reply = cha_user_context.recovery(raw_user_text)
         reply = primary.text if accepted else (recovery_reply or UNKNOWN_REPLY)
         new_tokens = sum(r.token_count for r in results)
@@ -5486,6 +5511,11 @@ def main() -> None:
         print(f"AI> {reply}")
         if recovery_reply is not None:
             print("[recovery=USER_CONTEXT_TEMPLATE, gate=UNKNOWN, trusted=False, train_ready=False]")
+            if recovery_evidence:
+                item = recovery_evidence[0]
+                print("[retrieval=user-report, conversation_id={}, source_turn={}, truth_state=USER_REPORTED_UNVERIFIED]".format(
+                    item["conversation_id"], item["turn_id"]
+                ))
 
         if args.show_risk and args.unknown_rejection and not accepted:
             print(f"[candidate={primary.text}]")
