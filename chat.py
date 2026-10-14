@@ -41,6 +41,7 @@ from chat_conversation_bridge_v0506 import ConversationBridge
 from context_aware_validation_v0507 import grounded as cha_topic_grounded, topic_for as cha_topic_for, resolve_context as cha_resolve_context
 from user_context_recovery_v0508 import UserContext
 from interactive_unknown_learning_v0510 import UnknownTeaching, concept_from
+from truth_aware_teaching_retrieval_v0511 import review as cha_teaching_review
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3367,6 +3368,13 @@ def main() -> None:
                 print(json.dumps(cha_unknown_teacher.lookup(concept), ensure_ascii=False, indent=2))
             except (OSError, ValueError, KeyError) as exc:
                 print(f"[unknown lookup error: {exc}]")
+            print()
+            continue
+
+        taught_reply = cha_teaching_review(cha_unknown_teacher, user_text)
+        if taught_reply is not None:
+            print(f"AI> {taught_reply['answer']}")
+            print("[route=TEACHING_RETRIEVAL, truth_state=USER_REPORTED_UNVERIFIED, trusted=False, train_ready=False]")
             print()
             continue
 
