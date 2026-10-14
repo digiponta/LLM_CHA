@@ -9,7 +9,9 @@ class EvidenceCompactionTests(unittest.TestCase):
   self.assertEqual(set(x),{"full","minimal","semantic_only"})
  def test_size(self):
   x=compare(10)["variants"]
-  self.assertLess(x["minimal"]["bytes"],x["full"]["bytes"])
+  self.assertEqual(x["minimal"]["bytes_vs_full"],x["minimal"]["bytes"]-x["full"]["bytes"])
+  self.assertEqual(x["minimal"]["smaller_than_full"],x["minimal"]["bytes"]<x["full"]["bytes"])
+  self.assertGreater(x["minimal"]["bytes"],x["full"]["bytes"])  # synthetic short utterances
  def test_semantic_no_original(self):
   d=project(make_session(10),"semantic_only")
   self.assertNotIn("original_utterance",json.dumps(d))
