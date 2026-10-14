@@ -44,3 +44,35 @@ def update(path,number,action):
     r.update(verified=False,train_ready=False,approved_for_sleep=False,fact_promoted=False)
     write_json_atomic(data,path)
     return summary(path,number)
+
+
+# v0.5.14: explicit, one-shot natural-language feedback on a retrieved answer.
+_POSITIVE = ("正しいです", "その説明で正しいです", "合っています", "その通りです")
+_NEGATIVE = ("違います", "それは違います", "間違っています", "誤りです")
+
+def classify_feedback(text):
+    value = text.strip().rstrip("。！! ")
+    if value in _POSITIVE:
+        return "positive"
+    if value in _NEGATIVE:
+        return "negative"
+    return None
+
+class FeedbackSession:
+    def __init__(self):
+        self.candidate_id = None
+
+    def clear(self):
+        self.candidate_id = None
+
+    def offered(self,record_numbers):
+        self.candidate_id = record_numbers[0] if len(record_numbers)==1 else None
+
+    def respond(self,text,path):
+        decision = classify_feedback(text)
+        if decision is None or self.candidate_id is None:
+            return None
+        number = self.candidate_id
+        result = update(path,number,decision)
+        self.clear()
+        return result
