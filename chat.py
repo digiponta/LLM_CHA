@@ -37,6 +37,7 @@ import torch.nn.functional as F
 
 from model import LanguageModel
 from tokenizer_bpe import Tokenizer
+from chat_conversation_bridge_v0506 import ConversationBridge
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -236,6 +237,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Chat with the current LLM_GPU conversational model."
     )
+    parser.add_argument("--cha-memory-root", default="data/conversation_memory_local",
+        help="Opt-in v0.5.6 conversation store; use /cha-start to record accepted turns.")
     parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument(
@@ -3164,6 +3167,11 @@ def main() -> None:
     )
 
     print("Commands:")
+    print("  /cha-start    begin opt-in conversation memory capture (accepted replies only)")
+    print("  /cha-status   show conversation memory status")
+    print("  /cha-close    close current conversation record")
+    print("  /cha-sleep    update incremental checkpoint (no model training)")
+    print("  /cha-migrate  preserve compact evidence and migration receipt")
     print("  /reset        clear conversation history")
     print("  /info         show model/checkpoint information")
     print("  /learn on     capture accepted turns for later training")
@@ -3317,6 +3325,7 @@ def main() -> None:
     )
     if context_recovery_path:
         print("[context recovery available: /context-save, /context-load]")
+    cha_bridge = ConversationBridge(resolve_runtime_path(args.cha_memory_root))
     last_user_text: str | None = None
     last_ai_reply: str | None = None
 
@@ -3339,6 +3348,23 @@ def main() -> None:
             continue
 
         command = user_text.lower()
+
+        if command in ("/cha-start", "/cha-status", "/cha-close", "/cha-sleep", "/cha-migrate"):
+            try:
+                if command == "/cha-start":
+                    print(f"[CHA memory started: {cha_bridge.start()}]")
+                elif command == "/cha-status":
+                    print(json.dumps(cha_bridge.status(), ensure_ascii=False))
+                elif command == "/cha-close":
+                    print(json.dumps(cha_bridge.close(), ensure_ascii=False))
+                elif command == "/cha-sleep":
+                    print(json.dumps(cha_bridge.sleep(), ensure_ascii=False))
+                elif command == "/cha-migrate":
+                    print(json.dumps(cha_bridge.migrate(), ensure_ascii=False))
+            except (OSError, ValueError, KeyError) as exc:
+                print(f"[CHA memory error: {exc}]")
+            print()
+            continue
 
         if command in ("/exit", "exit", "quit"):
             break
@@ -5524,6 +5550,12 @@ def main() -> None:
             if resolved:
                 print(f"[resolved teaching queue entries: {resolved}]")
             history.append((user_text, reply))
+            if cha_bridge.enabled:
+                try:
+                    cha_bridge.record_accepted(raw_user_text, reply)
+                except (OSError, ValueError, KeyError) as exc:
+                    cha_bridge.enabled = False
+                    print(f"[CHA memory capture stopped: {exc}]")
             last_ai_reply = reply
             if learning_enabled:
                 print("[learning candidate ready: use /good to approve or /teach TEXT to correct]")
