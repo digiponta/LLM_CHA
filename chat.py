@@ -5509,7 +5509,7 @@ def main() -> None:
 
         recovery_reply = None
         recovery_evidence = []
-        if not accepted and args.unknown_rejection and internalized_record is None:
+        if not accepted and args.unknown_rejection and internalized_record is None and concept_from(raw_user_text) is None:
             if cha_bridge.source is not None and (
                 cha_user_context.continuation(raw_user_text)
                 or cha_topic_for(raw_user_text) is not None
