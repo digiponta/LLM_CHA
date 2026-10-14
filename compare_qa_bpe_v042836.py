@@ -22,7 +22,7 @@ def load_bpe(path):
         raise ValueError("not a HuggingFace tokenizers BPE JSON; unsupported format")
     tokenizer=Tokenizer.from_file(str(path))
     size=tokenizer.get_vocab_size(with_added_tokens=True)
-    if not 100<=size<=65533:raise ValueError("unsupported tokenizer vocabulary size")
+    if not 1<=size<=65533:raise ValueError("unsupported tokenizer vocabulary size")
     return tokenizer,size+3
 
 def bpe_encoder(tokenizer,limit=160):
