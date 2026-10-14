@@ -16,42 +16,43 @@ def evaluate(input_path,limit=None,recent_limit=5):
     if limit is not None and limit<1:raise ValueError("limit must be positive")
     if recent_limit<1:raise ValueError("recent_limit must be positive")
     counts=Counter();topics=Counter();seen=set()
-    for number,line in enumerate(Path(input_path).open(encoding="utf-8"),1):
-        if not line.strip():continue
-        if limit is not None and counts["dialogues"]>=limit:break
-        d=json.loads(line)
-        if d.get("train_ready") is not False or d.get("original_speakers_preserved") is not True:
-            raise ValueError(f"unsafe input row {number}")
-        cid=d.get("conversation_id")
-        if not isinstance(cid,str) or not cid or cid in seen:
-            raise ValueError(f"missing/duplicate session ID: {number}")
-        seen.add(cid)
-        turns=d.get("turns")
-        if not isinstance(turns,list) or not turns:raise ValueError(f"invalid turns: {number}")
-        memory=new_memory(cid)
-        memory["source_speakers"]=["A","B"]
-        for i,t in enumerate(turns,1):
-            if t.get("turn_id")!=i or t.get("speaker") not in ("A","B") or not isinstance(t.get("text"),str) or not t["text"].strip():
-                raise ValueError(f"invalid turn: {number}/{i}")
-            # Store original speaker role and source: never interpret as user's identity.
-            utterance=t["text"].strip()
-            hits=keyword_candidates(utterance)
-            for word in hits:
-                if word not in memory["keywords"]:memory["keywords"].append(word)
-            if hits:memory["current_topic"]=hits[0]
-            memory["recent_turns"].append({"turn_id":i,"role":t["speaker"],"text":utterance})
-            memory["recent_turns"]=memory["recent_turns"][-recent_limit:]
-            memory["last_turn"]=i
-            counts["utterances"]+=1
-            counts["keyword_hits"]+=len(hits)
-            counts["full_history_chars"]+=len(utterance)
-        counts["dialogues"]+=1
-        counts["distinct_keywords_total"]+=len(memory["keywords"])
-        counts["recent_context_chars"]+=sum(len(t["text"]) for t in memory["recent_turns"])
-        topics[str(d.get("topic_name","unknown"))]+=1
-        # All propositions remain empty until speaker-aware extractor exists.
-        if memory["propositions"] or memory["train_ready"] is not False:
-            raise ValueError("unsafe user-fact attribution")
+    with Path(input_path).open(encoding="utf-8") as stream:
+        for number,line in enumerate(stream,1):
+            if not line.strip():continue
+            if limit is not None and counts["dialogues"]>=limit:break
+            d=json.loads(line)
+            if d.get("train_ready") is not False or d.get("original_speakers_preserved") is not True:
+                raise ValueError(f"unsafe input row {number}")
+            cid=d.get("conversation_id")
+            if not isinstance(cid,str) or not cid or cid in seen:
+                raise ValueError(f"missing/duplicate session ID: {number}")
+            seen.add(cid)
+            turns=d.get("turns")
+            if not isinstance(turns,list) or not turns:raise ValueError(f"invalid turns: {number}")
+            memory=new_memory(cid)
+            memory["source_speakers"]=["A","B"]
+            for i,t in enumerate(turns,1):
+                if t.get("turn_id")!=i or t.get("speaker") not in ("A","B") or not isinstance(t.get("text"),str) or not t["text"].strip():
+                    raise ValueError(f"invalid turn: {number}/{i}")
+                # Store original speaker role and source: never interpret as user's identity.
+                utterance=t["text"].strip()
+                hits=keyword_candidates(utterance)
+                for word in hits:
+                    if word not in memory["keywords"]:memory["keywords"].append(word)
+                if hits:memory["current_topic"]=hits[0]
+                memory["recent_turns"].append({"turn_id":i,"role":t["speaker"],"text":utterance})
+                memory["recent_turns"]=memory["recent_turns"][-recent_limit:]
+                memory["last_turn"]=i
+                counts["utterances"]+=1
+                counts["keyword_hits"]+=len(hits)
+                counts["full_history_chars"]+=len(utterance)
+            counts["dialogues"]+=1
+            counts["distinct_keywords_total"]+=len(memory["keywords"])
+            counts["recent_context_chars"]+=sum(len(t["text"]) for t in memory["recent_turns"])
+            topics[str(d.get("topic_name","unknown"))]+=1
+            # All propositions remain empty until speaker-aware extractor exists.
+            if memory["propositions"] or memory["train_ready"] is not False:
+                raise ValueError("unsafe user-fact attribution")
     return {"version":VERSION,"mode":"JDD_CONVERSATION_MEMORY_BASELINE",
         "counts":dict(counts),"topics":dict(topics),
         "source_speakers_preserved":True,"cross_conversation_memory_merging":False,
