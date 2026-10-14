@@ -8,7 +8,7 @@ from review_semantic_relevance_v042813 import FIELDS,summarize
 
 def shadow(validation, comparison, reviews):
     human=summarize(validation,reviews)
-    labels={(r["id"],r["turn"]):r["labels"] for r in human["manual_evaluations"]}
+    labels={(r["id"],int(r["turn"])):r["labels"] for r in human["manual_evaluations"]}
     source=comparison.get("records")
     if not isinstance(source,list) or len(source)!=64:raise ValueError("expected 64 comparison records")
     records=[];seen=set()
