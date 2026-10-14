@@ -39,4 +39,13 @@ class SemanticExtractionTests(unittest.TestCase):
   self.assertEqual(len(s["propositions"]),1)
  def test_unsupported_unknown(self):
   self.assertEqual(extract_candidates("今日はカレーを食べました","user",1),[])
+ def test_car_positive_plain(self):
+  x=extract_candidates("私は車を持っている","user",1)
+  self.assertEqual(len(x),1);self.assertTrue(x[0]["polarity"])
+ def test_car_negative_polite(self):
+  x=extract_candidates("私は車を持っていません","user",1)
+  self.assertEqual(len(x),1);self.assertFalse(x[0]["polarity"])
+ def test_car_positive_polite(self):
+  x=extract_candidates("私は車を持っています","user",1)
+  self.assertEqual(len(x),1);self.assertTrue(x[0]["polarity"])
 if __name__=="__main__":unittest.main()
