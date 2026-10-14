@@ -40,6 +40,7 @@ from tokenizer_bpe import Tokenizer
 from chat_conversation_bridge_v0506 import ConversationBridge
 from context_aware_validation_v0507 import grounded as cha_topic_grounded, topic_for as cha_topic_for, resolve_context as cha_resolve_context
 from user_context_recovery_v0508 import UserContext
+from interactive_unknown_learning_v0510 import UnknownTeaching, concept_from
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3172,6 +3173,8 @@ def main() -> None:
     print("  /cha-start    begin opt-in conversation memory capture (accepted replies only)")
     print("  /cha-load ID  load completed conversation for read-only recall")
     print("  /cha-recall Q recall recorded USER utterances with turn IDs")
+    print("  /cha-unknown X show unverified user-taught candidate entries")
+    print("  /cancel      cancel pending UNKNOWN teaching")
     print("  /cha-status   show conversation memory status")
     print("  /cha-close    close current conversation record")
     print("  /cha-sleep    update incremental checkpoint (no model training)")
@@ -3331,6 +3334,7 @@ def main() -> None:
         print("[context recovery available: /context-save, /context-load]")
     cha_bridge = ConversationBridge(resolve_runtime_path(args.cha_memory_root))
     cha_user_context = UserContext()
+    cha_unknown_teacher = UnknownTeaching(resolve_runtime_path("data/cha_unknown_candidates_v0510.json"))
     cha_recent_topic: str | None = None
     last_user_text: str | None = None
     last_ai_reply: str | None = None
@@ -3343,6 +3347,27 @@ def main() -> None:
             break
 
         if not user_text:
+            continue
+
+        if cha_unknown_teacher.pending is not None:
+            try:
+                response = cha_unknown_teacher.handle(user_text)
+                print(f"AI> {response}")
+            except (OSError, ValueError, KeyError) as exc:
+                print(f"[unknown teaching error: {exc}]")
+            print()
+            continue
+        if user_text.lower() == "/cancel":
+            print("[no pending UNKNOWN teaching]")
+            print()
+            continue
+        if user_text.startswith("/cha-unknown "):
+            concept = user_text.split(None, 1)[1].strip()
+            try:
+                print(json.dumps(cha_unknown_teacher.lookup(concept), ensure_ascii=False, indent=2))
+            except (OSError, ValueError, KeyError) as exc:
+                print(f"[unknown lookup error: {exc}]")
+            print()
             continue
 
         raw_user_text = user_text
@@ -5502,7 +5527,10 @@ def main() -> None:
                 except (OSError, ValueError, KeyError) as exc:
                     print(f"[CHA retrieval unavailable: {exc}]")
             recovery_reply = cha_user_context.recovery(raw_user_text)
-        reply = primary.text if accepted else (recovery_reply or UNKNOWN_REPLY)
+        unknown_question = None
+        if not accepted and args.unknown_rejection and internalized_record is None and not recovery_reply:
+            unknown_question = cha_unknown_teacher.begin(raw_user_text, reason)
+        reply = primary.text if accepted else (recovery_reply or unknown_question or UNKNOWN_REPLY)
         new_tokens = sum(r.token_count for r in results)
 
         if device.type == "cuda":
@@ -5515,6 +5543,8 @@ def main() -> None:
             reply = UNKNOWN_REPLY if args.unknown_rejection else "(no response)"
 
         print(f"AI> {reply}")
+        if unknown_question is not None:
+            print("[unknown=KNOWLEDGE_CLARIFICATION, gate=UNKNOWN, train_ready=False]")
         if recovery_reply is not None:
             print("[recovery=USER_CONTEXT_TEMPLATE, gate=UNKNOWN, trusted=False, train_ready=False]")
             if recovery_evidence:
