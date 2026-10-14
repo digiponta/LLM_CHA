@@ -60,6 +60,24 @@ class ConversationBridge:
         validate(record)
         return record
 
+    def record_user(self,text):
+        if not self.enabled:return False
+        if not text.strip():return False
+        record=self._load()
+        if not record["active"]:raise ValueError("conversation closed")
+        append_turn(record,"A",text)
+        write_json_atomic(record,self.source)
+        return True
+
+    def record_assistant(self,text):
+        if not self.enabled:return False
+        if not text.strip():return False
+        record=self._load()
+        if not record["active"]:raise ValueError("conversation closed")
+        append_turn(record,"B",text)
+        write_json_atomic(record,self.source)
+        return True
+
     def record_accepted(self,user_text,assistant_text):
         if not self.enabled:return False
         if not user_text.strip() or not assistant_text.strip():return False
