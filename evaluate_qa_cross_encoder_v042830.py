@@ -23,10 +23,11 @@ def split_cases(cases,seed=20261014):
         raise ValueError("insufficient labeled groups/classes for split")
     return train,test
 
-def run(contract,checkpoint,epochs=15,device="cpu",seed=20261014,split_seed=None,encode_fn=None):
+def run(contract,checkpoint,epochs=15,device="cpu",seed=20261014,split_seed=None,encode_fn=None,vocab_size=4096):
     import torch
     from torch import nn
     if not 1<=epochs<=100:raise ValueError("epochs must be 1..100")
+    if not isinstance(vocab_size,int) or not 259<=vocab_size<=65536:raise ValueError("invalid vocab size")
     cases=contract["cases"]
     if len(cases)!=64:raise ValueError("expected development contract of 64 cases")
     train,test=split_cases(cases,seed if split_seed is None else split_seed)
@@ -35,7 +36,7 @@ def run(contract,checkpoint,epochs=15,device="cpu",seed=20261014,split_seed=None
     class Encoder(nn.Module):
         def __init__(self):
             super().__init__()
-            self.token=nn.Embedding(4096,64,padding_idx=0)
+            self.token=nn.Embedding(vocab_size,64,padding_idx=0)
             self.segment=nn.Embedding(2,64)
             self.position=nn.Embedding(160,64)
             layer=nn.TransformerEncoderLayer(64,4,128,dropout=0.0,batch_first=True)
