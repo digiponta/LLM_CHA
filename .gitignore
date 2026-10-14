@@ -13,3 +13,9 @@ data/*.xml
 # Model checkpoints
 model/*.pt
 model/*.pth
+
+# Japanese Daily Dialogue: local research-only, no redistribution
+external_datasets/
+data/jdd_local/
+data/japanese_daily_dialogue/
+results/jdd_*.jsonl
