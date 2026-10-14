@@ -23,7 +23,7 @@ def split_cases(cases,seed=20261014):
         raise ValueError("insufficient labeled groups/classes for split")
     return train,test
 
-def run(contract,checkpoint,epochs=15,device="cpu",seed=20261014,split_seed=None):
+def run(contract,checkpoint,epochs=15,device="cpu",seed=20261014,split_seed=None,encode_fn=None):
     import torch
     from torch import nn
     if not 1<=epochs<=100:raise ValueError("epochs must be 1..100")
@@ -48,7 +48,7 @@ def run(contract,checkpoint,epochs=15,device="cpu",seed=20261014,split_seed=None
             pooled=(h*mask.unsqueeze(-1)).sum(1)/mask.sum(1).clamp(min=1).unsqueeze(-1)
             return self.head(pooled).squeeze(-1)
     def tensors(rows):
-        pairs=[encode_pair(r["question"],r["answer"]) for r in rows]
+        pairs=[(encode_pair if encode_fn is None else encode_fn)(r["question"],r["answer"]) for r in rows]
         width=max(len(x[0]) for x in pairs)
         ids=torch.zeros((len(rows),width),dtype=torch.long,device=device)
         seg=torch.zeros_like(ids);mask=torch.zeros_like(ids,dtype=torch.bool)
