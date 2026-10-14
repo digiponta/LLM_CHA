@@ -47,8 +47,8 @@ def update(path,number,action):
 
 
 # v0.5.14: explicit, one-shot natural-language feedback on a retrieved answer.
-_POSITIVE = ("正しいです", "その説明で正しいです", "合っています", "その通りです")
-_NEGATIVE = ("違います", "それは違います", "間違っています", "誤りです")
+_POSITIVE = ("はい",)
+_NEGATIVE = ("いいえ",)
 
 def classify_feedback(text):
     value = text.strip().rstrip("。！! ")
