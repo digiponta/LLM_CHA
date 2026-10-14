@@ -33,14 +33,25 @@ class ConversationRetrievalTests(unittest.TestCase):
   self.assertFalse(self.bridge.recall("映画")[0]["trusted_fact"])
  def test_continuation(self):
   rows=self.bridge.recall("続きの話を")
+  self.assertEqual(rows[0]["turn_id"],4)
+  self.assertEqual(rows[0]["topic"],"音楽")
+ def test_explicit_movie_continuation(self):
+  rows=self.bridge.recall("映画の話の続きを")
   self.assertEqual(rows[0]["turn_id"],1)
+  self.assertEqual(rows[0]["subject"],"アベンジャーズ")
  def test_cross_topic(self):
   rows=self.bridge.recall("音楽の話")
   self.assertEqual(len(rows),1)
   self.assertEqual(rows[0]["turn_id"],4)
  def test_restore(self):
   ctx,rows=restore_user_context(self.bridge.source,"続きを話そう")
+  self.assertEqual(ctx.topic,"音楽")
+  self.assertIsNone(ctx.subject)
+  self.assertEqual(rows[0]["turn_id"],4)
+ def test_restore_explicit_movie(self):
+  ctx,rows=restore_user_context(self.bridge.source,"映画の話の続きを")
   self.assertEqual(ctx.subject,"アベンジャーズ")
+  self.assertEqual(rows[0]["turn_id"],1)
  def test_reopen(self):
   other=ConversationBridge(self.root)
   other.load_closed("film")
