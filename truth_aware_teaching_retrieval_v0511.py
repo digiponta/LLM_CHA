@@ -24,12 +24,15 @@ def review(teacher,question):
                 "truth_state":"USER_REPORTED_UNVERIFIED"})
     if not explanations:return None
     differing=len(explanations)>1
+    contested=any(r.get("operational_status")=="CONTESTED" for r in records)
     if differing:
         lines=[f"「{concept}」について、以前教わった説明が{len(explanations)}件あります（いずれも未検証）。"]
         lines.extend(f"{i}. {x['text']}" for i,x in enumerate(explanations,1))
         lines.append("説明が異なるため、確認が必要です。自動的には確定しません。")
     else:
         lines=[f"以前「{concept}」について「{explanations[0]['text']}」と教えていただきました。この説明は未検証です。"]
+    if contested:
+        lines.insert(0,"注意：否定されたことのある知識です。再確認が必要です。")
     return {"concept":concept,"answer":"\n".join(lines),
         "records":explanations,"possible_conflict":differing,
         "truth_state":"USER_REPORTED_UNVERIFIED",
