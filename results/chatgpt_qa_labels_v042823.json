@@ -1,0 +1,390 @@
+{
+  "schema": "llm_cha_chatgpt_qa_v1",
+  "label_source": "chatgpt",
+  "decisions": [
+    {
+      "id": "A01",
+      "turn": 1,
+      "relevant": true,
+      "reason": "挨拶に自然に応答している。"
+    },
+    {
+      "id": "A02",
+      "turn": 1,
+      "relevant": false,
+      "reason": "朝の挨拶に対して会話が成立する返答ではない。"
+    },
+    {
+      "id": "A03",
+      "turn": 1,
+      "relevant": false,
+      "reason": "疲労に触れているが文章が崩れており自然な応答になっていない。"
+    },
+    {
+      "id": "A04",
+      "turn": 1,
+      "relevant": false,
+      "reason": "眠気の訴えと無関係な内容である。"
+    },
+    {
+      "id": "A05",
+      "turn": 1,
+      "relevant": false,
+      "reason": "良い気分という発言に応答せず意味不明な文章になっている。"
+    },
+    {
+      "id": "A06",
+      "turn": 1,
+      "relevant": false,
+      "reason": "会話への誘いに応じず未学習とのみ返している。"
+    },
+    {
+      "id": "A07",
+      "turn": 1,
+      "relevant": false,
+      "reason": "お礼への返答らしいが語句が破綻している。"
+    },
+    {
+      "id": "A08",
+      "turn": 1,
+      "relevant": false,
+      "reason": "最近の活動を尋ねられているが情報を返していない。"
+    },
+    {
+      "id": "A09",
+      "turn": 1,
+      "relevant": true,
+      "reason": "読書の好みについて直接回答している。"
+    },
+    {
+      "id": "A10",
+      "turn": 1,
+      "relevant": false,
+      "reason": "最近読んでいる本を挙げず無関係で不自然な文章になっている。"
+    },
+    {
+      "id": "A11",
+      "turn": 1,
+      "relevant": false,
+      "reason": "今日の行動を尋ねる質問に答えていない。"
+    },
+    {
+      "id": "A12",
+      "turn": 1,
+      "relevant": false,
+      "reason": "面白い話を求められたが話を提示していない。"
+    },
+    {
+      "id": "B01",
+      "turn": 1,
+      "relevant": false,
+      "reason": "GPUの説明を求められたが説明していない。"
+    },
+    {
+      "id": "B02",
+      "turn": 1,
+      "relevant": false,
+      "reason": "GPUに適した処理を挙げていない。"
+    },
+    {
+      "id": "B03",
+      "turn": 1,
+      "relevant": false,
+      "reason": "CPUとGPUの違いを説明していない。"
+    },
+    {
+      "id": "B04",
+      "turn": 1,
+      "relevant": false,
+      "reason": "AIの定義を説明していない。"
+    },
+    {
+      "id": "B05",
+      "turn": 1,
+      "relevant": true,
+      "reason": "LLMの学習方法と基本的な機能を説明している。"
+    },
+    {
+      "id": "B06",
+      "turn": 1,
+      "relevant": false,
+      "reason": "機械学習と深層学習の違いを説明していない。"
+    },
+    {
+      "id": "B07",
+      "turn": 1,
+      "relevant": false,
+      "reason": "量子力学の定義にならず説明も不正確である。"
+    },
+    {
+      "id": "B08",
+      "turn": 1,
+      "relevant": false,
+      "reason": "量子状態を説明していない。"
+    },
+    {
+      "id": "B09",
+      "turn": 1,
+      "relevant": false,
+      "reason": "数学の定義ではなく無関係な断片になっている。"
+    },
+    {
+      "id": "B10",
+      "turn": 1,
+      "relevant": false,
+      "reason": "宇宙の説明として意味が通らない。"
+    },
+    {
+      "id": "B11",
+      "turn": 1,
+      "relevant": false,
+      "reason": "小説と文学の関係への回答になっていない。"
+    },
+    {
+      "id": "B12",
+      "turn": 1,
+      "relevant": false,
+      "reason": "意味記憶と会話履歴の違いを説明していない。"
+    },
+    {
+      "id": "C01",
+      "turn": 1,
+      "relevant": false,
+      "reason": "GPUについて説明していない。"
+    },
+    {
+      "id": "C02",
+      "turn": 1,
+      "relevant": true,
+      "reason": "GPUの並列計算の特徴を簡潔に説明している。"
+    },
+    {
+      "id": "C03",
+      "turn": 1,
+      "relevant": false,
+      "reason": "大規模言語モデルの説明を提供していない。"
+    },
+    {
+      "id": "C04",
+      "turn": 1,
+      "relevant": false,
+      "reason": "LLMとは何かの説明がない。"
+    },
+    {
+      "id": "C05",
+      "turn": 1,
+      "relevant": false,
+      "reason": "眠気への応答ではなく無関係な文章である。"
+    },
+    {
+      "id": "C06",
+      "turn": 1,
+      "relevant": false,
+      "reason": "眠気の話題に適切に応じていない。"
+    },
+    {
+      "id": "C07",
+      "turn": 1,
+      "relevant": false,
+      "reason": "読書の好みへの回答ではなく内容が不自然である。"
+    },
+    {
+      "id": "C08",
+      "turn": 1,
+      "relevant": false,
+      "reason": "読書の楽しさに関する意見を示していない。"
+    },
+    {
+      "id": "D01",
+      "turn": 1,
+      "relevant": true,
+      "reason": "誰かという質問に名前で答えている。"
+    },
+    {
+      "id": "D02",
+      "turn": 1,
+      "relevant": true,
+      "reason": "名前を尋ねる質問に直接答えている。"
+    },
+    {
+      "id": "D03",
+      "turn": 1,
+      "relevant": null,
+      "reason": "名前は示しているが自己紹介として十分か評価基準によって分かれる。"
+    },
+    {
+      "id": "D04",
+      "turn": 1,
+      "relevant": false,
+      "reason": "興味のある話題を示していない。"
+    },
+    {
+      "id": "D05",
+      "turn": 1,
+      "relevant": false,
+      "reason": "困っている人への対応方針を説明していない。"
+    },
+    {
+      "id": "D06",
+      "turn": 1,
+      "relevant": false,
+      "reason": "未知の質問への対処を説明せず無関係な文章になっている。"
+    },
+    {
+      "id": "D07",
+      "turn": 1,
+      "relevant": false,
+      "reason": "話し方の特徴を答えず内容が破綻している。"
+    },
+    {
+      "id": "D08",
+      "turn": 1,
+      "relevant": false,
+      "reason": "落ち着いた口調で答える指示に沿わず無関係な内容を出力している。"
+    },
+    {
+      "id": "E01",
+      "turn": 1,
+      "relevant": true,
+      "reason": "本人の昨日の購入情報が与えられていないため不明とする応答は妥当である。"
+    },
+    {
+      "id": "E02",
+      "turn": 1,
+      "relevant": false,
+      "reason": "昼食について根拠のない意味不明な内容を答えている。"
+    },
+    {
+      "id": "E03",
+      "turn": 1,
+      "relevant": false,
+      "reason": "知らないことを認められるかという質問に答えていない。"
+    },
+    {
+      "id": "E04",
+      "turn": 1,
+      "relevant": true,
+      "reason": "架空の用語について根拠なく意味を捏造せず不明と応じている。"
+    },
+    {
+      "id": "E05",
+      "turn": 1,
+      "relevant": false,
+      "reason": "未確認情報と確認済み情報の違いを説明していない。"
+    },
+    {
+      "id": "E06",
+      "turn": 1,
+      "relevant": false,
+      "reason": "出典のない情報の確実性について答えていない。"
+    },
+    {
+      "id": "E07",
+      "turn": 1,
+      "relevant": false,
+      "reason": "証拠がない場合の説明方針になっていない。"
+    },
+    {
+      "id": "E08",
+      "turn": 1,
+      "relevant": true,
+      "reason": "推測で断定しない指示に対し不明と明示しており虚偽の断定を避けている。"
+    },
+    {
+      "id": "F1",
+      "turn": 1,
+      "relevant": false,
+      "reason": "GPUについての対話を始める返答になっていない。"
+    },
+    {
+      "id": "F1",
+      "turn": 2,
+      "relevant": false,
+      "reason": "GPUの特徴を挙げず無関係で意味不明な文章になっている。"
+    },
+    {
+      "id": "F1",
+      "turn": 3,
+      "relevant": false,
+      "reason": "CPUとの比較を示していない。"
+    },
+    {
+      "id": "F2",
+      "turn": 1,
+      "relevant": false,
+      "reason": "読書について話したいという希望に応じず不自然な文章を返している。"
+    },
+    {
+      "id": "F2",
+      "turn": 2,
+      "relevant": false,
+      "reason": "読書を好きな理由や魅力を説明していない。"
+    },
+    {
+      "id": "F2",
+      "turn": 3,
+      "relevant": false,
+      "reason": "直前の読書の話題について詳しく説明していない。"
+    },
+    {
+      "id": "F3",
+      "turn": 1,
+      "relevant": false,
+      "reason": "宇宙について説明や話題を提供せず意味不明な表現となっている。"
+    },
+    {
+      "id": "F3",
+      "turn": 2,
+      "relevant": false,
+      "reason": "数学へ話題を変える指示に応じていない。"
+    },
+    {
+      "id": "F3",
+      "turn": 3,
+      "relevant": false,
+      "reason": "以前の宇宙の話題に戻っていない。"
+    },
+    {
+      "id": "F4",
+      "turn": 1,
+      "relevant": true,
+      "reason": "疲れているという発言を受け止め、丁寧に返答している。"
+    },
+    {
+      "id": "F4",
+      "turn": 2,
+      "relevant": false,
+      "reason": "短い返答を求める指示に対し会話上の適切な短い返事になっていない。"
+    },
+    {
+      "id": "F4",
+      "turn": 3,
+      "relevant": false,
+      "reason": "感謝と会話継続の申し出への応答として意味が通らない。"
+    },
+    {
+      "id": "G01",
+      "turn": 1,
+      "relevant": false,
+      "reason": "GPUの一文説明を提供していない。"
+    },
+    {
+      "id": "G02",
+      "turn": 1,
+      "relevant": false,
+      "reason": "LLMの特徴を二つ挙げていない。"
+    },
+    {
+      "id": "G03",
+      "turn": 1,
+      "relevant": false,
+      "reason": "気分について短く返す指示に合わない。"
+    },
+    {
+      "id": "G04",
+      "turn": 1,
+      "relevant": false,
+      "reason": "分からない場合の応答指示に従わず無関係な文章を出力している。"
+    }
+  ]
+}
