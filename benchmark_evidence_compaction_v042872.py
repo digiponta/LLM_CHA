@@ -12,7 +12,7 @@ from pathlib import Path
 from benchmark_long_conversation_resources_v042871 import make_session
 from conversation_sleep_backend_v042868 import extract
 
-VERSION="v0.4.28.72"
+VERSION="v0.4.28.72.1"
 
 def sha(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
@@ -67,6 +67,11 @@ def compare(turns,unmatched_every=0):
             "can_reconstruct_original_utterances":mode=="full" and not doc["uncovered_turn_ids"],
             "preserves_all_utterance_meanings":False,
             "approved_for_eviction":False}
+    full_bytes=variants["full"]["bytes"]
+    for mode,info in variants.items():
+        info["bytes_vs_full"]=info["bytes"]-full_bytes
+        info["ratio_vs_conversation"]=round(info["bytes"]/source_bytes,4)
+        info["smaller_than_full"]=info["bytes"]<full_bytes
     return {"turns":turns,"unmatched_every":unmatched_every,
        "conversation_bytes":source_bytes,"variants":variants,
        "deletion_performed":False,"model_accuracy":None}
@@ -77,6 +82,7 @@ def benchmark(turn_counts=(100,500,1000),unmatched_every=0):
        "runtime_modified":False,"training_performed":False,"dry_run_only":True,
        "limitations":["Projected sizes are for standalone JSON representations, not the full v0.4.28.71 three-artifact pipeline.",
        "Minimal evidence is an extracted span, not sufficient proof of an entire utterance.",
+       "Short utterances may yield larger minimal/semantic-only JSON than full evidence because of repeated SHA-256 metadata.",
        "Semantic-only hashes do not enable text reconstruction.",
        "Unmatched turns remain unrepresented; all replacement projections remain ineligible for eviction.",
        "No accuracy, recoverability or multi-writer consistency claims."]}
