@@ -15,20 +15,23 @@ class UsageConfidenceTests(unittest.TestCase):
   t.handle("量子状態を利用するセンサーです。")
   t.handle("はい")
  def test_natural_positive(self):
-  self.assertEqual(classify_feedback("正しいです。"),"positive")
+  self.assertEqual(classify_feedback("はい。"),"positive")
  def test_natural_negative(self):
-  self.assertEqual(classify_feedback("違います"),"negative")
+  self.assertEqual(classify_feedback("いいえ"),"negative")
  def test_ambiguous_not_feedback(self):
   self.assertIsNone(classify_feedback("なんとなく正しい気がする"))
  def test_one_shot(self):
   session=FeedbackSession()
   session.offered([1])
-  self.assertEqual(session.respond("正しいです",self.path)["positive_feedback"],1)
+  self.assertEqual(session.respond("はい",self.path)["positive_feedback"],1)
   self.assertIsNone(session.respond("正しいです",self.path))
  def test_multi_candidate_no_feedback(self):
   session=FeedbackSession()
   session.offered([1,2])
   self.assertIsNone(session.respond("正しいです",self.path))
+ def test_legacy_feedback_words_not_accepted(self):
+  self.assertIsNone(classify_feedback("正しいです"))
+  self.assertIsNone(classify_feedback("違います"))
  def test_initial(self):
   self.assertEqual(summary(self.path,1)["operational_status"],"PROVISIONAL")
  def test_use_no_approval(self):
