@@ -45,6 +45,7 @@ from truth_aware_teaching_retrieval_v0511 import review as cha_teaching_review
 from definition_grounding_v05111 import definition_grounded as cha_definition_grounded
 from knowledge_candidate_review_v0512 import inspect as cha_review_inspect, approve as cha_review_approve
 from usage_confidence_v0513 import update as cha_usage_update, summary as cha_usage_summary, FeedbackSession, classify_feedback
+from correction_learning_v0515 import CorrectionSession
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3345,6 +3346,7 @@ def main() -> None:
     cha_user_context = UserContext()
     cha_unknown_teacher = UnknownTeaching(resolve_runtime_path("data/cha_unknown_candidates_v0510.json"))
     cha_feedback_session = FeedbackSession()
+    cha_correction_session = CorrectionSession()
     cha_recent_topic: str | None = None
     last_user_text: str | None = None
     last_ai_reply: str | None = None
@@ -3359,6 +3361,14 @@ def main() -> None:
         if not user_text:
             continue
 
+        if cha_correction_session.pending is not None:
+            try:
+                response = cha_correction_session.respond(cha_unknown_teacher.path,user_text)
+                print(f"AI> {response}")
+            except (OSError,ValueError,KeyError) as exc:
+                print(f"[correction error: {exc}]")
+            print()
+            continue
         if cha_unknown_teacher.pending is not None:
             try:
                 response = cha_unknown_teacher.handle(user_text)
@@ -3379,6 +3389,9 @@ def main() -> None:
                 if feedback_result is not None:
                     print(json.dumps(feedback_result, ensure_ascii=False, indent=2))
                     print("[feedback=EXPLICIT_USER, duplicate_prevented=True]")
+                    if feedback_result["operational_status"]=="CONTESTED" and classify_feedback(user_text)=="negative":
+                        print("AI> "+cha_correction_session.start(
+                            cha_unknown_teacher.path,feedback_result["id"]))
                     print()
                     continue
             except (OSError, ValueError, KeyError) as exc:
