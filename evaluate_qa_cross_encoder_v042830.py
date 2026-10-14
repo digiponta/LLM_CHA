@@ -23,13 +23,13 @@ def split_cases(cases,seed=20261014):
         raise ValueError("insufficient labeled groups/classes for split")
     return train,test
 
-def run(contract,checkpoint,epochs=15,device="cpu",seed=20261014):
+def run(contract,checkpoint,epochs=15,device="cpu",seed=20261014,split_seed=None):
     import torch
     from torch import nn
     if not 1<=epochs<=100:raise ValueError("epochs must be 1..100")
     cases=contract["cases"]
     if len(cases)!=64:raise ValueError("expected development contract of 64 cases")
-    train,test=split_cases(cases,seed)
+    train,test=split_cases(cases,seed if split_seed is None else split_seed)
     torch.manual_seed(seed)
     torch.set_num_threads(min(4,torch.get_num_threads()))
     class Encoder(nn.Module):
