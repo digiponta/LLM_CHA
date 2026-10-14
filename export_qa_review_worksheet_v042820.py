@@ -6,12 +6,7 @@ from review_semantic_relevance_v042813 import FIELDS,template
 def worksheet(validation):
     base=template(validation)
     order=lambda row:(0 if row["id"] in {"A04","A05","C05","C07"} and row["turn"]==1 else 1,row["id"],row["turn"])
-    result=[]
-    for row in sorted(base,key=order):
-        r=dict(row)
-        r["review_guidance"]="Review answer relevance against the question; consult generation trace for primary/probes."
-        result.append(r)
-    return result
+    return sorted(base,key=order)
 
 def main():
     p=argparse.ArgumentParser()
