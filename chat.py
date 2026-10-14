@@ -3447,7 +3447,7 @@ def main() -> None:
                     print(f"[usage recording error: {exc}]")
             print("[route=TEACHING_RETRIEVAL, truth_state=USER_REPORTED_UNVERIFIED, trusted=False, train_ready=False]")
             if cha_feedback_session.candidate_id is not None:
-                print("[feedback_prompt=この説明は正しいですか？ 正しいです／違います]")
+                print("[feedback_prompt=この説明は正しいですか？ はい／いいえ]")
             print()
             continue
 
