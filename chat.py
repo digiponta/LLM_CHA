@@ -39,6 +39,7 @@ from model import LanguageModel
 from tokenizer_bpe import Tokenizer
 from chat_conversation_bridge_v0506 import ConversationBridge
 from context_aware_validation_v0507 import grounded as cha_topic_grounded, topic_for as cha_topic_for, resolve_context as cha_resolve_context
+from user_context_recovery_v0508 import UserContext
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3327,6 +3328,7 @@ def main() -> None:
     if context_recovery_path:
         print("[context recovery available: /context-save, /context-load]")
     cha_bridge = ConversationBridge(resolve_runtime_path(args.cha_memory_root))
+    cha_user_context = UserContext()
     cha_recent_topic: str | None = None
     last_user_text: str | None = None
     last_ai_reply: str | None = None
@@ -3409,6 +3411,7 @@ def main() -> None:
                 proposition_cursor.reset()
             history.clear()
             cha_recent_topic = None
+            cha_user_context = UserContext()
             print("[conversation history cleared]")
             print()
             continue
@@ -5219,6 +5222,7 @@ def main() -> None:
             if internalized_record is not None
             else normalize_identity_query(user_text)
         )
+        cha_user_context.observe(raw_user_text)
         generation_user_text = cha_resolve_context(generation_user_text, cha_recent_topic)
         user_topic = cha_topic_for(user_text)
         if user_topic:
@@ -5464,7 +5468,10 @@ def main() -> None:
             if verified:
                 route_result += f"; verification resolved={verified}"
 
-        reply = primary.text if accepted else UNKNOWN_REPLY
+        recovery_reply = None
+        if not accepted and args.unknown_rejection and internalized_record is None:
+            recovery_reply = cha_user_context.recovery(raw_user_text)
+        reply = primary.text if accepted else (recovery_reply or UNKNOWN_REPLY)
         new_tokens = sum(r.token_count for r in results)
 
         if device.type == "cuda":
@@ -5477,6 +5484,8 @@ def main() -> None:
             reply = UNKNOWN_REPLY if args.unknown_rejection else "(no response)"
 
         print(f"AI> {reply}")
+        if recovery_reply is not None:
+            print("[recovery=USER_CONTEXT_TEMPLATE, gate=UNKNOWN, trusted=False, train_ready=False]")
 
         if args.show_risk and args.unknown_rejection and not accepted:
             print(f"[candidate={primary.text}]")
