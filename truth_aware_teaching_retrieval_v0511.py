@@ -5,6 +5,7 @@ Distinct explanations for one concept are displayed together; this is a
 difference/possible-conflict warning, not logical contradiction proof.
 """
 from interactive_unknown_learning_v0510 import concept_from
+import json
 
 def review(teacher,question):
     concept=concept_from(question)
@@ -12,7 +13,10 @@ def review(teacher,question):
     records=teacher.lookup(concept)
     if not records:return None
     explanations=[]
-    for index,record in enumerate(records,1):
+    all_rows=json.loads(teacher.path.read_text(encoding="utf-8-sig")) if teacher.path.exists() else []
+    for record in records:
+        index=next((n for n,row in enumerate(all_rows,1) if row==record),None)
+        if index is None:continue
         if record.get("status") not in ("PENDING_REVIEW","REVIEW_ACKNOWLEDGED") or record.get("train_ready") is not False:
             continue
         explanation=record.get("user_explanation")
