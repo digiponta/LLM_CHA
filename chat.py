@@ -44,6 +44,7 @@ from interactive_unknown_learning_v0510 import UnknownTeaching, concept_from
 from truth_aware_teaching_retrieval_v0511 import review as cha_teaching_review
 from definition_grounding_v05111 import definition_grounded as cha_definition_grounded
 from knowledge_candidate_review_v0512 import inspect as cha_review_inspect, approve as cha_review_approve
+from usage_confidence_v0513 import update as cha_usage_update, summary as cha_usage_summary
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3179,6 +3180,9 @@ def main() -> None:
     print("  /cha-unknown X show unverified user-taught candidate entries")
     print("  /cha-review X inspect candidate differences and review state")
     print("  /cha-ack ID  acknowledge review (does not verify, promote or train)")
+    print("  /cha-usage ID       show usage/feedback state")
+    print("  /cha-feedback ID +  explicit positive feedback")
+    print("  /cha-feedback ID -  explicit negative feedback")
     print("  /cancel      cancel pending UNKNOWN teaching")
     print("  /cha-status   show conversation memory status")
     print("  /cha-close    close current conversation record")
@@ -3366,6 +3370,27 @@ def main() -> None:
             print("[no pending UNKNOWN teaching]")
             print()
             continue
+        if user_text.startswith("/cha-usage "):
+            try:
+                number = int(user_text.split(None,1)[1].strip())
+                print(json.dumps(cha_usage_summary(cha_unknown_teacher.path,number),ensure_ascii=False,indent=2))
+            except (OSError,ValueError,KeyError) as exc:
+                print(f"[usage status error: {exc}]")
+            print()
+            continue
+        if user_text.startswith("/cha-feedback "):
+            try:
+                parts=user_text.split()
+                if len(parts)!=3 or parts[2] not in ("+","-"):
+                    raise ValueError("syntax: /cha-feedback ID + or -")
+                number=int(parts[1])
+                outcome="positive" if parts[2]=="+" else "negative"
+                print(json.dumps(cha_usage_update(cha_unknown_teacher.path,number,outcome),
+                                 ensure_ascii=False,indent=2))
+            except (OSError,ValueError,KeyError) as exc:
+                print(f"[feedback error: {exc}]")
+            print()
+            continue
         if user_text.startswith("/cha-review "):
             concept = user_text.split(None, 1)[1].strip()
             try:
@@ -3396,6 +3421,11 @@ def main() -> None:
         taught_reply = cha_teaching_review(cha_unknown_teacher, user_text)
         if taught_reply is not None:
             print(f"AI> {taught_reply['answer']}")
+            for evidence in taught_reply["records"]:
+                try:
+                    cha_usage_update(cha_unknown_teacher.path, evidence["record_number"], "used")
+                except (OSError,ValueError,KeyError) as exc:
+                    print(f"[usage recording error: {exc}]")
             print("[route=TEACHING_RETRIEVAL, truth_state=USER_REPORTED_UNVERIFIED, trusted=False, train_ready=False]")
             print()
             continue
