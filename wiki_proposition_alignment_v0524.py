@@ -22,7 +22,7 @@ def proposition(text,default_subject=None):
 
 def align(question,evidence,kind,subject=None):
     q=proposition(question,default_subject=subject)
-    e=proposition(evidence,default_subject=None)
+    e=proposition(evidence,default_subject=subject)
     if kind!="MECHANISM" or not any(x in question for x in ("高感度","感度が高","感度の高","微弱な磁場")):
         return {"aligned":True,"reason":"OUT_OF_SCOPE","question":q,"evidence":e}
     if q["subject"] is None or e["subject"] is None:
