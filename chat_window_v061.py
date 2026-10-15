@@ -61,18 +61,23 @@ class ConversationParser:
 
 
 def read_terminal_line():
-    """Read input with the active console codepage, not Python UTF-8 mode."""
-    if os.name == "nt" and hasattr(sys.stdin, "buffer"):
-        encoding = locale.getpreferredencoding(False)
-        # Under PYTHONUTF8=1, prefer the console input codepage.
-        try:
-            import ctypes
-            codepage = ctypes.windll.kernel32.GetConsoleCP()
-            if codepage:
-                encoding = "cp{}".format(codepage)
-        except (OSError, AttributeError, ValueError):
-            pass
-        return sys.stdin.buffer.readline().decode(encoding, errors="strict")
+    """Read Windows console as UTF-16, independent of codepage and pipe UTF-8."""
+    if os.name == "nt":
+        import ctypes
+        import msvcrt
+        from ctypes import wintypes
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        handle = msvcrt.get_osfhandle(sys.stdin.fileno())
+        mode = wintypes.DWORD()
+        if kernel.GetConsoleMode(wintypes.HANDLE(handle), ctypes.byref(mode)):
+            # ReadConsoleW provides normal console line editing and Unicode input.
+            buffer = ctypes.create_unicode_buffer(4096)
+            count = wintypes.DWORD()
+            ok = kernel.ReadConsoleW(wintypes.HANDLE(handle), buffer, 4095,
+                                     ctypes.byref(count), None)
+            if not ok:
+                raise OSError("ReadConsoleW failed: {}".format(ctypes.get_last_error()))
+            return buffer.value[:count.value]
     return sys.stdin.readline()
 
 
@@ -139,8 +144,8 @@ def run():
                     events.put(("user", message))
                 child.stdin.write(line)
                 child.stdin.flush()
-        except (OSError, ValueError, BrokenPipeError):
-            pass
+        except (OSError, ValueError, BrokenPipeError, UnicodeError) as exc:
+            print("[GUI input relay error: {}]".format(exc), file=sys.stderr, flush=True)
 
     threading.Thread(target=read_child, daemon=True).start()
     threading.Thread(target=forward_terminal, daemon=True).start()
