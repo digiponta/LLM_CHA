@@ -2,7 +2,7 @@
 import re
 from wikipedia_acquisition_v0517 import _request
 from wiki_persona_multiturn_v0520 import FOLLOWUPS
-from scientific_evidence_v0563 import scientific_sentences, scientific_prose
+from scientific_evidence_v0563 import scientific_sentences, scientific_prose, display_latex
 
 def readable_evidence(sentence):
     """Reject equation markup, captions, fragments and text without prose."""
@@ -68,8 +68,9 @@ class EvidenceSession:
             for sentence in eligible:
                 if sentence in self.seen:continue
                 self.seen.add(sentence)
-                answer=("Wikipediaには、"+sentence+"。とある。" if persona=="nagato"
-                        else "Wikipediaには、"+sentence+"。と記載されています。")
+                display=display_latex(sentence)
+                answer=("Wikipediaには、"+display+"。とある。" if persona=="nagato"
+                        else "Wikipediaには、"+display+"。と記載されています。")
                 return {"status":"FOUND","answer":answer,"source":url,"title":title,
                         "route":"PERSONA_WIKIPEDIA_EVIDENCE_SESSION",
                         "quality_gate":"SAME_ARTICLE_UNSEEN_EXACT_SPAN",
