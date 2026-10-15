@@ -3492,7 +3492,7 @@ def main() -> None:
                 print("[wiki_evidence_expansion={}, intent={}]".format(expanded["status"],expanded["intent"]))
                 if expanded["status"]=="FOUND":
                     try:
-                        comparison=cha_wiki_compare_store(expanded,resolve_runtime_path(args.proposition_store))
+                        comparison=cha_wiki_compare_store(expanded,resolve_runtime_path(args.propositions))
                         print("[wiki_semantic_comparison={}, matches={}, conflicts={}, promoted=False]".format(
                             comparison["status"],len(comparison["matches"]),len(comparison["conflicts"])))
                     except (OSError,ValueError,KeyError) as exc:
