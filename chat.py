@@ -46,6 +46,7 @@ from definition_grounding_v05111 import definition_grounded as cha_definition_gr
 from knowledge_candidate_review_v0512 import inspect as cha_review_inspect, approve as cha_review_approve
 from usage_confidence_v0513 import update as cha_usage_update, summary as cha_usage_summary, FeedbackSession, classify_feedback
 from correction_learning_v0515 import CorrectionSession
+from unknown_term_detection_v0516 import probe as cha_unknown_term_probe
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3182,6 +3183,7 @@ def main() -> None:
     print("  /cha-review X inspect candidate differences and review state")
     print("  /cha-ack ID  acknowledge review (does not verify, promote or train)")
     print("  /cha-usage ID       show usage/feedback state")
+    print("  /cha-terms TEXT     inspect Wikipedia lookup candidates (diagnostic only)")
     print("  /cha-feedback ID +  explicit positive feedback")
     print("  /cha-feedback ID -  explicit negative feedback")
     print("  /cancel      cancel pending UNKNOWN teaching")
@@ -3399,6 +3401,11 @@ def main() -> None:
                 print(f"[natural feedback error: {exc}]")
             # Feedback applies only to the immediately following user turn.
             cha_feedback_session.clear()
+        if user_text.startswith("/cha-terms "):
+            phrase=user_text.split(None,1)[1]
+            print(json.dumps(cha_unknown_term_probe(phrase),ensure_ascii=False,indent=2))
+            print()
+            continue
         if user_text.startswith("/cha-usage "):
             try:
                 number = int(user_text.split(None,1)[1].strip())
@@ -3465,6 +3472,10 @@ def main() -> None:
             continue
 
         raw_user_text = user_text
+        term_probe=cha_unknown_term_probe(raw_user_text)
+        if term_probe["terms"]:
+            print("[wiki_candidate_terms={}; lookup=NOT_YET_ENABLED]".format(
+                ",".join(term_probe["terms"])))
         normalized_user_text = normalize_runtime_input(user_text)
         if normalized_user_text and normalized_user_text != user_text:
             print(f"[normalized input: {user_text!r} -> {normalized_user_text!r}]")
