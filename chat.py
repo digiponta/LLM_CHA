@@ -3510,6 +3510,8 @@ def main() -> None:
                             extraction_report["status"],counts.get("sentences",0),
                             counts.get("NO_CAUSAL_MARKER",0),counts.get("INVALID_OR_AMBIGUOUS_EDGE",0),
                             counts.get("EDGE_EXTRACTED",0)))
+                        print("[wiki_propositions=atomic_typed, count={}, verified=False, promoted=False]".format(
+                            counts.get("typed_propositions",0)))
                         for example in extraction_report.get("samples",[]):
                             print("[wiki_causal_reject={}, article={}, excerpt={}]".format(
                                 example["reason"],example["article"],example["excerpt"]))
