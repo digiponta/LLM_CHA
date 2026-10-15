@@ -88,4 +88,12 @@ class EvidenceSessionTests(unittest.TestCase):
   def mocked(params):return {"query":{"pages":[{"title":"重ね合わせ","extract":data}]}}
   result=session.next(W,"もっと詳しく",fetch=mocked)
   self.assertEqual(result["status"],"EVIDENCE_EXHAUSTED")
+ def test_rejection_sample_diagnostics(self):
+  data=W["extract"]+"短すぎる。"+"量子状態に関する説明が途中で終わり\u005c\u005cn"
+  def mocked(url):return {"query":{"pages":[{"title":"重ね合わせ","extract":data}]}}
+  result=EvidenceSession().next(W,"もっと詳しく",fetch=mocked)
+  self.assertEqual(result["status"],"EVIDENCE_EXHAUSTED")
+  self.assertIn("rejected_samples",result)
+  self.assertIsInstance(result["rejected_samples"],list)
+  self.assertLessEqual(len(result["rejected_samples"]),8)
 if __name__=="__main__":unittest.main()
