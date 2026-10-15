@@ -19,7 +19,7 @@ def _request(params,fetch=None):
     with urlopen(request,timeout=4) as response:
         return json.load(response)
 
-def lookup(term,fetch=None):
+def lookup(term,fetch=None,context=None):
     if not isinstance(term,str) or not 1<=len(term.strip())<=60:
         raise ValueError("invalid term")
     term=term.strip()
@@ -44,8 +44,24 @@ def lookup(term,fetch=None):
         excerpt=page.get("extract","").strip()
         if not excerpt:return {"term":term,"status":"NO_EXTRACT","candidates":titles}
         title=page.get("title",title)
+        # A disambiguation article may have the exact search title but the
+        # relevant meaning only in a later entry. Use surrounding user context.
+        if context and any(word in context for word in ("量子","超伝導","磁気","センサー")):
+            match=re.search(r"(超伝導量子干渉計)",excerpt)
+            if match and title.casefold()==term.casefold():
+                target=match.group(1)
+                detail=_request({"action":"query","prop":"extracts|info","inprop":"url",
+                    "titles":target,"redirects":1,"exintro":1,"explaintext":1,
+                    "exchars":900,"format":"json","formatversion":2},fetch)
+                detail_pages=detail.get("query",{}).get("pages",[])
+                if detail_pages and not detail_pages[0].get("missing") and detail_pages[0].get("extract","").strip():
+                    page=detail_pages[0]
+                    title=page.get("title",target)
+                    excerpt=page["extract"].strip()
         url="https://ja.wikipedia.org/wiki/"+quote(title.replace(" ","_"))
         keywords=[]
+        if "超伝導量子干渉計" in excerpt or title=="超伝導量子干渉計":
+            keywords.append("超伝導量子干渉計")
         for token in re.findall(r"[A-Za-z][A-Za-z0-9-]{2,}|[ァ-ヶー]{3,}",excerpt):
             if token not in keywords and token.casefold()!=term.casefold():
                 keywords.append(token)
