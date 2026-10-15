@@ -54,6 +54,7 @@ from wiki_persona_multiturn_v0520 import WikiConversation
 from wiki_evidence_expansion_v0521 import expand as cha_expand_wiki_evidence
 from wiki_semantic_memory_bridge_v0525 import compare_store as cha_wiki_compare_store
 from wiki_multi_article_discovery_v0526 import discover as cha_wiki_discover
+from wiki_multihop_runtime_v0529 import probe as cha_wiki_multihop_probe
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3497,6 +3498,14 @@ def main() -> None:
                         related["status"],related["intent"],len(related.get("visited",[]))))
                     if related["status"]=="FOUND":
                         expanded=related
+                if expanded["status"]!="FOUND" and raw_user_text.find("なぜ")>=0:
+                    diagnostic=cha_wiki_multihop_probe(cha_wiki_conversation.current,raw_user_text)
+                    print("[wiki_multihop_diagnostic={}, visited={}, edges={}, answer_used=False]".format(
+                        diagnostic["status"],len(diagnostic.get("visited",[])),diagnostic.get("edge_candidates",0)))
+                    if diagnostic["status"]=="CHAIN_FOUND":
+                        for hop_index,hop in enumerate(diagnostic["hops"],1):
+                            print("[wiki_multihop_edge={}, cause={}, effect={}, source={}]".format(
+                                hop_index,hop["cause"],hop["effect"],hop["source"]))
                 if expanded["status"]=="FOUND":
                     try:
                         comparison=cha_wiki_compare_store(expanded,resolve_runtime_path(args.propositions))
