@@ -1,4 +1,6 @@
-## v0.6.1 — GUI Conversation Mirror (experimental)
+## v0.6.1 — GUI Conversation Mirror (release baseline)
+
+**Release notes:** [RELEASE_NOTES_v0.6.1.md](RELEASE_NOTES_v0.6.1.md). Windows CLI exit was observed; final complete GUI regression rerun remains to be confirmed.
 
 Run `python chat_window_v061.py` instead of `python chat.py` to retain the **command prompt** for all input, commands and diagnostics, while opening a separate **read-only Tkinter window** showing only user utterances and AI answers in chronological order.
 
