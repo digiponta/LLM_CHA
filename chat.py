@@ -68,6 +68,7 @@ from persona_priority_v0547 import apply as cha_persona_wiki_repair
 from unified_persona_controller_v0548 import status as cha_persona_status, audit as cha_persona_audit
 from persona_conversation_router_v0549 import respond as cha_persona_sharing_respond
 from persona_context_v0550 import PersonaContext
+from persona_auto_wiki_v0556 import enrich as cha_persona_auto_wiki_enrich
 from answer_quality_gate_v0542 import evaluate as cha_answer_quality_evaluate
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
@@ -3371,6 +3372,7 @@ def main() -> None:
     cha_user_context = UserContext()
     cha_wiki_conversation = WikiConversation()
     cha_persona_context = PersonaContext(cha_wiki_conversation.persona)
+    cha_persona_wiki_cache = {}
     cha_unknown_teacher = UnknownTeaching(resolve_runtime_path("data/cha_unknown_candidates_v0510.json"))
     cha_feedback_session = FeedbackSession()
     cha_correction_session = CorrectionSession()
@@ -3538,6 +3540,19 @@ def main() -> None:
         raw_user_text = user_text
         cha_sharing=cha_persona_context.handle(raw_user_text)
         if cha_sharing is not None:
+            wiki_auto=cha_persona_auto_wiki_enrich(
+                raw_user_text,cha_wiki_conversation.persona,
+                cha_wikipedia_lookup,cha_persona_wiki_respond,
+                cache=cha_persona_wiki_cache)
+            if wiki_auto["status"]=="FOUND":
+                cha_wiki_conversation.offer(wiki_auto["wiki_context"])
+                print("AI> "+wiki_auto["answer"])
+                print("[route=PERSONA_AUTO_WIKIPEDIA, term={}, source={}, truth_state=EXTERNAL_UNVERIFIED, verified=False, train_ready=False, auto_promote=False]".format(
+                    wiki_auto["term"],wiki_auto["source"]))
+                last_ai_reply=None
+                cha_wiki_last_generated=None
+                print()
+                continue
             print("AI> "+cha_sharing["answer"])
             print("[route={}, persona={}, intent={}, knowledge_asserted=False, train_ready=False]".format(
                 cha_sharing["route"],cha_sharing["persona"],cha_sharing["intent"]))
