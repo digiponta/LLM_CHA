@@ -51,6 +51,7 @@ from wikipedia_acquisition_v0517 import lookup as cha_wikipedia_lookup
 from wiki_grounded_fallback_v05172 import grounded_reply as cha_wiki_grounded_reply
 from persona_wiki_grounding_v0519 import respond as cha_persona_wiki_respond
 from wiki_persona_multiturn_v0520 import WikiConversation
+from wiki_evidence_expansion_v0521 import expand as cha_expand_wiki_evidence
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3485,6 +3486,16 @@ def main() -> None:
         raw_user_text = user_text
         wiki_followup=cha_wiki_conversation.respond(raw_user_text)
         if wiki_followup is not None:
+            if wiki_followup["route"]=="WIKIPEDIA_EVIDENCE_INSUFFICIENT" and cha_wiki_conversation.current is not None:
+                expanded=cha_expand_wiki_evidence(cha_wiki_conversation.current,raw_user_text)
+                print("[wiki_evidence_expansion={}, intent={}]".format(expanded["status"],expanded["intent"]))
+                if expanded["status"]=="FOUND":
+                    sentence=expanded["sentence"].rstrip("。")
+                    wiki_followup={
+                        "answer":"Wikipediaには、"+sentence+"とある。",
+                        "route":"PERSONA_WIKIPEDIA_EXPANDED_EVIDENCE",
+                        "source":expanded["source"],
+                        "quality_gate":expanded["quality_gate"]}
             print("AI> " + wiki_followup["answer"])
             print("[route={}, source={}, verified=False, train_ready=False, raw_generation=SKIPPED, quality_gate={}]".format(wiki_followup["route"],wiki_followup["source"],wiki_followup["quality_gate"]))
             print()
