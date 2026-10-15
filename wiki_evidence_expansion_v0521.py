@@ -1,0 +1,51 @@
+"""v0.5.21 Question-driven expansion of Wikipedia evidence.
+
+Only retrieves a longer extract from the *same resolved article*.
+No other article is silently substituted and no new knowledge is trained.
+Keyword matching is a conservative heuristic, not semantic entailment.
+"""
+import re
+from wikipedia_acquisition_v0517 import _request
+
+def intent(question):
+    if any(t in question for t in ("なぜ","どうして","理由","原理","仕組み")):return "MECHANISM"
+    if any(t in question for t in ("何に使","用途","応用","どこで使")):return "APPLICATION"
+    return "OTHER"
+
+CUES={
+    "MECHANISM": ("ため","によって","ことで","仕組み","原理","原因","量子干渉"),
+    "APPLICATION": ("用途","応用","使用され","利用され","使われ","用いられ","使う","利用する"),
+}
+
+def expand(wiki,question,fetch=None):
+    kind=intent(question)
+    if kind=="OTHER":return {"status":"NOT_APPLICABLE","intent":kind}
+    if not isinstance(wiki,dict) or wiki.get("status")!="FOUND":
+        return {"status":"NO_CONTEXT","intent":kind}
+    title=wiki.get("title","")
+    if not isinstance(title,str) or not title or len(title)>100:
+        return {"status":"NO_CONTEXT","intent":kind}
+    try:
+        data=_request({"action":"query","prop":"extracts","titles":title,"redirects":1,
+            "explaintext":1,"exchars":4000,"format":"json","formatversion":2},fetch)
+        pages=data.get("query",{}).get("pages",[])
+        if not pages or pages[0].get("missing") or pages[0].get("title")!=title:
+            return {"status":"NO_EVIDENCE","intent":kind}
+        excerpt=pages[0].get("extract","")
+        if not isinstance(excerpt,str):
+            return {"status":"NO_EVIDENCE","intent":kind}
+        source=wiki.get("url","")
+        if not isinstance(source,str) or not source.startswith("https://ja.wikipedia.org/wiki/"):
+            return {"status":"NO_EVIDENCE","intent":kind}
+        # A mechanism needs a causal cue; a mere mention of a component
+        # cannot explain why a phenomenon occurs.
+        sentences=[p.strip() for p in re.split(r"[。\n]",excerpt) if 15<=len(p.strip())<=240]
+        candidates=[p for p in sentences if any(c in p for c in CUES[kind])]
+        if not candidates:
+            return {"status":"NO_EVIDENCE","intent":kind,"source":source}
+        selected=candidates[0]
+        return {"status":"FOUND","intent":kind,"sentence":selected,"source":source,
+            "title":title,"truth_state":"EXTERNAL_UNVERIFIED",
+            "verified":False,"train_ready":False,"quality_gate":"SOURCE_SPAN_EXACT_HEURISTIC"}
+    except (OSError,ValueError,KeyError,TypeError,TimeoutError) as exc:
+        return {"status":"LOOKUP_FAILED","intent":kind,"error":type(exc).__name__}
