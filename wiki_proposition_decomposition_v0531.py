@@ -29,3 +29,24 @@ def decompose(sentence,source=None):
     return [{"text":prefix+clause+"。","kind":kind,"source":source,
              "original":raw,"inferred_causality":False,
              "verified":False,"train_ready":False} for kind,clause in parts]
+
+def assess_parts(sentence,question,source=None):
+    """Individually evaluate each proposition; never infer causality."""
+    from wiki_evidence_expansion_v0521 import intent
+    kind=intent(question)
+    results=[]
+    for part in decompose(sentence,source):
+        # Structural descriptions provide device composition, not a
+        # causal explanation of high sensitivity.
+        if kind=="MECHANISM":
+            supported=False
+            reason="STRUCTURE_OR_ROLE_NOT_CAUSAL_EXPLANATION"
+        elif kind=="APPLICATION":
+            supported=part["kind"]=="ROLE" and any(x in part["text"] for x in
+                ("脳磁","医療","地質","研究","応用","MRI"))
+            reason="CONCRETE_APPLICATION" if supported else "GENERAL_ROLE_NOT_APPLICATION"
+        else:
+            supported=False
+            reason="NOT_APPLICABLE"
+        results.append({**part,"question_intent":kind,"answerable":supported,"reason":reason})
+    return results
