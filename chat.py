@@ -55,6 +55,7 @@ from wiki_evidence_expansion_v0521 import expand as cha_expand_wiki_evidence
 from wiki_semantic_memory_bridge_v0525 import compare_store as cha_wiki_compare_store
 from wiki_multi_article_discovery_v0526 import discover as cha_wiki_discover
 from wiki_multihop_runtime_v0529 import probe as cha_wiki_multihop_probe
+from wiki_causal_diagnostics_v0530 import diagnose as cha_wiki_causal_diagnose
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3502,6 +3503,16 @@ def main() -> None:
                     diagnostic=cha_wiki_multihop_probe(cha_wiki_conversation.current,raw_user_text)
                     print("[wiki_multihop_diagnostic={}, visited={}, edges={}, answer_used=False]".format(
                         diagnostic["status"],len(diagnostic.get("visited",[])),diagnostic.get("edge_candidates",0)))
+                    if diagnostic.get("edge_candidates",0)==0 and diagnostic["status"]=="NO_SUPPORTED_CHAIN":
+                        extraction_report=cha_wiki_causal_diagnose(cha_wiki_conversation.current)
+                        counts=extraction_report.get("totals",{})
+                        print("[wiki_causal_diagnostics={}, sentences={}, no_marker={}, ambiguous={}, edges={}]".format(
+                            extraction_report["status"],counts.get("sentences",0),
+                            counts.get("NO_CAUSAL_MARKER",0),counts.get("INVALID_OR_AMBIGUOUS_EDGE",0),
+                            counts.get("EDGE_EXTRACTED",0)))
+                        for example in extraction_report.get("samples",[]):
+                            print("[wiki_causal_reject={}, article={}, excerpt={}]".format(
+                                example["reason"],example["article"],example["excerpt"]))
                     if diagnostic["status"]=="CHAIN_FOUND":
                         for hop_index,hop in enumerate(diagnostic["hops"],1):
                             print("[wiki_multihop_edge={}, cause={}, effect={}, source={}]".format(
