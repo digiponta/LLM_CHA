@@ -67,6 +67,7 @@ from wiki_conversational_repair_v0541 import render as cha_wiki_conversational_r
 from persona_priority_v0547 import apply as cha_persona_wiki_repair
 from unified_persona_controller_v0548 import status as cha_persona_status, audit as cha_persona_audit
 from persona_conversation_router_v0549 import respond as cha_persona_sharing_respond
+from persona_context_v0550 import PersonaContext
 from answer_quality_gate_v0542 import evaluate as cha_answer_quality_evaluate
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
@@ -3369,6 +3370,7 @@ def main() -> None:
     cha_bridge = ConversationBridge(resolve_runtime_path(args.cha_memory_root))
     cha_user_context = UserContext()
     cha_wiki_conversation = WikiConversation()
+    cha_persona_context = PersonaContext(cha_wiki_conversation.persona)
     cha_unknown_teacher = UnknownTeaching(resolve_runtime_path("data/cha_unknown_candidates_v0510.json"))
     cha_feedback_session = FeedbackSession()
     cha_correction_session = CorrectionSession()
@@ -3534,7 +3536,7 @@ def main() -> None:
             continue
 
         raw_user_text = user_text
-        cha_sharing=cha_persona_sharing_respond(raw_user_text,persona=cha_wiki_conversation.persona)
+        cha_sharing=cha_persona_context.handle(raw_user_text)
         if cha_sharing is not None:
             print("AI> "+cha_sharing["answer"])
             print("[route={}, persona={}, intent={}, knowledge_asserted=False, train_ready=False]".format(
