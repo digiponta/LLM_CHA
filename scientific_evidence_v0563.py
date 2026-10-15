@@ -15,7 +15,7 @@ def _math_end(text, start):
     return None
 
 def scientific_sentences(text):
-    """Return exact contiguous source spans; never strip or synthesize formulas."""
+    """Split on Japanese sentence stops, not line breaks inside math/prose."""
     if not isinstance(text, str):
         return []
     pieces = []
@@ -30,7 +30,7 @@ def scientific_sentences(text):
                 break
             i = end
             continue
-        if text[i] in "。\n":
+        if text[i] == "。":
             part = text[start:i].strip()
             if part:
                 pieces.append(part)
