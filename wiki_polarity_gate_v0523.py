@@ -10,7 +10,7 @@ def check(question,sentence,kind):
     if kind!="MECHANISM" or not any(x in question for x in ("高感度","感度が高","感度の高","微弱な磁場")):
         return result
     low=bool(re.search(r"(?:感度|感受性)(?:は|が|の)?(?:非常に|比較的)?(?:低い|低く|劣る)|低感度|感度を犠牲",sentence))
-    variant=bool(re.search(r"\b(?:RF|DC|AC)\s*SQUID\b",sentence,re.I))
+    variant=bool(re.search(r"(?<![A-Za-z0-9_])(?:RF|DC|AC)\s*SQUID(?![A-Za-z0-9_])",sentence,re.I))
     if variant:
         return {"supported":False,"reason":"SUBJECT_VARIANT_MISMATCH"}
     if low:
