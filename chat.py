@@ -47,6 +47,7 @@ from knowledge_candidate_review_v0512 import inspect as cha_review_inspect, appr
 from usage_confidence_v0513 import update as cha_usage_update, summary as cha_usage_summary, FeedbackSession, classify_feedback
 from correction_learning_v0515 import CorrectionSession
 from unknown_term_detection_v0516 import probe as cha_unknown_term_probe
+from wikipedia_acquisition_v0517 import lookup as cha_wikipedia_lookup
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3184,6 +3185,7 @@ def main() -> None:
     print("  /cha-ack ID  acknowledge review (does not verify, promote or train)")
     print("  /cha-usage ID       show usage/feedback state")
     print("  /cha-terms TEXT     inspect Wikipedia lookup candidates (diagnostic only)")
+    print("  /cha-wiki TERM      retrieve Wikipedia summary with source and confidence state")
     print("  /cha-feedback ID +  explicit positive feedback")
     print("  /cha-feedback ID -  explicit negative feedback")
     print("  /cancel      cancel pending UNKNOWN teaching")
@@ -3401,6 +3403,11 @@ def main() -> None:
                 print(f"[natural feedback error: {exc}]")
             # Feedback applies only to the immediately following user turn.
             cha_feedback_session.clear()
+        if user_text.startswith("/cha-wiki "):
+            term=user_text.split(None,1)[1].strip()
+            print(json.dumps(cha_wikipedia_lookup(term),ensure_ascii=False,indent=2))
+            print()
+            continue
         if user_text.startswith("/cha-terms "):
             phrase=user_text.split(None,1)[1]
             print(json.dumps(cha_unknown_term_probe(phrase),ensure_ascii=False,indent=2))
@@ -3474,8 +3481,15 @@ def main() -> None:
         raw_user_text = user_text
         term_probe=cha_unknown_term_probe(raw_user_text)
         if term_probe["terms"]:
-            print("[wiki_candidate_terms={}; lookup=NOT_YET_ENABLED]".format(
-                ",".join(term_probe["terms"])))
+            term=term_probe["terms"][0]
+            wiki_context=cha_wikipedia_lookup(term)
+            if wiki_context.get("status")=="FOUND":
+                print("[wiki_context={}, status=EXTERNAL_UNVERIFIED, url={}]".format(
+                    wiki_context["title"],wiki_context["url"]))
+                print("[wiki_extract={}]".format(wiki_context["extract"][:240].replace("\\n"," ")))
+                print("[wiki_keywords={}]".format(",".join(wiki_context["keywords"])))
+            else:
+                print("[wiki_lookup={}, term={}]".format(wiki_context["status"],term))
         normalized_user_text = normalize_runtime_input(user_text)
         if normalized_user_text and normalized_user_text != user_text:
             print(f"[normalized input: {user_text!r} -> {normalized_user_text!r}]")
