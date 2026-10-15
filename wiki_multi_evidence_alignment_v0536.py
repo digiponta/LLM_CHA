@@ -6,7 +6,7 @@ similarity. Only explicit relation candidates are evaluated separately.
 import re
 from urllib.parse import quote
 from wikipedia_acquisition_v0517 import _request
-from wiki_typed_propositions_v0532 import extract
+from wiki_proposition_comparison_v0537 import collect, compare_all
 from wiki_relation_alignment_v0535 import align
 
 def analyze(wiki,question,fetch=None,max_articles=4):
@@ -33,7 +33,7 @@ def analyze(wiki,question,fetch=None,max_articles=4):
                 sentence=raw.strip()
                 if not 12<=len(sentence)<=240:continue
                 sentence+="。"
-                atoms=extract(sentence,url)
+                atoms=collect(sentence,url)
                 propositions.extend(atoms[:max(0,50-len(propositions))])
                 article_props+=len(atoms)
                 result=align(question,sentence,url)
@@ -52,6 +52,7 @@ def analyze(wiki,question,fetch=None,max_articles=4):
             "propositions":propositions,"aligned_candidates":[r for r in relations if r.get("aligned")],
             "rejected_candidates":[r for r in relations if not r.get("aligned")],
             "duplicate_propositions":duplicates,
+            "comparison":compare_all(propositions),
             "causal_answer_approved":False,"diagnostic_only":True,
             "verified":False,"train_ready":False,"promoted":False}
     except (OSError,ValueError,KeyError,TypeError,TimeoutError) as exc:
