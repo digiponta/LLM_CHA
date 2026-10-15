@@ -9,6 +9,18 @@ def fake(url):
     return {"query":{"pages":[{"title":"SQUID","extract":"SQUIDは超伝導を利用した磁束計測装置。磁気センサーとして使用される。"}]}}
 
 class WikipediaAcquisitionTests(unittest.TestCase):
+ def test_contextual_disambiguation(self):
+  def api(url):
+   if "list=search" in url:
+    return {"query":{"search":[{"title":"Squid"}]}}
+   if "titles=%E8%B6%85%E4%BC%9D%E5%B0%8E" in url:
+    return {"query":{"pages":[{"title":"超伝導量子干渉計",
+     "extract":"超伝導量子干渉計（SQUID）は超伝導を用いた高感度磁束計です。"}]}}
+   return {"query":{"pages":[{"title":"Squid",
+     "extract":"Squid。イカ、ソフトウェア、超伝導量子干渉計 (SQUID) など。"}]}}
+  r=lookup("SQUID",fetch=api,context="SQUIDを使った量子センサー")
+  self.assertEqual(r["title"],"超伝導量子干渉計")
+  self.assertIn("超伝導量子干渉計",r["keywords"])
  def test_exact(self):
   r=lookup("SQUID",fetch=fake)
   self.assertEqual(r["status"],"FOUND")
