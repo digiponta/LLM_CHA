@@ -11,7 +11,7 @@ def readable_evidence(sentence):
     if re.search(r"[{}\\]|[=<>]",sentence):return False
     japanese=len(re.findall(r"[ぁ-んァ-ヶ一-龯]",sentence))
     if japanese<12 or len(sentence)<25:return False
-    if not re.search(r"(である|です|ます|れる|する|した|となる|を表|により|において|という|と呼ばれ|がある|であり)",sentence):
+    if not re.search(r"(である|です|ます|れる|する|した|となる|を表|により|において|という|と呼ばれ|がある|であり|できる|される)",sentence):
         return False
     return True
 
