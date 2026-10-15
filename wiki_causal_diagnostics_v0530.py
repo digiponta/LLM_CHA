@@ -8,14 +8,17 @@ from collections import Counter
 from urllib.parse import quote
 from wikipedia_acquisition_v0517 import _request
 from wiki_multihop_causal_v0528 import edge, MARKERS, TERMS
+from wiki_proposition_decomposition_v0531 import decompose
 
 def diagnose_extract(body,source,sample_limit=3):
     counts=Counter()
     samples=[]
+    counts["decomposed_propositions"]=0
     for raw in re.split(r"[。\n]",body):
         sentence=raw.strip()
         if not sentence:continue
         counts["sentences"]+=1
+        counts["decomposed_propositions"]+=len(decompose(sentence,source))
         if not 12<=len(sentence)<=240:
             reason="LENGTH_OUT_OF_RANGE"
         elif not any(m in sentence for m in MARKERS):
