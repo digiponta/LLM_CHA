@@ -3587,8 +3587,8 @@ def main() -> None:
                     persona=cha_wiki_conversation.persona)
                 if more_detail["status"]=="FOUND":
                     print("AI> "+more_detail["answer"])
-                    print("[route=PERSONA_WIKIPEDIA_EXTENDED_MORE, source={}, truth_state=EXTERNAL_UNVERIFIED, verified=False, train_ready=False, quality_gate=SAME_ARTICLE_EXACT_SPAN]".format(
-                        more_detail["source"]))
+                    print("[route={}, source={}, truth_state=EXTERNAL_UNVERIFIED, verified=False, train_ready=False, quality_gate={}]".format(
+                        more_detail["route"],more_detail["source"],more_detail["quality_gate"]))
                     last_ai_reply=None
                     cha_wiki_last_generated=None
                     print()
