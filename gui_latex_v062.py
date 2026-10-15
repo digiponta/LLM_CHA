@@ -5,6 +5,7 @@ Input format: LATEX( raw LaTeX ). The CLI and underlying evidence stay unchanged
 import base64
 import io
 import re
+import tkinter as tk
 
 MARKER = re.compile(r"LATEX\(\s*(.*?)\s*\)", re.DOTALL)
 MAX_FORMULA_LENGTH = 500
@@ -50,7 +51,6 @@ def insert_gui_message(widget, message, tag, images):
             widget.insert("end", content, tag)
             continue
         try:
-            import tkinter as tk
             image = tk.PhotoImage(data=base64.b64encode(render_formula_png(content)).decode("ascii"))
             images.append(image)  # Tk images must remain referenced.
             widget.image_create("end", image=image, padx=3, pady=2)
