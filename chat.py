@@ -3585,6 +3585,9 @@ def main() -> None:
                 more_detail=cha_wiki_evidence_session.next(
                     cha_wiki_conversation.current,raw_user_text,
                     persona=cha_wiki_conversation.persona)
+                print("[wiki_evidence_session={}, reason={}]".format(
+                    more_detail.get("status", "UNKNOWN"),
+                    more_detail.get("reason", more_detail.get("error", "-"))))
                 if more_detail["status"]=="FOUND":
                     print("AI> "+more_detail["answer"])
                     print("[route={}, source={}, truth_state=EXTERNAL_UNVERIFIED, verified=False, train_ready=False, quality_gate={}]".format(
