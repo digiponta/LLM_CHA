@@ -1,3 +1,13 @@
+# LLM_CHA v0.6.0 — Wikipedia Grounded Dialogue Baseline
+
+**Release baseline:** `v0.6.0` (2026-10-15). The user-reported Windows/Python 3.13 validation passed **60/60 scoped Wikipedia dialogue regression tests**, and the three-step evidence follow-up succeeded in a manual conversation. This does not constitute comprehensive system validation.
+
+Features: unknown-topic Wikipedia fallback, persona-aware topic follow-up, sequential same-article evidence, related-article continuation, literal `LATEX( raw formula )` display, and external-evidence safety flags (`EXTERNAL_UNVERIFIED`, `train_ready=False`, `auto_promote=False`).
+
+See [RELEASE_NOTES_v0.6.0.md](RELEASE_NOTES_v0.6.0.md) for the architecture, verification scope, limitations, and release details.
+
+---
+
 # LLM_CHA — Multi-Topic Truth-Aware Conversation (v0.2.33.82 Stable Candidate)
 
 **Status: Stable Candidate / validation complete for the scoped 94 regression tests and 8 GPU smoke checks; NOT yet a formal stable release.**
