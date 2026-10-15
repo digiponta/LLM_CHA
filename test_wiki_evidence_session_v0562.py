@@ -78,7 +78,7 @@ class EvidenceSessionTests(unittest.TestCase):
   a=session.next(W,"もっと詳しく",fetch=mocked)
   b=session.next(W,"もっと詳しく",fetch=mocked)
   self.assertEqual(a["status"],"FOUND")
-  self.assertIn(r"{\displaystyle |\psi \rangle }",a["answer"])
+  self.assertIn(r"LATEX( |\psi \rangle )",a["answer"])
   self.assertEqual(b["status"],"FOUND")
   self.assertIn("線形結合",b["answer"])
   self.assertNotEqual(a["answer"],b["answer"])
@@ -107,11 +107,22 @@ class EvidenceSessionTests(unittest.TestCase):
   self.assertEqual(a["status"],"FOUND")
   self.assertIn(r"{\displaystyle |\psi \rangle }",a["answer"])
   self.assertEqual(b["status"],"FOUND")
-  self.assertIn(r"{\displaystyle |\psi _{1}\rangle }",b["answer"])
+  self.assertIn(r"LATEX( |\psi _{1}\rangle )",b["answer"])
   self.assertNotEqual(a["answer"],b["answer"])
  def test_newline_math_only_stays_rejected(self):
   session=EvidenceSession()
   data=W["extract"]+r"{\displaystyle |\psi \rangle }"+"\n"+r"{\displaystyle \psi }"+"。"
   def mocked(url):return {"query":{"pages":[{"title":"重ね合わせ","extract":data}]}}
   self.assertEqual(session.next(W,"もっと詳しく",fetch=mocked)["status"],"EVIDENCE_EXHAUSTED")
+ def test_wikipedia_duplicate_visual_math_compacted(self):
+  from scientific_evidence_v0563 import display_latex
+  text="量子力学では状態は\n\n |\n ψ\n ⟩\n\n"+r"{\displaystyle |\psi \rangle }"+"で記述される"
+  result=display_latex(text)
+  self.assertIn(r"LATEX( |\psi \rangle )",result)
+  self.assertIn("量子力学では状態は",result)
+  self.assertIn("で記述される",result)
+  self.assertNotIn("{\displaystyle",result)
+ def test_plain_source_is_unchanged(self):
+  from scientific_evidence_v0563 import display_latex
+  self.assertEqual(display_latex("量子状態は線形結合で記述される"),"量子状態は線形結合で記述される")
 if __name__=="__main__":unittest.main()
