@@ -56,6 +56,7 @@ from wiki_semantic_memory_bridge_v0525 import compare_store as cha_wiki_compare_
 from wiki_multi_article_discovery_v0526 import discover as cha_wiki_discover
 from wiki_multihop_runtime_v0529 import probe as cha_wiki_multihop_probe
 from wiki_causal_diagnostics_v0530 import diagnose as cha_wiki_causal_diagnose
+from wiki_partial_means_v0533 import partial_why as cha_wiki_partial_why
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3519,6 +3520,18 @@ def main() -> None:
                         for hop_index,hop in enumerate(diagnostic["hops"],1):
                             print("[wiki_multihop_edge={}, cause={}, effect={}, source={}]".format(
                                 hop_index,hop["cause"],hop["effect"],hop["source"]))
+                if expanded["status"]!="FOUND" and cha_wiki_conversation.current is not None:
+                    wiki_current=cha_wiki_conversation.current
+                    wiki_excerpt=wiki_current.get("extract","")
+                    wiki_sentence=wiki_excerpt.split("。")[0].strip()+"。" if wiki_excerpt else ""
+                    partial=cha_wiki_partial_why(raw_user_text,wiki_sentence,wiki_current.get("url"))
+                    print("[wiki_partial_means={}, causal_explanation=False]".format(partial["status"]))
+                    if partial["status"]=="PARTIAL_MEANS_EVIDENCE":
+                        wiki_followup={
+                            "answer":partial["answer"],
+                            "route":"PERSONA_WIKIPEDIA_PARTIAL_MEANS",
+                            "source":partial["source"],
+                            "quality_gate":partial["quality_gate"]}
                 if expanded["status"]=="FOUND":
                     try:
                         comparison=cha_wiki_compare_store(expanded,resolve_runtime_path(args.propositions))
