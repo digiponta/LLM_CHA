@@ -52,6 +52,7 @@ from wiki_grounded_fallback_v05172 import grounded_reply as cha_wiki_grounded_re
 from persona_wiki_grounding_v0519 import respond as cha_persona_wiki_respond
 from wiki_persona_multiturn_v0520 import WikiConversation
 from wiki_evidence_expansion_v0521 import expand as cha_expand_wiki_evidence
+from wiki_semantic_memory_bridge_v0525 import compare_store as cha_wiki_compare_store
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3490,6 +3491,12 @@ def main() -> None:
                 expanded=cha_expand_wiki_evidence(cha_wiki_conversation.current,raw_user_text)
                 print("[wiki_evidence_expansion={}, intent={}]".format(expanded["status"],expanded["intent"]))
                 if expanded["status"]=="FOUND":
+                    try:
+                        comparison=cha_wiki_compare_store(expanded,resolve_runtime_path(args.proposition_store))
+                        print("[wiki_semantic_comparison={}, matches={}, conflicts={}, promoted=False]".format(
+                            comparison["status"],len(comparison["matches"]),len(comparison["conflicts"])))
+                    except (OSError,ValueError,KeyError) as exc:
+                        print("[wiki_semantic_comparison=UNAVAILABLE, reason={}]".format(type(exc).__name__))
                     sentence=expanded["sentence"].rstrip("。")
                     wiki_followup={
                         "answer":"Wikipediaには、"+sentence+"とある。",
