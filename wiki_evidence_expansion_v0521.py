@@ -6,6 +6,7 @@ Keyword matching is a conservative heuristic, not semantic entailment.
 """
 import re
 from wikipedia_acquisition_v0517 import _request
+from wiki_answerability_gate_v0522 import evaluate
 
 def intent(question):
     if any(t in question for t in ("なぜ","どうして","理由","原理","仕組み")):return "MECHANISM"
@@ -43,9 +44,13 @@ def expand(wiki,question,fetch=None):
         candidates=[p for p in sentences if any(c in p for c in CUES[kind])]
         if not candidates:
             return {"status":"NO_EVIDENCE","intent":kind,"source":source}
-        selected=candidates[0]
+        answerable=[p for p in candidates if evaluate(p,kind,question)["answerable"]]
+        if not answerable:
+            return {"status":"NO_ANSWERABLE_EVIDENCE","intent":kind,"source":source,
+                    "quality_gate":"ANSWERABILITY_REJECT"}
+        selected=answerable[0]
         return {"status":"FOUND","intent":kind,"sentence":selected,"source":source,
             "title":title,"truth_state":"EXTERNAL_UNVERIFIED",
-            "verified":False,"train_ready":False,"quality_gate":"SOURCE_SPAN_EXACT_HEURISTIC"}
+            "verified":False,"train_ready":False,"quality_gate":"SOURCE_SPAN_AND_ANSWERABILITY_HEURISTIC"}
     except (OSError,ValueError,KeyError,TypeError,TimeoutError) as exc:
         return {"status":"LOOKUP_FAILED","intent":kind,"error":type(exc).__name__}
