@@ -96,4 +96,22 @@ class EvidenceSessionTests(unittest.TestCase):
   self.assertIn("rejected_samples",result)
   self.assertIsInstance(result["rejected_samples"],list)
   self.assertLessEqual(len(result["rejected_samples"]),8)
+ def test_formula_prose_across_newlines(self):
+  session=EvidenceSession()
+  one="量子状態は次のような状態ベクトルで記述される\n"+r"{\displaystyle |\psi \rangle }"
+  two="複数の基底状態の重ね合わせは\n"+r"{\displaystyle |\psi _{1}\rangle }"+"\nという数式で表現できる"
+  data=W["extract"]+one+"。"+two+"。"
+  def mocked(url):return {"query":{"pages":[{"title":"重ね合わせ","extract":data}]}}
+  a=session.next(W,"もっと詳しく",fetch=mocked)
+  b=session.next(W,"もっと詳しく",fetch=mocked)
+  self.assertEqual(a["status"],"FOUND")
+  self.assertIn(r"{\displaystyle |\psi \rangle }",a["answer"])
+  self.assertEqual(b["status"],"FOUND")
+  self.assertIn(r"{\displaystyle |\psi _{1}\rangle }",b["answer"])
+  self.assertNotEqual(a["answer"],b["answer"])
+ def test_newline_math_only_stays_rejected(self):
+  session=EvidenceSession()
+  data=W["extract"]+r"{\displaystyle |\psi \rangle }"+"\n"+r"{\displaystyle \psi }"+"。"
+  def mocked(url):return {"query":{"pages":[{"title":"重ね合わせ","extract":data}]}}
+  self.assertEqual(session.next(W,"もっと詳しく",fetch=mocked)["status"],"EVIDENCE_EXHAUSTED")
 if __name__=="__main__":unittest.main()
