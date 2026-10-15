@@ -185,17 +185,23 @@ def run():
     threading.Thread(target=read_child, daemon=True).start()
     threading.Thread(target=forward_terminal, daemon=True).start()
 
+    closing_for_exit = False
+
     def poll():
+        nonlocal closing_for_exit
         while True:
             try:
                 kind, value = events.get_nowait()
             except queue.Empty:
                 break
             if kind == "exit":
-                root.title("LLM_CHA — 会話終了")
+                closing_for_exit = True
+                root.destroy()
+                return
             else:
                 insert(kind, value)
-        root.after(60, poll)
+        if not closing_for_exit:
+            root.after(60, poll)
 
     def close_window():
         # Closing the mirror must not end the CLI conversation.
@@ -205,7 +211,8 @@ def run():
     root.after(60, poll)
     print("LLM_CHA GUI mirror: コマンドプロンプトに入力してください。", flush=True)
     root.mainloop()
-    # If window closes, continue relaying chat in the CLI until /exit.
+    # A manually closed mirror should not block CLI input or force the child to stop.
+    # The process remains until the CLI receives /exit, like the original launcher.
     if child.poll() is None:
         child.wait()
 
