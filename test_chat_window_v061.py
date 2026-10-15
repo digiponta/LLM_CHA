@@ -40,5 +40,19 @@ class ConversationParserTests(unittest.TestCase):
         self.assertEqual(value, text)
         self.assertEqual(value.encode("utf-8").decode("utf-8"), text)
 
+    def test_duplicate_console_prompts(self):
+        from chat_window_v061 import ConsolePromptDeduper
+        value = "You> You> 量子ビットとは？\nAI> 回答。\nYou> "
+        filter_ = ConsolePromptDeduper()
+        rendered = "".join(filter_.feed(ch) for ch in value)
+        self.assertEqual(rendered, "You> 量子ビットとは？\nAI> 回答。\nYou> ")
+
+    def test_prompt_not_removed_after_output(self):
+        from chat_window_v061 import ConsolePromptDeduper
+        value = "You> 量子ビットとは？\n[route=OK]\nYou> "
+        filter_ = ConsolePromptDeduper()
+        rendered = "".join(filter_.feed(ch) for ch in value)
+        self.assertEqual(rendered, value)
+
 if __name__=="__main__":
     unittest.main()
