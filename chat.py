@@ -3688,6 +3688,17 @@ def main() -> None:
                         "route":"PERSONA_WIKIPEDIA_EXPANDED_EVIDENCE",
                         "source":expanded["source"],
                         "quality_gate":expanded["quality_gate"]}
+            if wiki_followup["route"]=="WIKIPEDIA_EVIDENCE_INSUFFICIENT":
+                google_term=(cha_wiki_conversation.current or {}).get("title","")
+                google_report=cha_google_search((google_term+" "+raw_user_text).strip())
+                google_reply=cha_google_leads(google_report,cha_wiki_conversation.persona)
+                if google_reply is not None:
+                    print("AI> "+google_reply["answer"])
+                    print("[route=GOOGLE_SEARCH_LEADS, verified=False, train_ready=False, auto_promote=False]")
+                    last_ai_reply=None
+                    cha_wiki_last_generated=None
+                    print()
+                    continue
             print("AI> " + wiki_followup["answer"])
             print("[route={}, source={}, verified=False, train_ready=False, raw_generation=SKIPPED, quality_gate={}]".format(wiki_followup["route"],wiki_followup["source"],wiki_followup["quality_gate"]))
             print()
