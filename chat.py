@@ -3407,6 +3407,7 @@ def main() -> None:
             continue
         if not user_text.startswith("/"):
             cha_wiki_retry_utterance=user_text
+            cha_wiki_last_generated=None
 
         if cha_correction_session.pending is not None:
             try:
@@ -5809,6 +5810,7 @@ def main() -> None:
         if not reply:
             reply = UNKNOWN_REPLY if args.unknown_rejection else "(no response)"
 
+        cha_wiki_last_generated = reply
         print(f"AI> {reply}")
         if unknown_question is not None:
             print("[unknown=KNOWLEDGE_CLARIFICATION, gate=UNKNOWN, train_ready=False]")
