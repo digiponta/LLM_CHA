@@ -25,6 +25,29 @@ class TopicFollowupTests(unittest.TestCase):
  def test_failure(self):
   r=followup("量子重ね合わせについて教えて",CURRENT,"nagato",lambda *a,**k:{"status":"NOT_FOUND"},render)
   self.assertEqual(r["status"],"NOT_FOUND")
+ def test_quantum_alias_retry(self):
+  calls=[]
+  def lookup_alias(term,context=None):
+   calls.append(term)
+   if term=="量子重ね合わせ":
+    return {"status":"AMBIGUOUS","candidates":["重ね合わせ","量子力学"]}
+   return {"status":"FOUND","title":"重ね合わせ",
+           "extract":"量子力学における重ね合わせは複数状態の線形結合。",
+           "url":"https://ja.wikipedia.org/wiki/test"}
+  def render_alias(w,u,persona="nagato"):
+   return {"answer":"Wikipediaによると、量子力学における重ね合わせは複数状態の線形結合。",
+           "source":w["url"]}
+  r=followup("量子重ね合わせについて教えて",CURRENT,"nagato",lookup_alias,render_alias)
+  self.assertEqual(r["status"],"FOUND")
+  self.assertEqual(r["lookup_alias"],"重ね合わせ")
+  self.assertEqual(calls,["量子重ね合わせ","重ね合わせ"])
+ def test_alias_requires_quantum_source(self):
+  def unrelated(term,context=None):
+   if term=="量子重ね合わせ":return {"status":"AMBIGUOUS"}
+   return {"status":"FOUND","title":"重ね合わせ","extract":"画像の合成手法。",
+           "url":"https://ja.wikipedia.org/wiki/test"}
+  r=followup("量子重ね合わせについて教えて",CURRENT,"nagato",unrelated,render)
+  self.assertEqual(r["status"],"AMBIGUOUS")
  def test_cache(self):
   cache={};hits=[]
   def count(term,context=None):hits.append(term);return NEW
