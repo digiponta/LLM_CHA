@@ -62,6 +62,7 @@ from wiki_relation_alignment_v0535 import align as cha_wiki_relation_align
 from wiki_multi_evidence_alignment_v0536 import analyze as cha_wiki_multi_evidence_analyze
 from wiki_extraction_coverage_v0538 import summarize as cha_wiki_coverage_summary
 from wiki_retry_v0539 import retry as cha_wiki_retry
+from wiki_answer_assessment_v0540 import assess as cha_wiki_answer_assess
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3371,6 +3372,7 @@ def main() -> None:
     last_ai_reply: str | None = None
     cha_wiki_retry_utterance: str | None = None
     cha_wiki_retry_status: str = "NEVER_RUN"
+    cha_wiki_last_generated: str | None = None
 
     while True:
         try:
@@ -3393,6 +3395,11 @@ def main() -> None:
             cha_wiki_retry_status=result["status"]
             print("[wiki_retry={}, topic={}, previous_user={}, verified=False, train_ready=False]".format(
                 result["status"],result.get("topic","-"),previous or "-"))
+            if result["status"]=="EVIDENCE_FOUND":
+                comparison=cha_wiki_answer_assess(
+                    cha_wiki_last_generated,result["evidence_span"],result["topic"],result.get("source"))
+                print("[wiki_answer_assessment={}, reason={}, correction_approved=False]".format(
+                    comparison["status"],comparison["reason"]))
             print("AI> "+result["answer"])
             if result.get("source"):
                 print("[route=WIKIPEDIA_REPAIR, source={}, truth_state=EXTERNAL_UNVERIFIED, promoted=False]".format(result["source"]))
