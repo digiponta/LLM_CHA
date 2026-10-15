@@ -63,6 +63,7 @@ from wiki_multi_evidence_alignment_v0536 import analyze as cha_wiki_multi_eviden
 from wiki_extraction_coverage_v0538 import summarize as cha_wiki_coverage_summary
 from wiki_retry_v0539 import retry as cha_wiki_retry
 from wiki_answer_assessment_v0540 import assess as cha_wiki_answer_assess
+from wiki_conversational_repair_v0541 import render as cha_wiki_conversational_render
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3392,6 +3393,8 @@ def main() -> None:
             explicit=user_text[6:].strip() if user_text.startswith("/wiki ") else None
             previous=cha_wiki_retry_utterance
             result=cha_wiki_retry(previous,explicit=explicit)
+            if result["status"]=="EVIDENCE_FOUND":
+                result=cha_wiki_conversational_render(previous,result,explicit=bool(explicit))
             cha_wiki_retry_status=result["status"]
             print("[wiki_retry={}, topic={}, previous_user={}, verified=False, train_ready=False]".format(
                 result["status"],result.get("topic","-"),previous or "-"))
@@ -3402,7 +3405,7 @@ def main() -> None:
                     comparison["status"],comparison["reason"]))
             print("AI> "+result["answer"])
             if result.get("source"):
-                print("[route=WIKIPEDIA_REPAIR, source={}, truth_state=EXTERNAL_UNVERIFIED, promoted=False]".format(result["source"]))
+                print("[route={}, source={}, truth_state=EXTERNAL_UNVERIFIED, promoted=False]".format(result["route"],result["source"]))
             print()
             continue
         if not user_text.startswith("/"):
