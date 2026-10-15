@@ -75,7 +75,18 @@ class EvidenceSession:
                         "quality_gate":"SAME_ARTICLE_UNSEEN_EXACT_SPAN",
                         "truth_state":"EXTERNAL_UNVERIFIED","verified":False,
                         "train_ready":False,"auto_promote":False}
+            rejected=[]
+            for sentence in sentences[:8]:
+                if sentence in eligible:
+                    continue
+                rejected.append({
+                    "length":len(sentence),
+                    "japanese_chars":len(re.findall(r"[ぁ-んァ-ヶ一-龯]", sentence)),
+                    "has_math":bool(re.search(r"[{}\\\\]|[=<>]", sentence)),
+                    "sample":sentence[:100].replace("\\n", " ")
+                })
             return {"status":"EVIDENCE_EXHAUSTED","source":url,
+                    "rejected_samples":rejected,
                     "reason":"NO_UNSEEN_READABLE_PROSE",
                     "candidates":len(sentences),"segments":len(segments),
                     "extended_chars":len(extended),"remainder_chars":len(remainder),
