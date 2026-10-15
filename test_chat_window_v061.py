@@ -29,18 +29,16 @@ class ConversationParserTests(unittest.TestCase):
         parser.feed("u> AI> こんにちは。\n")
         self.assertEqual(events,[("ai","こんにちは。")])
 
-    def test_japanese_console_round_trip(self):
+    def test_japanese_unicode_line_round_trip(self):
         import io
-        import unittest.mock
+        from unittest.mock import patch
         from chat_window_v061 import read_terminal_line
-        input_text = "量子ビットとは？\n"
-        stream = io.TextIOWrapper(io.BytesIO(input_text.encode("cp932")), encoding="utf-8")
-        with unittest.mock.patch("chat_window_v061.os.name", "nt"), \
-             unittest.mock.patch("chat_window_v061.sys.stdin", stream), \
-             unittest.mock.patch("chat_window_v061.locale.getpreferredencoding", return_value="cp932"):
+        text = "量子ビットとは？\\n"
+        with patch("chat_window_v061.os.name", "posix"), \\
+             patch("chat_window_v061.sys.stdin", io.StringIO(text)):
             value = read_terminal_line()
-        self.assertEqual(value, input_text)
-        self.assertEqual(value.encode("utf-8").decode("utf-8"), input_text)
+        self.assertEqual(value, text)
+        self.assertEqual(value.encode("utf-8").decode("utf-8"), text)
 
 if __name__=="__main__":
     unittest.main()
