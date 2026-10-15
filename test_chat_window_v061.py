@@ -33,8 +33,8 @@ class ConversationParserTests(unittest.TestCase):
         import io
         from unittest.mock import patch
         from chat_window_v061 import read_terminal_line
-        text = "量子ビットとは？\\n"
-        with patch("chat_window_v061.os.name", "posix"), \\
+        text = "量子ビットとは？\n"
+        with patch("chat_window_v061.os.name", "posix"), \
              patch("chat_window_v061.sys.stdin", io.StringIO(text)):
             value = read_terminal_line()
         self.assertEqual(value, text)
