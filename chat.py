@@ -49,6 +49,7 @@ from correction_learning_v0515 import CorrectionSession
 from unknown_term_detection_v0516 import probe as cha_unknown_term_probe
 from wikipedia_acquisition_v0517 import lookup as cha_wikipedia_lookup
 from wiki_grounded_fallback_v05172 import grounded_reply as cha_wiki_grounded_reply
+from wiki_conversation_context_v0518 import WikiConversation
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3349,6 +3350,7 @@ def main() -> None:
         print("[context recovery available: /context-save, /context-load]")
     cha_bridge = ConversationBridge(resolve_runtime_path(args.cha_memory_root))
     cha_user_context = UserContext()
+    cha_wiki_conversation = WikiConversation()
     cha_unknown_teacher = UnknownTeaching(resolve_runtime_path("data/cha_unknown_candidates_v0510.json"))
     cha_feedback_session = FeedbackSession()
     cha_correction_session = CorrectionSession()
@@ -3480,6 +3482,13 @@ def main() -> None:
             continue
 
         raw_user_text = user_text
+        wiki_followup=cha_wiki_conversation.respond(raw_user_text)
+        if wiki_followup is not None:
+            print("AI> " + wiki_followup["answer"])
+            print("[route={}, source={}, verified=False, train_ready=False, raw_generation=SKIPPED]".format(wiki_followup["route"],wiki_followup["source"]))
+            print()
+            last_ai_reply=None
+            continue
         term_probe=cha_unknown_term_probe(raw_user_text)
         if term_probe["terms"]:
             term=term_probe["terms"][0]
@@ -3491,6 +3500,7 @@ def main() -> None:
                 print("[wiki_keywords={}]".format(",".join(wiki_context["keywords"])))
                 grounded=cha_wiki_grounded_reply(wiki_context,raw_user_text)
                 if grounded is not None:
+                    cha_wiki_conversation.offer(wiki_context)
                     print("AI> "+grounded["answer"])
                     print("[route=WIKIPEDIA_GROUNDED_FALLBACK, source={}, verified=False, train_ready=False, raw_generation=SKIPPED]".format(
                         grounded["source"]))
@@ -3573,6 +3583,7 @@ def main() -> None:
             history.clear()
             cha_recent_topic = None
             cha_user_context = UserContext()
+            cha_wiki_conversation.clear()
             print("[conversation history cleared]")
             print()
             continue
