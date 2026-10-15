@@ -64,6 +64,7 @@ from wiki_extraction_coverage_v0538 import summarize as cha_wiki_coverage_summar
 from wiki_retry_v0539 import retry as cha_wiki_retry
 from wiki_answer_assessment_v0540 import assess as cha_wiki_answer_assess
 from wiki_conversational_repair_v0541 import render as cha_wiki_conversational_render
+from persona_priority_v0547 import apply as cha_persona_wiki_repair
 from answer_quality_gate_v0542 import evaluate as cha_answer_quality_evaluate
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
@@ -3395,7 +3396,7 @@ def main() -> None:
             previous=cha_wiki_retry_utterance
             result=cha_wiki_retry(previous,explicit=explicit)
             if result["status"]=="EVIDENCE_FOUND":
-                result=cha_wiki_conversational_render(previous,result,explicit=bool(explicit))
+                result=cha_persona_wiki_repair(previous,result,explicit=bool(explicit),persona=cha_wiki_conversation.persona)
             cha_wiki_retry_status=result["status"]
             print("[wiki_retry={}, topic={}, previous_user={}, verified=False, train_ready=False]".format(
                 result["status"],result.get("topic","-"),previous or "-"))
