@@ -60,6 +60,38 @@ class ConversationParser:
             self.emit("ai_continuation", line)
 
 
+class ConsolePromptDeduper:
+    """Collapse adjacent 'You> ' prompts while preserving the live CLI stream."""
+    def __init__(self):
+        self.candidate = ""
+        self.after_prompt = False
+
+    def feed(self, char):
+        self.candidate += char
+        output = ""
+        prompt = PROMPT
+        while self.candidate:
+            if self.after_prompt:
+                # A second prompt immediately after the previous one is redundant.
+                prefix = self.candidate.lstrip(" \t")
+                if prompt.startswith(prefix):
+                    break
+                if prefix.startswith(prompt):
+                    self.candidate = prefix[len(prompt):]
+                    continue
+                self.after_prompt = False
+            # Check for a new prompt from the beginning of the stream.
+            if prompt.startswith(self.candidate):
+                if self.candidate == prompt:
+                    output += prompt
+                    self.candidate = ""
+                    self.after_prompt = True
+                break
+            output += self.candidate[0]
+            self.candidate = self.candidate[1:]
+        return output
+
+
 def read_terminal_line():
     """Read Windows console as UTF-16, independent of codepage and pipe UTF-8."""
     if os.name == "nt":
@@ -122,13 +154,16 @@ def run():
         raise SystemExit("chat.py を起動できません: " + str(exc))
 
     def read_child():
+        deduper = ConsolePromptDeduper()
         try:
             while True:
                 char = child.stdout.read(1)
                 if not char:
                     break
-                sys.stdout.write(char)
-                sys.stdout.flush()
+                visible = deduper.feed(char)
+                if visible:
+                    sys.stdout.write(visible)
+                    sys.stdout.flush()
                 parser.feed(char)
         finally:
             events.put(("exit", child.wait()))
