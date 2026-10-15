@@ -10,6 +10,7 @@ from wikipedia_acquisition_v0517 import _request
 from wiki_evidence_expansion_v0521 import intent
 from wiki_answerability_gate_v0522 import evaluate
 from wiki_polarity_gate_v0523 import check
+from wiki_causal_direction_v0527 import check_direction
 from wiki_proposition_alignment_v0524 import align
 
 def discover(wiki,question,fetch=None,max_articles=5):
@@ -50,6 +51,7 @@ def discover(wiki,question,fetch=None,max_articles=5):
                 if not evaluate(sentence,kind,question)["answerable"]:continue
                 if not check(question,sentence,kind)["supported"]:continue
                 if not align(question,sentence,kind,subject="SQUID")["aligned"]:continue
+                if not check_direction(question,sentence,kind)["supported"]:continue
                 return {"status":"FOUND","intent":kind,"title":actual,
                     "sentence":sentence,"source":"https://ja.wikipedia.org/wiki/"+quote(actual.replace(" ","_")),
                     "visited":visited,"truth_state":"EXTERNAL_UNVERIFIED",
