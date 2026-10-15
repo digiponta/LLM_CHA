@@ -25,6 +25,10 @@ class PersonaConversationTests(unittest.TestCase):
  def test_chat(self):
   s=(Path(__file__).parent/"chat.py").read_text(encoding="utf-8")
   ast.parse(s)
-  self.assertIn("cha_persona_sharing_respond(raw_user_text",s)
-  self.assertLess(s.index("cha_persona_sharing_respond(raw_user_text"),s.index("wiki_followup=cha_wiki_conversation.respond(raw_user_text)"))
+  # v0.5.50 routes through PersonaContext, which delegates sharing to v0.5.49.
+  from persona_context_v0550 import PersonaContext
+  self.assertEqual(PersonaContext().handle("今日は散歩した")["route"],"PERSONA_CONVERSATION_SHARING")
+  call="cha_persona_context.handle(raw_user_text)"
+  self.assertIn(call,s)
+  self.assertLess(s.index(call),s.index("wiki_followup=cha_wiki_conversation.respond(raw_user_text)"))
 if __name__=="__main__":unittest.main()
