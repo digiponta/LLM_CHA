@@ -3,6 +3,18 @@ import re
 from wikipedia_acquisition_v0517 import _request
 from wiki_persona_multiturn_v0520 import FOLLOWUPS
 
+def readable_evidence(sentence):
+    """Reject equation markup, captions, fragments and text without prose."""
+    if not isinstance(sentence,str):return False
+    if any(token in sentence for token in ("{\\displaystyle", "\\rangle", "\\langle", "\\frac", "\\sum", "\\psi")):
+        return False
+    if re.search(r"[{}\\]|[=<>]",sentence):return False
+    japanese=len(re.findall(r"[ぁ-んァ-ヶ一-龯]",sentence))
+    if japanese<12 or len(sentence)<25:return False
+    if not re.search(r"(である|です|ます|れる|する|した|となる|を表|により|において|という|と呼ばれ|がある|であり)",sentence):
+        return False
+    return True
+
 class EvidenceSession:
     def __init__(self):
         self.identity=None
@@ -41,6 +53,7 @@ class EvidenceSession:
                        if 20<=len(x.strip())<=220]
             for sentence in sentences:
                 if sentence in self.seen:continue
+                if not readable_evidence(sentence):continue
                 if sentence not in extended:continue
                 self.seen.add(sentence)
                 answer=("Wikipediaには、"+sentence+"。とある。" if persona=="nagato"
