@@ -3719,6 +3719,7 @@ def main() -> None:
             continue
 
         if command == "/reset":
+            cha_persona_context.clear()
             if topic_adapter is not None:
                 topic_adapter.context.reset()
                 proposition_cursor.reset()
