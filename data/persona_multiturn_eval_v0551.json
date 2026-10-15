@@ -1,0 +1,93 @@
+{
+  "scenarios": [
+    {
+      "id": "article_followup_nagato",
+      "persona": "nagato",
+      "turns": [
+        {
+          "user": "今日は、量子コンピュータの記事を読んだ",
+          "expected_route": "PERSONA_CONVERSATION_SHARING"
+        },
+        {
+          "user": "量子ビットについて書かれていた",
+          "expected_route": "PERSONA_CONTEXT_CONTINUATION",
+          "expected_topic": "量子コンピュータ"
+        },
+        {
+          "user": "別の技術について書かれていた",
+          "expected_route": "DELEGATE"
+        }
+      ]
+    },
+    {
+      "id": "article_followup_neutral",
+      "persona": "neutral",
+      "turns": [
+        {
+          "user": "今日は、天文学の記事を読んだ",
+          "expected_route": "PERSONA_CONVERSATION_SHARING"
+        },
+        {
+          "user": "星について書かれていた",
+          "expected_route": "PERSONA_CONTEXT_CONTINUATION",
+          "expected_topic": "天文学"
+        }
+      ]
+    },
+    {
+      "id": "knowledge_isolation",
+      "persona": "nagato",
+      "turns": [
+        {
+          "user": "今日は、量子コンピュータの記事を読んだ",
+          "expected_route": "PERSONA_CONVERSATION_SHARING"
+        },
+        {
+          "user": "量子ビットとは？",
+          "expected_route": "DELEGATE"
+        },
+        {
+          "user": "量子ビットについて書かれていた",
+          "expected_route": "DELEGATE"
+        }
+      ]
+    },
+    {
+      "id": "topic_switch",
+      "persona": "nagato",
+      "turns": [
+        {
+          "user": "今日は、量子コンピュータの記事を読んだ",
+          "expected_route": "PERSONA_CONVERSATION_SHARING"
+        },
+        {
+          "user": "今日は散歩した",
+          "expected_route": "PERSONA_CONVERSATION_SHARING"
+        },
+        {
+          "user": "量子ビットについて書かれていた",
+          "expected_route": "DELEGATE"
+        }
+      ]
+    },
+    {
+      "id": "new_article_switch",
+      "persona": "neutral",
+      "turns": [
+        {
+          "user": "今日は、量子コンピュータの記事を読んだ",
+          "expected_route": "PERSONA_CONVERSATION_SHARING"
+        },
+        {
+          "user": "今日は、文学の記事を読んだ",
+          "expected_route": "PERSONA_CONVERSATION_SHARING"
+        },
+        {
+          "user": "小説について書かれていた",
+          "expected_route": "PERSONA_CONTEXT_CONTINUATION",
+          "expected_topic": "文学"
+        }
+      ]
+    }
+  ]
+}
