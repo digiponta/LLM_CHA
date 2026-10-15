@@ -60,6 +60,7 @@ from wiki_partial_means_v0533 import partial_why as cha_wiki_partial_why
 from wiki_relation_tiers_v0534 import assess_why as cha_wiki_relation_assess
 from wiki_relation_alignment_v0535 import align as cha_wiki_relation_align
 from wiki_multi_evidence_alignment_v0536 import analyze as cha_wiki_multi_evidence_analyze
+from wiki_extraction_coverage_v0538 import summarize as cha_wiki_coverage_summary
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3539,6 +3540,17 @@ def main() -> None:
                         multi_evidence["status"],len(multi_evidence.get("articles",[])),
                         len(multi_evidence.get("propositions",[])),
                         len(multi_evidence.get("aligned_candidates",[]))))
+                    coverage_summary=cha_wiki_coverage_summary(multi_evidence)
+                    if coverage_summary["status"]=="COMPARISON_DIAGNOSTIC":
+                        comparison_counts=coverage_summary["comparison_counts"]
+                        print("[wiki_extraction_coverage=DIAGNOSTIC, comparison_match={}, conflict={}, complement={}, insufficient={}]".format(
+                            comparison_counts["MATCH"],comparison_counts["CONFLICT"],
+                            comparison_counts["COMPLEMENT"],comparison_counts["INSUFFICIENT"]))
+                        for article_report in multi_evidence.get("articles",[]):
+                            c=article_report["coverage"]["counts"]
+                            print("[wiki_article_coverage={}, sentences={}, extracted={}, propositions={}, unsupported={}]".format(
+                                article_report["title"],c.get("sentences",0),c.get("EXTRACTED",0),
+                                c.get("propositions",0),c.get("unextracted_sentences",0)))
                     partial=cha_wiki_partial_why(raw_user_text,wiki_sentence,wiki_current.get("url"))
                     print("[wiki_partial_means={}, causal_explanation=False]".format(partial["status"]))
                     if partial["status"]=="PARTIAL_MEANS_EVIDENCE":
