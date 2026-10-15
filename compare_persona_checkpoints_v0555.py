@@ -22,7 +22,10 @@ def prompts(turns, mode, outputs=None):
         result.append(prompt)
         if mode=="self":
             if outputs is None:raise ValueError("self requires generated outputs")
-            history.append((user["user"],outputs[i]))
+            # Current turn has not been generated yet. Only previous turns
+            # can enter the autoregressive conversational history.
+            if i < len(outputs):
+                history.append((user["user"],outputs[i]))
     return result
 
 def generate_mode(turns,mode,generate):
