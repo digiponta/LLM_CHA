@@ -8,6 +8,7 @@ import re
 from wikipedia_acquisition_v0517 import _request
 from wiki_answerability_gate_v0522 import evaluate
 from wiki_polarity_gate_v0523 import check as polarity_check
+from wiki_causal_direction_v0527 import check_direction
 from wiki_proposition_alignment_v0524 import align as proposition_align
 
 def intent(question):
@@ -59,7 +60,11 @@ def expand(wiki,question,fetch=None):
         if not structured:
             return {"status":"NO_PROPOSITION_ALIGNMENT","intent":kind,"source":source,
                     "quality_gate":"PROPOSITION_ALIGNMENT_REJECT"}
-        selected=structured[0]
+        directed=[p for p in structured if check_direction(question,p,kind)["supported"]]
+        if not directed:
+            return {"status":"NO_CAUSALLY_ALIGNED_EVIDENCE","intent":kind,"source":source,
+                    "quality_gate":"CAUSAL_DIRECTION_REJECT"}
+        selected=directed[0]
         return {"status":"FOUND","intent":kind,"sentence":selected,"source":source,
             "title":title,"truth_state":"EXTERNAL_UNVERIFIED",
             "verified":False,"train_ready":False,"quality_gate":"SOURCE_SPAN_ANSWERABILITY_POLARITY_PROPOSITION_HEURISTIC"}
