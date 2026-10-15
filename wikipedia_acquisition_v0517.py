@@ -10,7 +10,7 @@ from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 
 ENDPOINT="https://ja.wikipedia.org/w/api.php"
-AGENT="LLM_CHA-research/0.5.17 (Wikipedia contextual lookup)"
+AGENT="LLM_CHA/0.5.17 (https://github.com/digiponta/LLM_CHA; educational research)"
 def _request(params,fetch=None):
     url=ENDPOINT+"?"+urlencode(params)
     if fetch is not None:
