@@ -45,4 +45,16 @@ class EvidenceSessionTests(unittest.TestCase):
  def test_network_failure(self):
   def bad(params):raise OSError("offline")
   self.assertEqual(EvidenceSession().next(W,"もっと詳しく",fetch=bad)["status"],"LOOKUP_FAILED")
+ def test_prose_fallback_and_exhaustion_diagnostics(self):
+  session=EvidenceSession()
+  long_sentence="量子状態の記述には複数の基底を用いることが重要な要素となる場合"
+  data=W["extract"]+long_sentence+"。"
+  def mocked(params):return {"query":{"pages":[{"title":"重ね合わせ","extract":data}]}}
+  first=session.next(W,"もっと詳しく",fetch=mocked)
+  self.assertEqual(first["status"],"FOUND")
+  self.assertIn(long_sentence,first["answer"])
+  exhausted=session.next(W,"もっと詳しく",fetch=mocked)
+  self.assertEqual(exhausted["status"],"EVIDENCE_EXHAUSTED")
+  self.assertEqual(exhausted["reason"],"NO_UNSEEN_READABLE_PROSE")
+  self.assertEqual(exhausted["eligible"],1)
 if __name__=="__main__":unittest.main()
