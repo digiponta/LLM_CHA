@@ -105,7 +105,7 @@ class EvidenceSessionTests(unittest.TestCase):
   a=session.next(W,"もっと詳しく",fetch=mocked)
   b=session.next(W,"もっと詳しく",fetch=mocked)
   self.assertEqual(a["status"],"FOUND")
-  self.assertIn(r"{\displaystyle |\psi \rangle }",a["answer"])
+  self.assertIn(r"LATEX( |\psi \rangle )",a["answer"])
   self.assertEqual(b["status"],"FOUND")
   self.assertIn(r"LATEX( |\psi _{1}\rangle )",b["answer"])
   self.assertNotEqual(a["answer"],b["answer"])
@@ -121,7 +121,7 @@ class EvidenceSessionTests(unittest.TestCase):
   self.assertIn(r"LATEX( |\psi \rangle )",result)
   self.assertIn("量子力学では状態は",result)
   self.assertIn("で記述される",result)
-  self.assertNotIn("{\displaystyle",result)
+  self.assertNotIn(r"{\displaystyle",result)
  def test_plain_source_is_unchanged(self):
   from scientific_evidence_v0563 import display_latex
   self.assertEqual(display_latex("量子状態は線形結合で記述される"),"量子状態は線形結合で記述される")
