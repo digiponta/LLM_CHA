@@ -69,4 +69,23 @@ class EvidenceSessionTests(unittest.TestCase):
   self.assertEqual(result["candidates"],0)
   self.assertEqual(result["eligible"],0)
   self.assertGreater(result["extended_chars"],0)
+ def test_formula_preserved_and_followup_advances(self):
+  session=EvidenceSession()
+  one=r"量子力学では、系の状態は{\displaystyle |\psi \rangle }で記述される"
+  two=r"このような状態ベクトルの線形結合を重ね合わせと呼ぶ"
+  data=W["extract"]+one+"。"+two+"。"
+  def mocked(params):return {"query":{"pages":[{"title":"重ね合わせ","extract":data}]}}
+  a=session.next(W,"もっと詳しく",fetch=mocked)
+  b=session.next(W,"もっと詳しく",fetch=mocked)
+  self.assertEqual(a["status"],"FOUND")
+  self.assertIn(r"{\displaystyle |\psi \rangle }",a["answer"])
+  self.assertEqual(b["status"],"FOUND")
+  self.assertIn("線形結合",b["answer"])
+  self.assertNotEqual(a["answer"],b["answer"])
+ def test_formula_only_not_returned(self):
+  session=EvidenceSession()
+  data=W["extract"]+r"{\displaystyle |\psi \rangle }。"
+  def mocked(params):return {"query":{"pages":[{"title":"重ね合わせ","extract":data}]}}
+  result=session.next(W,"もっと詳しく",fetch=mocked)
+  self.assertEqual(result["status"],"EVIDENCE_EXHAUSTED")
 if __name__=="__main__":unittest.main()
