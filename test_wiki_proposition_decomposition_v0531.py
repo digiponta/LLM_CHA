@@ -1,5 +1,5 @@
 import unittest
-from wiki_proposition_decomposition_v0531 import decompose
+from wiki_proposition_decomposition_v0531 import decompose, assess_parts
 from wiki_causal_diagnostics_v0530 import diagnose_extract
 
 TEXT="超伝導量子干渉計 (superconducting quantum interference device, SQUID) とは、ジョセフソン接合を含む環状超伝導体に基く、極めて弱い磁場の検出に用いられる非常に感度の高い磁気センサの一種である。"
@@ -30,6 +30,14 @@ class PropositionDecompositionTests(unittest.TestCase):
   r=diagnose_extract(TEXT,URL)
   self.assertEqual(r["counts"]["sentences"],1)
   self.assertEqual(r["counts"]["decomposed_propositions"],2)
+ def test_independent_question_judgment(self):
+  parts=assess_parts(TEXT,"なぜ高感度なの？",URL)
+  self.assertEqual(len(parts),2)
+  self.assertTrue(all(not p["answerable"] for p in parts))
+  self.assertTrue(all(p["reason"]=="STRUCTURE_OR_ROLE_NOT_CAUSAL_EXPLANATION" for p in parts))
+ def test_general_function_not_specific_use(self):
+  parts=assess_parts(TEXT,"何に使われるの？",URL)
+  self.assertTrue(all(not p["answerable"] for p in parts))
  def test_unsplit_metadata(self):
   p=decompose("SQUIDは高感度なセンサである。")[0]
   self.assertEqual(p["kind"],"UNSPLIT")
