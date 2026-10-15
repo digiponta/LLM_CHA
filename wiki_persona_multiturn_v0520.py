@@ -38,8 +38,11 @@ class WikiConversation:
         parts=[p.strip() for p in re.split(r"[。\n]",extract) if 15<=len(p.strip())<=180]
         # Sentences are indexed consistently to avoid repeating evidence.
         patterns={"why":("原理","ジョセフソン","接合","なぜ","量子干渉","仕組み"),
-                  "use":("利用","応用","用途","測定","検出","使われ","用いら")}
-        for i,p in enumerate(parts):
+                  "use":("医療","応用","用途","利用され","使われ","用いら","利用")}
+        order=list(enumerate(parts))
+        if kind=="use":
+            order.sort(key=lambda item: -sum(1 for keyword in ("医療","応用","用途","利用され","使われ") if keyword in item[1]))
+        for i,p in order:
             if i in self.used:continue
             if kind!="more" and not any(k in p for k in patterns[kind]):continue
             self.used.add(i)
