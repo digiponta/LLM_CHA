@@ -49,6 +49,7 @@ from correction_learning_v0515 import CorrectionSession
 from unknown_term_detection_v0516 import probe as cha_unknown_term_probe
 from wikipedia_acquisition_v0517 import lookup as cha_wikipedia_lookup
 from wiki_grounded_fallback_v05172 import grounded_reply as cha_wiki_grounded_reply
+from persona_wiki_grounding_v0519 import respond as cha_persona_wiki_respond
 from wiki_conversation_context_v0518 import WikiConversation
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
@@ -3498,12 +3499,14 @@ def main() -> None:
                     wiki_context["title"],wiki_context["url"]))
                 print("[wiki_extract={}]".format(wiki_context["extract"][:240].replace("\\n"," ")))
                 print("[wiki_keywords={}]".format(",".join(wiki_context["keywords"])))
-                grounded=cha_wiki_grounded_reply(wiki_context,raw_user_text)
+                grounded=cha_persona_wiki_respond(wiki_context,raw_user_text,persona="nagato")
+                if grounded is None:
+                    grounded=cha_wiki_grounded_reply(wiki_context,raw_user_text)
                 if grounded is not None:
                     cha_wiki_conversation.offer(wiki_context)
                     print("AI> "+grounded["answer"])
-                    print("[route=WIKIPEDIA_GROUNDED_FALLBACK, source={}, verified=False, train_ready=False, raw_generation=SKIPPED]".format(
-                        grounded["source"]))
+                    print("[route={}, source={}, verified=False, train_ready=False, raw_generation=SKIPPED, quality_gate={}]".format(
+                        grounded["route"],grounded["source"],grounded.get("quality_gate","SOURCE_EXTRACT_FALLBACK")))
                     last_ai_reply=None
                     print()
                     continue
