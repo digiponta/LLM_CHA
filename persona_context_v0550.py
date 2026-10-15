@@ -32,6 +32,8 @@ class PersonaContext:
         m=FOLLOWUP.fullmatch(user.strip())
         if self.topic is not None and m:
             detail=m.group("detail").strip()
+            if detail.endswith("について"):
+                detail=detail[:-4]
             if not detail:
                 self.clear();return None
             topic=self.topic
