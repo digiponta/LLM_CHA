@@ -1,3 +1,20 @@
+## v0.6.1 — GUI Conversation Mirror (experimental)
+
+Run `python chat_window_v061.py` instead of `python chat.py` to retain the **command prompt** for all input, commands and diagnostics, while opening a separate **read-only Tkinter window** showing only user utterances and AI answers in chronological order.
+
+- No additional pip packages are required: uses Python's standard-library Tkinter.
+- User inputs beginning with `/` (commands), model status, gate diagnostics, route and memory logs are not displayed in the GUI.
+- `chat.py` remains unmodified. The launcher starts it as a subprocess and relays its terminal I/O.
+- Exit normally with `/exit` in the command prompt. Closing the graphical window only hides the mirror; it does not stop the terminal chat.
+- This is a transcript viewer, **not** a new GUI input path; the chat window does not capture or store conversations.
+
+Quick check:
+
+```powershell
+python -m unittest -v test_chat_window_v061.py
+python chat_window_v061.py
+```
+
 # LLM_CHA v0.6.0 — Wikipedia Grounded Dialogue Baseline
 
 **Release baseline:** `v0.6.0` (2026-10-15). The user-reported Windows/Python 3.13 validation passed **60/60 scoped Wikipedia dialogue regression tests**, and the three-step evidence follow-up succeeded in a manual conversation. This does not constitute comprehensive system validation.
