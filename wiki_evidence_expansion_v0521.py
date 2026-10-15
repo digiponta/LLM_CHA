@@ -7,6 +7,7 @@ Keyword matching is a conservative heuristic, not semantic entailment.
 import re
 from wikipedia_acquisition_v0517 import _request
 from wiki_answerability_gate_v0522 import evaluate
+from wiki_polarity_gate_v0523 import check as polarity_check
 
 def intent(question):
     if any(t in question for t in ("なぜ","どうして","理由","原理","仕組み")):return "MECHANISM"
@@ -48,9 +49,14 @@ def expand(wiki,question,fetch=None):
         if not answerable:
             return {"status":"NO_ANSWERABLE_EVIDENCE","intent":kind,"source":source,
                     "quality_gate":"ANSWERABILITY_REJECT"}
-        selected=answerable[0]
+        aligned=[p for p in answerable if polarity_check(question,p,kind)["supported"]]
+        if not aligned:
+            return {"status":"NO_SEMANTICALLY_ALIGNED_EVIDENCE","intent":kind,"source":source,
+                    "quality_gate":"POLARITY_SUBJECT_REJECT",
+                    "reasons":list(dict.fromkeys(polarity_check(question,p,kind)["reason"] for p in answerable))}
+        selected=aligned[0]
         return {"status":"FOUND","intent":kind,"sentence":selected,"source":source,
             "title":title,"truth_state":"EXTERNAL_UNVERIFIED",
-            "verified":False,"train_ready":False,"quality_gate":"SOURCE_SPAN_AND_ANSWERABILITY_HEURISTIC"}
+            "verified":False,"train_ready":False,"quality_gate":"SOURCE_SPAN_ANSWERABILITY_POLARITY_HEURISTIC"}
     except (OSError,ValueError,KeyError,TypeError,TimeoutError) as exc:
         return {"status":"LOOKUP_FAILED","intent":kind,"error":type(exc).__name__}
