@@ -61,6 +61,7 @@ from wiki_relation_tiers_v0534 import assess_why as cha_wiki_relation_assess
 from wiki_relation_alignment_v0535 import align as cha_wiki_relation_align
 from wiki_multi_evidence_alignment_v0536 import analyze as cha_wiki_multi_evidence_analyze
 from wiki_extraction_coverage_v0538 import summarize as cha_wiki_coverage_summary
+from wiki_retry_v0539 import retry as cha_wiki_retry
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3368,6 +3369,8 @@ def main() -> None:
     cha_recent_topic: str | None = None
     last_user_text: str | None = None
     last_ai_reply: str | None = None
+    cha_wiki_retry_utterance: str | None = None
+    cha_wiki_retry_status: str = "NEVER_RUN"
 
     while True:
         try:
@@ -3378,6 +3381,25 @@ def main() -> None:
 
         if not user_text:
             continue
+        if user_text=="/wiki status":
+            print("[wiki_retry_status={}, last_user={}]".format(
+                cha_wiki_retry_status,cha_wiki_retry_utterance or "-"))
+            print()
+            continue
+        if user_text=="/wiki" or user_text.startswith("/wiki "):
+            explicit=user_text[6:].strip() if user_text.startswith("/wiki ") else None
+            previous=cha_wiki_retry_utterance
+            result=cha_wiki_retry(previous,explicit=explicit)
+            cha_wiki_retry_status=result["status"]
+            print("[wiki_retry={}, topic={}, previous_user={}, verified=False, train_ready=False]".format(
+                result["status"],result.get("topic","-"),previous or "-"))
+            print("AI> "+result["answer"])
+            if result.get("source"):
+                print("[route=WIKIPEDIA_REPAIR, source={}, truth_state=EXTERNAL_UNVERIFIED, promoted=False]".format(result["source"]))
+            print()
+            continue
+        if not user_text.startswith("/"):
+            cha_wiki_retry_utterance=user_text
 
         if cha_correction_session.pending is not None:
             try:
