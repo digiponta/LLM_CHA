@@ -57,4 +57,16 @@ class EvidenceSessionTests(unittest.TestCase):
   self.assertEqual(exhausted["status"],"EVIDENCE_EXHAUSTED")
   self.assertEqual(exhausted["reason"],"NO_UNSEEN_READABLE_PROSE")
   self.assertEqual(exhausted["eligible"],1)
+ def test_extended_fetch_and_candidate_diagnostics(self):
+  urls=[]
+  def mocked(url):
+   urls.append(url)
+   return {"query":{"pages":[{"title":"重ね合わせ","extract":W["extract"]+"短い断片。"}]}}
+  result=EvidenceSession().next(W,"もっと詳しく",fetch=mocked)
+  self.assertEqual(result["status"],"EVIDENCE_EXHAUSTED")
+  self.assertIn("exchars=10000",urls[0])
+  self.assertEqual(result["segments"],1)
+  self.assertEqual(result["candidates"],0)
+  self.assertEqual(result["eligible"],0)
+  self.assertGreater(result["extended_chars"],0)
 if __name__=="__main__":unittest.main()
