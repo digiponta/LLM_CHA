@@ -14,7 +14,7 @@ def assess(previous_answer, evidence_span, topic, source=None):
     old=[]
     new=[]
     for x in re.split(r"[。\n]",previous_answer):
-        old.extend(collect(x.strip()+"。",None))
+        old.extend(collect(x.strip()+"。","MODEL_OUTPUT_UNVERIFIED"))
     for x in re.split(r"[。\n]",evidence_span):
         new.extend(collect(x.strip()+"。",source))
     for a in old:
