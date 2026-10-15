@@ -12,6 +12,7 @@ import sys
 import threading
 import tkinter as tk
 from tkinter import scrolledtext
+from gui_latex_v062 import insert_gui_message
 
 PROMPT = "You> "
 AI_PREFIX = "AI> "
@@ -117,7 +118,7 @@ def run():
     events = queue.Queue()
     parser = ConversationParser(lambda kind, value: events.put((kind, value)))
     root = tk.Tk()
-    root.title("LLM_CHA — 会話履歴 (v0.6.1)")
+    root.title("LLM_CHA — 会話履歴 (v0.6.2)")
     root.geometry("760x640")
     root.minsize(460, 280)
 
@@ -130,6 +131,8 @@ def run():
     display.tag_configure("ai", foreground="#174b34", spacing1=12, spacing3=6)
     display.tag_configure("ai_continuation", foreground="#174b34")
 
+    gui_images = []  # Keep Tk PhotoImage references alive.
+
     def insert(kind, message):
         if kind == "user":
             output = "あなた: " + message + "\n"
@@ -138,7 +141,7 @@ def run():
         else:
             output = message + "\n"
         display.configure(state="normal")
-        display.insert("end", output, kind)
+        insert_gui_message(display, output, kind, gui_images) if kind != "user" else display.insert("end", output, kind)
         display.configure(state="disabled")
         display.see("end")
 
