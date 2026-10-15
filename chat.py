@@ -71,6 +71,7 @@ from persona_context_v0550 import PersonaContext
 from persona_auto_wiki_v0556 import enrich as cha_persona_auto_wiki_enrich
 from unknown_wiki_fallback_v0557 import fallback as cha_unknown_wiki_fallback
 from persona_wiki_topic_followup_v0558 import followup as cha_wiki_topic_followup
+from wiki_more_details_v0560 import more as cha_wiki_more_details
 from answer_quality_gate_v0542 import evaluate as cha_answer_quality_evaluate
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
@@ -3579,6 +3580,17 @@ def main() -> None:
         wiki_followup=cha_wiki_conversation.respond(raw_user_text)
         if wiki_followup is not None:
             if wiki_followup["route"]=="WIKIPEDIA_EVIDENCE_INSUFFICIENT" and cha_wiki_conversation.current is not None:
+                more_detail=cha_wiki_more_details(
+                    cha_wiki_conversation.current,raw_user_text,
+                    persona=cha_wiki_conversation.persona)
+                if more_detail["status"]=="FOUND":
+                    print("AI> "+more_detail["answer"])
+                    print("[route=PERSONA_WIKIPEDIA_EXTENDED_MORE, source={}, truth_state=EXTERNAL_UNVERIFIED, verified=False, train_ready=False, quality_gate=SAME_ARTICLE_EXACT_SPAN]".format(
+                        more_detail["source"]))
+                    last_ai_reply=None
+                    cha_wiki_last_generated=None
+                    print()
+                    continue
                 expanded=cha_expand_wiki_evidence(cha_wiki_conversation.current,raw_user_text)
                 print("[wiki_evidence_expansion={}, intent={}]".format(expanded["status"],expanded["intent"]))
                 if expanded["status"] not in ("FOUND","LOOKUP_FAILED"):
