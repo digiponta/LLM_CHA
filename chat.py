@@ -72,6 +72,7 @@ from persona_auto_wiki_v0556 import enrich as cha_persona_auto_wiki_enrich
 from unknown_wiki_fallback_v0557 import fallback as cha_unknown_wiki_fallback
 from persona_wiki_topic_followup_v0558 import followup as cha_wiki_topic_followup
 from wiki_more_details_v0560 import more as cha_wiki_more_details
+from google_search_fallback_v0561 import search as cha_google_search, render_leads as cha_google_leads
 from answer_quality_gate_v0542 import evaluate as cha_answer_quality_evaluate
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
@@ -5484,6 +5485,17 @@ def main() -> None:
                     continue
                 print("[unknown_wiki_lookup={}, term={}]".format(
                     wiki_fallback["status"],dispatch.focus))
+                # Optional third-party provider. Only after Wikipedia misses.
+                # Search result links are leads, not verified knowledge.
+                google_report=cha_google_search(dispatch.focus)
+                google_reply=cha_google_leads(google_report,cha_wiki_conversation.persona)
+                if google_reply is not None:
+                    print("AI> "+google_reply["answer"])
+                    print("[route=GOOGLE_SEARCH_LEADS, truth_state=EXTERNAL_UNVERIFIED, verified=False, train_ready=False, auto_promote=False, model_generation=SKIPPED]")
+                    last_ai_reply=None
+                    cha_wiki_last_generated=None
+                    print()
+                    continue
             if truth_block:
                 route_result = "truth-state block"
                 resolution_name = "TRUTH_BLOCK"
