@@ -65,6 +65,7 @@ from wiki_retry_v0539 import retry as cha_wiki_retry
 from wiki_answer_assessment_v0540 import assess as cha_wiki_answer_assess
 from wiki_conversational_repair_v0541 import render as cha_wiki_conversational_render
 from persona_priority_v0547 import apply as cha_persona_wiki_repair
+from unified_persona_controller_v0548 import status as cha_persona_status, audit as cha_persona_audit
 from answer_quality_gate_v0542 import evaluate as cha_answer_quality_evaluate
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
@@ -3391,6 +3392,10 @@ def main() -> None:
                 cha_wiki_retry_status,cha_wiki_retry_utterance or "-"))
             print()
             continue
+        if user_text=="/persona-status":
+            print("[persona_status="+json.dumps(cha_persona_status(cha_wiki_conversation.persona),ensure_ascii=False)+"]")
+            print()
+            continue
         if user_text=="/wiki" or user_text.startswith("/wiki "):
             explicit=user_text[6:].strip() if user_text.startswith("/wiki ") else None
             previous=cha_wiki_retry_utterance
@@ -3621,7 +3626,7 @@ def main() -> None:
                     wiki_context["title"],wiki_context["url"]))
                 print("[wiki_extract={}]".format(wiki_context["extract"][:240].replace("\\n"," ")))
                 print("[wiki_keywords={}]".format(",".join(wiki_context["keywords"])))
-                grounded=cha_persona_wiki_respond(wiki_context,raw_user_text,persona="nagato")
+                grounded=cha_persona_wiki_respond(wiki_context,raw_user_text,persona=cha_wiki_conversation.persona)
                 if grounded is None:
                     grounded=cha_wiki_grounded_reply(wiki_context,raw_user_text)
                 if grounded is not None:
@@ -5817,6 +5822,9 @@ def main() -> None:
 
         cha_wiki_last_generated = reply
         print(f"AI> {reply}")
+        print("[persona_audit="+json.dumps(cha_persona_audit(
+            "MODEL_GENERATION",reply,persona=cha_wiki_conversation.persona,
+            persona_applied=False),ensure_ascii=False)+"]")
         if unknown_question is not None:
             print("[unknown=KNOWLEDGE_CLARIFICATION, gate=UNKNOWN, train_ready=False]")
         if recovery_reply is not None:
