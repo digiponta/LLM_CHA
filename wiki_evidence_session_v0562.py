@@ -48,7 +48,7 @@ class EvidenceSession:
             self.seen=set()
         try:
             data=_request({"action":"query","prop":"extracts","titles":title,"redirects":1,
-                           "explaintext":1,"exchars":4000,"format":"json","formatversion":2},fetch)
+                           "explaintext":1,"exchars":10000,"format":"json","formatversion":2},fetch)
             pages=data.get("query",{}).get("pages",[])
             if not pages or pages[0].get("missing") or pages[0].get("title")!=title:
                 return {"status":"SOURCE_MISMATCH"}
@@ -60,8 +60,8 @@ class EvidenceSession:
             if original and not original.endswith(("。","\n")):
                 cut=remainder.find("。")
                 remainder=remainder[cut+1:] if cut>=0 else ""
-            sentences=[x.strip() for x in re.split(r"[。\n]",remainder)
-                       if 20<=len(x.strip())<=220]
+            segments=[x.strip() for x in re.split(r"[。\n]",remainder) if x.strip()]
+            sentences=[s for s in segments if 20<=len(s)<=220]
             eligible=[s for s in sentences if s in extended and
                       (readable_evidence(s) or _prose_fallback(s))]
             for sentence in eligible:
@@ -76,7 +76,9 @@ class EvidenceSession:
                         "train_ready":False,"auto_promote":False}
             return {"status":"EVIDENCE_EXHAUSTED","source":url,
                     "reason":"NO_UNSEEN_READABLE_PROSE",
-                    "candidates":len(sentences),"eligible":len(eligible),
+                    "candidates":len(sentences),"segments":len(segments),
+                    "extended_chars":len(extended),"remainder_chars":len(remainder),
+                    "eligible":len(eligible),
                     "seen_eligible":sum(s in self.seen for s in eligible),
                     "verified":False,"train_ready":False}
         except (OSError,ValueError,TypeError,KeyError,TimeoutError) as exc:
