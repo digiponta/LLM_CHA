@@ -59,6 +59,7 @@ from wiki_causal_diagnostics_v0530 import diagnose as cha_wiki_causal_diagnose
 from wiki_partial_means_v0533 import partial_why as cha_wiki_partial_why
 from wiki_relation_tiers_v0534 import assess_why as cha_wiki_relation_assess
 from wiki_relation_alignment_v0535 import align as cha_wiki_relation_align
+from wiki_multi_evidence_alignment_v0536 import analyze as cha_wiki_multi_evidence_analyze
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3533,6 +3534,11 @@ def main() -> None:
                     alignment=cha_wiki_relation_align(raw_user_text,wiki_sentence,wiki_current.get("url"))
                     print("[wiki_relation_alignment={}, aligned={}, causal_answer_approved=False]".format(
                         alignment["status"],alignment.get("aligned_count",0)))
+                    multi_evidence=cha_wiki_multi_evidence_analyze(wiki_current,raw_user_text)
+                    print("[wiki_multi_evidence={}, articles={}, propositions={}, aligned={}, causal_answer_approved=False]".format(
+                        multi_evidence["status"],len(multi_evidence.get("articles",[])),
+                        len(multi_evidence.get("propositions",[])),
+                        len(multi_evidence.get("aligned_candidates",[]))))
                     partial=cha_wiki_partial_why(raw_user_text,wiki_sentence,wiki_current.get("url"))
                     print("[wiki_partial_means={}, causal_explanation=False]".format(partial["status"]))
                     if partial["status"]=="PARTIAL_MEANS_EVIDENCE":
