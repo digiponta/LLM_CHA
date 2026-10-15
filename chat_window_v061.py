@@ -74,11 +74,11 @@ class ConsolePromptDeduper:
             if self.after_prompt:
                 # A second prompt immediately after the previous one is redundant.
                 prefix = self.candidate.lstrip(" \t")
-                if prompt.startswith(prefix):
-                    break
                 if prefix.startswith(prompt):
                     self.candidate = prefix[len(prompt):]
                     continue
+                if prompt.startswith(prefix):
+                    break
                 self.after_prompt = False
             # Check for a new prompt from the beginning of the stream.
             if prompt.startswith(self.candidate):
