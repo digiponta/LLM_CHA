@@ -1,0 +1,48 @@
+{
+  "models": [
+    {
+      "name": "online_v162",
+      "path": "model/model-gpu-v1.6.2-online.pt"
+    },
+    {
+      "name": "nagato_sft_v94",
+      "path": "../LLM_TRY/model/model-llm-try-nagato-chat-v94.pt"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "article",
+      "turns": [
+        {
+          "user": "今日は、量子コンピュータの記事を読んだ",
+          "reference_answer": "そう。どんな内容だった？"
+        },
+        {
+          "user": "量子ビットについて書かれていた",
+          "reference_answer": "どの部分が気になった？"
+        },
+        {
+          "user": "とても興味深かった",
+          "reference_answer": "そう。どこが印象に残った？"
+        }
+      ]
+    },
+    {
+      "id": "daily",
+      "turns": [
+        {
+          "user": "今日は散歩した",
+          "reference_answer": "そう。どこを歩いたの？"
+        },
+        {
+          "user": "近くの公園まで行った",
+          "reference_answer": "公園。何か見つけた？"
+        },
+        {
+          "user": "花が咲いていた",
+          "reference_answer": "季節を感じられる。"
+        }
+      ]
+    }
+  ]
+}
