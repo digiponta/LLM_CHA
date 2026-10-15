@@ -9,6 +9,15 @@ class PolarityGateTests(unittest.TestCase):
  def test_variant_reject(self):
   s="RF SQUIDはジョセフソン接合により動作するため安価だが感度は低い"
   self.assertEqual(check("なぜ高感度なの？",s,"MECHANISM")["reason"],"SUBJECT_VARIANT_MISMATCH")
+ def test_variant_touching_japanese(self):
+  s="RF SQUIDは単一のジョセフソン接合により動作するため製造が安いが感度は低い"
+  self.assertEqual(check("なぜ高感度なの？",s,"MECHANISM")["reason"],"SUBJECT_VARIANT_MISMATCH")
+ def test_variant_spaced_japanese(self):
+  s="DC SQUID は超伝導回路の量子干渉によって微弱な磁場を検出する"
+  self.assertEqual(check("なぜ高感度なの？",s,"MECHANISM")["reason"],"SUBJECT_VARIANT_MISMATCH")
+ def test_plain_squid_not_variant(self):
+  s="SQUIDは超伝導の量子干渉によって微弱な磁場を検出する"
+  self.assertTrue(check("なぜ高感度なの？",s,"MECHANISM")["supported"])
  def test_low_reject(self):
   s="超伝導の量子干渉によって感度は低い状態となる"
   self.assertEqual(check("なぜ高感度なの？",s,"MECHANISM")["reason"],"POLARITY_MISMATCH")
