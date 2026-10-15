@@ -57,6 +57,7 @@ from wiki_multi_article_discovery_v0526 import discover as cha_wiki_discover
 from wiki_multihop_runtime_v0529 import probe as cha_wiki_multihop_probe
 from wiki_causal_diagnostics_v0530 import diagnose as cha_wiki_causal_diagnose
 from wiki_partial_means_v0533 import partial_why as cha_wiki_partial_why
+from wiki_relation_tiers_v0534 import assess_why as cha_wiki_relation_assess
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3524,6 +3525,10 @@ def main() -> None:
                     wiki_current=cha_wiki_conversation.current
                     wiki_excerpt=wiki_current.get("extract","")
                     wiki_sentence=wiki_excerpt.split("。")[0].strip()+"。" if wiki_excerpt else ""
+                    relation_review=cha_wiki_relation_assess(raw_user_text,wiki_sentence,wiki_current.get("url"))
+                    print("[wiki_relation_tiers={}, means={}, explicit_direction={}, causal_answer_approved=False]".format(
+                        relation_review["status"],relation_review.get("means_count",0),
+                        relation_review.get("explicit_direction_count",0)))
                     partial=cha_wiki_partial_why(raw_user_text,wiki_sentence,wiki_current.get("url"))
                     print("[wiki_partial_means={}, causal_explanation=False]".format(partial["status"]))
                     if partial["status"]=="PARTIAL_MEANS_EVIDENCE":
