@@ -7,7 +7,7 @@ WIKI={"status":"FOUND","title":"超伝導量子干渉計","url":"https://ja.wiki
 def fixture(url):
     return {"query":{"pages":[{"title":"超伝導量子干渉計","extract":
     "超伝導量子干渉計は高感度の磁場センサー。医療分野で脳磁図の計測に利用される。"
-    "超伝導回路の量子干渉によって磁束の変化を捉える。"}]}}
+    "超伝導回路の量子干渉によって微弱な磁場を検出する。"}]}}
 
 class WikiExpansionTests(unittest.TestCase):
  def test_intent_application(self):
