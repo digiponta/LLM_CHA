@@ -70,6 +70,7 @@ from persona_conversation_router_v0549 import respond as cha_persona_sharing_res
 from persona_context_v0550 import PersonaContext
 from persona_auto_wiki_v0556 import enrich as cha_persona_auto_wiki_enrich
 from unknown_wiki_fallback_v0557 import fallback as cha_unknown_wiki_fallback
+from persona_wiki_topic_followup_v0558 import followup as cha_wiki_topic_followup
 from answer_quality_gate_v0542 import evaluate as cha_answer_quality_evaluate
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
@@ -3557,6 +3558,20 @@ def main() -> None:
             print("AI> "+cha_sharing["answer"])
             print("[route={}, persona={}, intent={}, knowledge_asserted=False, train_ready=False]".format(
                 cha_sharing["route"],cha_sharing["persona"],cha_sharing["intent"]))
+            last_ai_reply=None
+            cha_wiki_last_generated=None
+            print()
+            continue
+        topic_followup=cha_wiki_topic_followup(
+            raw_user_text,cha_wiki_conversation.current,
+            cha_wiki_conversation.persona,cha_wikipedia_lookup,
+            cha_persona_wiki_respond,grounded=cha_wiki_grounded_reply,
+            cache=cha_persona_wiki_cache)
+        if topic_followup["status"]=="FOUND":
+            cha_wiki_conversation.offer(topic_followup["wiki_context"])
+            print("AI> "+topic_followup["answer"])
+            print("[route=PERSONA_WIKIPEDIA_TOPIC_FOLLOWUP, term={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(
+                topic_followup["term"],topic_followup["source"]))
             last_ai_reply=None
             cha_wiki_last_generated=None
             print()
