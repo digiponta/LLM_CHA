@@ -72,7 +72,6 @@ from persona_auto_wiki_v0556 import enrich as cha_persona_auto_wiki_enrich
 from unknown_wiki_fallback_v0557 import fallback as cha_unknown_wiki_fallback
 from persona_wiki_topic_followup_v0558 import followup as cha_wiki_topic_followup
 from wiki_more_details_v0560 import more as cha_wiki_more_details
-from google_search_fallback_v0561 import search as cha_google_search, render_leads as cha_google_leads
 from answer_quality_gate_v0542 import evaluate as cha_answer_quality_evaluate
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
@@ -3557,16 +3556,6 @@ def main() -> None:
                 cha_wiki_last_generated=None
                 print()
                 continue
-            if wiki_auto["status"] not in ("NO_CANDIDATE","FOUND"):
-                google_report=cha_google_search(wiki_auto.get("term") or raw_user_text)
-                google_reply=cha_google_leads(google_report,cha_wiki_conversation.persona)
-                if google_reply is not None:
-                    print("AI> "+google_reply["answer"])
-                    print("[route=GOOGLE_SEARCH_LEADS, verified=False, train_ready=False, auto_promote=False]")
-                    last_ai_reply=None
-                    cha_wiki_last_generated=None
-                    print()
-                    continue
             print("AI> "+cha_sharing["answer"])
             print("[route={}, persona={}, intent={}, knowledge_asserted=False, train_ready=False]".format(
                 cha_sharing["route"],cha_sharing["persona"],cha_sharing["intent"]))
@@ -3588,16 +3577,6 @@ def main() -> None:
             cha_wiki_last_generated=None
             print()
             continue
-        if topic_followup["status"] not in ("NO_CONTEXT","NOT_TOPIC_FOLLOWUP","AMBIGUOUS_TOPIC","SAME_TOPIC_DEFER","FOUND"):
-            google_report=cha_google_search(raw_user_text)
-            google_reply=cha_google_leads(google_report,cha_wiki_conversation.persona)
-            if google_reply is not None:
-                print("AI> "+google_reply["answer"])
-                print("[route=GOOGLE_SEARCH_LEADS, verified=False, train_ready=False, auto_promote=False]")
-                last_ai_reply=None
-                cha_wiki_last_generated=None
-                print()
-                continue
         wiki_followup=cha_wiki_conversation.respond(raw_user_text)
         if wiki_followup is not None:
             if wiki_followup["route"]=="WIKIPEDIA_EVIDENCE_INSUFFICIENT" and cha_wiki_conversation.current is not None:
@@ -3688,17 +3667,6 @@ def main() -> None:
                         "route":"PERSONA_WIKIPEDIA_EXPANDED_EVIDENCE",
                         "source":expanded["source"],
                         "quality_gate":expanded["quality_gate"]}
-            if wiki_followup["route"]=="WIKIPEDIA_EVIDENCE_INSUFFICIENT":
-                google_term=(cha_wiki_conversation.current or {}).get("title","")
-                google_report=cha_google_search((google_term+" "+raw_user_text).strip())
-                google_reply=cha_google_leads(google_report,cha_wiki_conversation.persona)
-                if google_reply is not None:
-                    print("AI> "+google_reply["answer"])
-                    print("[route=GOOGLE_SEARCH_LEADS, verified=False, train_ready=False, auto_promote=False]")
-                    last_ai_reply=None
-                    cha_wiki_last_generated=None
-                    print()
-                    continue
             print("AI> " + wiki_followup["answer"])
             print("[route={}, source={}, verified=False, train_ready=False, raw_generation=SKIPPED, quality_gate={}]".format(wiki_followup["route"],wiki_followup["source"],wiki_followup["quality_gate"]))
             print()
@@ -5516,17 +5484,6 @@ def main() -> None:
                     continue
                 print("[unknown_wiki_lookup={}, term={}]".format(
                     wiki_fallback["status"],dispatch.focus))
-                # Optional third-party provider. Only after Wikipedia misses.
-                # Search result links are leads, not verified knowledge.
-                google_report=cha_google_search(dispatch.focus)
-                google_reply=cha_google_leads(google_report,cha_wiki_conversation.persona)
-                if google_reply is not None:
-                    print("AI> "+google_reply["answer"])
-                    print("[route=GOOGLE_SEARCH_LEADS, truth_state=EXTERNAL_UNVERIFIED, verified=False, train_ready=False, auto_promote=False, model_generation=SKIPPED]")
-                    last_ai_reply=None
-                    cha_wiki_last_generated=None
-                    print()
-                    continue
             if truth_block:
                 route_result = "truth-state block"
                 resolution_name = "TRUTH_BLOCK"
