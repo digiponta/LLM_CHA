@@ -3482,7 +3482,7 @@ def main() -> None:
         term_probe=cha_unknown_term_probe(raw_user_text)
         if term_probe["terms"]:
             term=term_probe["terms"][0]
-            wiki_context=cha_wikipedia_lookup(term)
+            wiki_context=cha_wikipedia_lookup(term,context=raw_user_text)
             if wiki_context.get("status")=="FOUND":
                 print("[wiki_context={}, status=EXTERNAL_UNVERIFIED, url={}]".format(
                     wiki_context["title"],wiki_context["url"]))
