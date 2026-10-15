@@ -28,6 +28,15 @@ class GoogleFallbackTests(unittest.TestCase):
   a=render_leads(search("量子",api_key="test",fetch=lambda p:DATA))
   self.assertIn("https://example.org/quantum",a["answer"])
   self.assertFalse(a["train_ready"])
+ def test_bad_key_provider_message(self):
+  r=search("量子",api_key="test",fetch=lambda p:{"error":"Invalid API key"})
+  self.assertEqual(r["reason"],"AUTH_OR_KEY")
+ def test_quota_message(self):
+  r=search("量子",api_key="test",fetch=lambda p:{"error":"Monthly quota exhausted"})
+  self.assertEqual(r["reason"],"QUOTA_OR_PLAN")
+ def test_no_raw_provider_message(self):
+  r=search("量子",api_key="test",fetch=lambda p:{"error":"secret token exposed"})
+  self.assertNotIn("secret",str(r))
  def test_no_leads_render(self):
   self.assertIsNone(render_leads({"status":"NOT_CONFIGURED"}))
 if __name__=="__main__":unittest.main()
