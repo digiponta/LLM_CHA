@@ -64,6 +64,7 @@ from wiki_extraction_coverage_v0538 import summarize as cha_wiki_coverage_summar
 from wiki_retry_v0539 import retry as cha_wiki_retry
 from wiki_answer_assessment_v0540 import assess as cha_wiki_answer_assess
 from wiki_conversational_repair_v0541 import render as cha_wiki_conversational_render
+from answer_quality_gate_v0542 import evaluate as cha_answer_quality_evaluate
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -5893,6 +5894,16 @@ def main() -> None:
                 f"resolution={resolution}, action={action}, "
                 f"route={route_result}, reason={reason}]"
             )
+
+        # Read-only suggestion: never auto-fetch Wikipedia or override the answer.
+        from wiki_retry_v0539 import resolve_topic as cha_wiki_resolve_topic
+        quality=cha_answer_quality_evaluate(
+            raw_user_text, reply, accepted=accepted, agreement=agreement,
+            resolution=resolution, wiki_topic=cha_wiki_resolve_topic(raw_user_text))
+        print("[answer_quality={}, reason={}, wiki_suggested={}]".format(
+            quality["status"],quality["reason"],quality["suggest_wiki"]))
+        if quality["suggest_wiki"]:
+            print("[wiki_repair_hint=根拠を確認するには /wiki を入力してください。]")
 
         print(
             f"[{new_tokens} generated probe tokens, "
