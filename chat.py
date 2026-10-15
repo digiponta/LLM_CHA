@@ -3557,6 +3557,16 @@ def main() -> None:
                 cha_wiki_last_generated=None
                 print()
                 continue
+            if wiki_auto["status"] not in ("NO_CANDIDATE","FOUND"):
+                google_report=cha_google_search(wiki_auto.get("term") or raw_user_text)
+                google_reply=cha_google_leads(google_report,cha_wiki_conversation.persona)
+                if google_reply is not None:
+                    print("AI> "+google_reply["answer"])
+                    print("[route=GOOGLE_SEARCH_LEADS, verified=False, train_ready=False, auto_promote=False]")
+                    last_ai_reply=None
+                    cha_wiki_last_generated=None
+                    print()
+                    continue
             print("AI> "+cha_sharing["answer"])
             print("[route={}, persona={}, intent={}, knowledge_asserted=False, train_ready=False]".format(
                 cha_sharing["route"],cha_sharing["persona"],cha_sharing["intent"]))
@@ -3578,6 +3588,16 @@ def main() -> None:
             cha_wiki_last_generated=None
             print()
             continue
+        if topic_followup["status"] not in ("NO_CONTEXT","NOT_TOPIC_FOLLOWUP","AMBIGUOUS_TOPIC","SAME_TOPIC_DEFER","FOUND"):
+            google_report=cha_google_search(raw_user_text)
+            google_reply=cha_google_leads(google_report,cha_wiki_conversation.persona)
+            if google_reply is not None:
+                print("AI> "+google_reply["answer"])
+                print("[route=GOOGLE_SEARCH_LEADS, verified=False, train_ready=False, auto_promote=False]")
+                last_ai_reply=None
+                cha_wiki_last_generated=None
+                print()
+                continue
         wiki_followup=cha_wiki_conversation.respond(raw_user_text)
         if wiki_followup is not None:
             if wiki_followup["route"]=="WIKIPEDIA_EVIDENCE_INSUFFICIENT" and cha_wiki_conversation.current is not None:
