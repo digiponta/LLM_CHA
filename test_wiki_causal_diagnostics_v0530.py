@@ -15,7 +15,7 @@ def mock(url):
  return {"query":{"pages":[{"title":title,"extract":body}]}}
 class CausalDiagnosticsTests(unittest.TestCase):
  def test_counts(self):
-  r=diagnose_extract("普通の説明である。ジョセフソン接合によって量子干渉が生じる。",SOURCE)
+  r=diagnose_extract("これは通常の物理に関する説明文である。ジョセフソン接合によって量子干渉が生じる。",SOURCE)
   self.assertEqual(r["counts"]["EDGE_EXTRACTED"],1)
   self.assertEqual(r["counts"]["NO_CAUSAL_MARKER"],1)
  def test_short(self):
