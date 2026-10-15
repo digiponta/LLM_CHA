@@ -8,6 +8,7 @@ from urllib.parse import quote
 from wikipedia_acquisition_v0517 import _request
 from wiki_proposition_comparison_v0537 import collect, compare_all
 from wiki_relation_alignment_v0535 import align
+from wiki_extraction_coverage_v0538 import diagnose_body
 
 def analyze(wiki,question,fetch=None,max_articles=4):
     if not isinstance(wiki,dict) or wiki.get("status")!="FOUND" or not isinstance(wiki.get("title"),str) or not 0<=max_articles<=5:
@@ -39,7 +40,8 @@ def analyze(wiki,question,fetch=None,max_articles=4):
                 result=align(question,sentence,url)
                 relations.extend(result.get("candidates",[])[:max(0,30-len(relations))])
                 article_relations+=len(result.get("candidates",[]))
-            articles.append({"title":name,"source":url,"typed_count":article_props,"relation_count":article_relations})
+            articles.append({"title":name,"source":url,"typed_count":article_props,"relation_count":article_relations,
+                             "coverage":diagnose_body(body,url,sample_limit=3)})
         # Identity of subject + predicate + object is a duplicate proposition,
         # not proof of a causal link or independent verification.
         keys={};duplicates=[]
