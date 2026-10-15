@@ -23,6 +23,10 @@ class ComparisonTests(unittest.TestCase):
   self.assertEqual(len(r["results"][0]["cases"]),3)
  def test_no_forgetting_claim(self):
   r=compare({"models":[],"scenarios":[]},lambda x:None);self.assertFalse(r["claim_of_forgetting"])
+ def test_self_prefix_without_current_output(self):
+  p=prompts(T,"self",["前ターンの回答"])
+  self.assertIn("前ターンの回答",p[1])
+  self.assertEqual(p[0],"人: 今日は散歩した\nAI:")
  def test_invalid_mode(self):
   with self.assertRaises(ValueError):prompts(T,"invalid")
 if __name__=="__main__":unittest.main()
