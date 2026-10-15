@@ -50,7 +50,7 @@ from unknown_term_detection_v0516 import probe as cha_unknown_term_probe
 from wikipedia_acquisition_v0517 import lookup as cha_wikipedia_lookup
 from wiki_grounded_fallback_v05172 import grounded_reply as cha_wiki_grounded_reply
 from persona_wiki_grounding_v0519 import respond as cha_persona_wiki_respond
-from wiki_conversation_context_v0518 import WikiConversation
+from wiki_persona_multiturn_v0520 import WikiConversation
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
     compose_subject as compose_semantic_proposition_subject,
@@ -3486,7 +3486,7 @@ def main() -> None:
         wiki_followup=cha_wiki_conversation.respond(raw_user_text)
         if wiki_followup is not None:
             print("AI> " + wiki_followup["answer"])
-            print("[route={}, source={}, verified=False, train_ready=False, raw_generation=SKIPPED]".format(wiki_followup["route"],wiki_followup["source"]))
+            print("[route={}, source={}, verified=False, train_ready=False, raw_generation=SKIPPED, quality_gate={}]".format(wiki_followup["route"],wiki_followup["source"],wiki_followup["quality_gate"]))
             print()
             last_ai_reply=None
             continue
