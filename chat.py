@@ -3585,9 +3585,15 @@ def main() -> None:
                 more_detail=cha_wiki_evidence_session.next(
                     cha_wiki_conversation.current,raw_user_text,
                     persona=cha_wiki_conversation.persona)
-                print("[wiki_evidence_session={}, reason={}]".format(
+                print("[wiki_evidence_session={}, reason={}, segments={}, candidates={}, eligible={}, seen_eligible={}, extended_chars={}, remainder_chars={}]".format(
                     more_detail.get("status", "UNKNOWN"),
-                    more_detail.get("reason", more_detail.get("error", "-"))))
+                    more_detail.get("reason", more_detail.get("error", "-")),
+                    more_detail.get("segments", "-"),
+                    more_detail.get("candidates", "-"),
+                    more_detail.get("eligible", "-"),
+                    more_detail.get("seen_eligible", "-"),
+                    more_detail.get("extended_chars", "-"),
+                    more_detail.get("remainder_chars", "-")))
                 if more_detail["status"]=="FOUND":
                     print("AI> "+more_detail["answer"])
                     print("[route={}, source={}, truth_state=EXTERNAL_UNVERIFIED, verified=False, train_ready=False, quality_gate={}]".format(
