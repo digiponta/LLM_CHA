@@ -1,9 +1,21 @@
 import unittest
-from wiki_evidence_session_v0562 import EvidenceSession
+from wiki_evidence_session_v0562 import EvidenceSession, readable_evidence
 W={"status":"FOUND","title":"重ね合わせ","url":"https://ja.wikipedia.org/wiki/test","extract":"これは重ね合わせの概要である。"}
 FULL=W["extract"]+"量子状態は複数の基底状態の線形結合として表現できる。観測結果は状態の振幅と確率則に関連して記述される。"
 def fetch(params):return {"query":{"pages":[{"title":"重ね合わせ","extract":FULL}]}}
 class EvidenceSessionTests(unittest.TestCase):
+ def test_reject_latex_fragments(self):
+  self.assertFalse(readable_evidence(r"{\\displaystyle |\\psi \\rangle }"))
+  self.assertFalse(readable_evidence(r"{\\displaystyle \\psi }"))
+ def test_reject_equation_in_long_text(self):
+  self.assertFalse(readable_evidence(r"量子状態は{\\displaystyle |\\psi \\rangle }で表現される"))
+ def test_skip_math_and_advance(self):
+  session=EvidenceSession()
+  tex=W["extract"]+r"{\\displaystyle |\\psi \\rangle }。"+("量子状態は複数の基底状態の線形結合として表現できる。")
+  def mocked(params):return {"query":{"pages":[{"title":"重ね合わせ","extract":tex}]}}
+  result=session.next(W,"もっと詳しく",fetch=mocked)
+  self.assertEqual(result["status"],"FOUND")
+  self.assertIn("線形結合",result["answer"])
  def test_sequential(self):
   session=EvidenceSession()
   a=session.next(W,"もっと詳しく",fetch=fetch)
