@@ -21,6 +21,20 @@ def followup(utterance,current,persona,lookup,render,grounded=None,cache=None):
     if term==source_title:
         return {"status":"SAME_TOPIC_DEFER"}
     result=fallback(term,utterance,persona,lookup,render,grounded=grounded,cache=cache)
+    # Wikipedia can have an article under a shorter established title.
+    # Only retry the narrow '量子X' -> 'X' case in quantum context,
+    # and only accept an article whose extract explicitly says 量子.
+    if (result["status"] in ("AMBIGUOUS","NOT_FOUND")
+            and term.startswith("量子") and len(term)>3
+            and "量子" in (source_title+" "+current.get("extract",""))):
+        short=term[2:]
+        alternate=fallback(short,utterance,persona,lookup,render,
+                           grounded=grounded,cache=cache)
+        if (alternate["status"]=="FOUND"
+                and "量子" in alternate["wiki_context"].get("extract","")):
+            alternate["requested_term"]=term
+            alternate["lookup_alias"]=short
+            result=alternate
     if result["status"]!="FOUND":return result
     result["route"]="PERSONA_WIKIPEDIA_TOPIC_FOLLOWUP"
     result["previous_topic"]=source_title
