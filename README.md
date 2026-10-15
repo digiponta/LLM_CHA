@@ -1,3 +1,17 @@
+## v0.6.2 — GUI LaTeX Rendering (experimental)
+
+The command-line interface and `chat.py` remain unchanged. The optional read-only Tkinter conversation window renders `LATEX( ... )` markers as inline mathematical images using Matplotlib's local mathtext renderer. No TeX executable, network service, or Python code evaluation is involved.
+
+```powershell
+python -m pip install matplotlib
+python -m unittest -v test_gui_latex_v062.py test_chat_window_v061.py
+python chat_window_v061.py
+```
+
+The CLI still prints raw `LATEX( ... )` text. If Matplotlib is unavailable or a formula is unsupported, the GUI displays the original marker text. The input and source evidence are never modified.
+
+---
+
 ## v0.6.1 — GUI Conversation Mirror (release baseline)
 
 **Release notes:** [RELEASE_NOTES_v0.6.1.md](RELEASE_NOTES_v0.6.1.md). Windows CLI exit was observed; final complete GUI regression rerun remains to be confirmed.
