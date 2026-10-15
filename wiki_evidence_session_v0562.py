@@ -15,6 +15,17 @@ def readable_evidence(sentence):
         return False
     return True
 
+def _prose_fallback(sentence):
+    """Accept verbatim Japanese prose without equation markup."""
+    if not isinstance(sentence, str) or not 30 <= len(sentence) <= 220:
+        return False
+    if re.search(r"[{}\\]|[=<>]", sentence):
+        return False
+    if len(re.findall(r"[ぁ-んァ-ヶ一-龯]", sentence)) < 20:
+        return False
+    return (bool(re.search(r"(は|が|を|に|で|と|から|によって)", sentence))
+            and bool(re.search(r"(る|た|い|こと|もの|場合|可能|状態|性質|関係|表現|方法|原理|現象)$", sentence)))
+
 class EvidenceSession:
     def __init__(self):
         self.identity=None
@@ -51,10 +62,10 @@ class EvidenceSession:
                 remainder=remainder[cut+1:] if cut>=0 else ""
             sentences=[x.strip() for x in re.split(r"[。\n]",remainder)
                        if 20<=len(x.strip())<=220]
-            for sentence in sentences:
+            eligible=[s for s in sentences if s in extended and
+                      (readable_evidence(s) or _prose_fallback(s))]
+            for sentence in eligible:
                 if sentence in self.seen:continue
-                if not readable_evidence(sentence):continue
-                if sentence not in extended:continue
                 self.seen.add(sentence)
                 answer=("Wikipediaには、"+sentence+"。とある。" if persona=="nagato"
                         else "Wikipediaには、"+sentence+"。と記載されています。")
@@ -64,6 +75,9 @@ class EvidenceSession:
                         "truth_state":"EXTERNAL_UNVERIFIED","verified":False,
                         "train_ready":False,"auto_promote":False}
             return {"status":"EVIDENCE_EXHAUSTED","source":url,
+                    "reason":"NO_UNSEEN_READABLE_PROSE",
+                    "candidates":len(sentences),"eligible":len(eligible),
+                    "seen_eligible":sum(s in self.seen for s in eligible),
                     "verified":False,"train_ready":False}
         except (OSError,ValueError,TypeError,KeyError,TimeoutError) as exc:
             return {"status":"LOOKUP_FAILED","reason":type(exc).__name__}
