@@ -1,0 +1,56 @@
+{
+  "cases": [
+    {
+      "id": "run_20261015_unknown",
+      "checkpoint": "model-gpu-v1.6.2-online.pt loss=0.05347",
+      "user": "今日は、量子コンピュータの記事を読んだ",
+      "answer": "未学習です",
+      "accepted": false,
+      "agreement": 0.333,
+      "topic": "量子コンピュータ",
+      "needs_repair": true
+    },
+    {
+      "id": "run_earlier_bad_accepted",
+      "checkpoint": "model-gpu-v1.6.2-online.pt loss=1.21508",
+      "user": "今日は、量子コンピュータの記事を読んだ",
+      "answer": "有害な万人であり、繰り込み言語で発生するコンピュータ。",
+      "accepted": true,
+      "agreement": 0.087,
+      "topic": "量子コンピュータ",
+      "needs_repair": true
+    },
+    {
+      "id": "source_unverified_probe",
+      "checkpoint": "FIXTURE",
+      "user": "今日はSQUIDの記事を読んだ",
+      "answer": "SQUIDは半導体を含む。",
+      "accepted": true,
+      "agreement": 0.9,
+      "topic": "SQUID",
+      "evidence_status": "UNSUPPORTED",
+      "needs_repair": true
+    },
+    {
+      "id": "normal_answer_control",
+      "checkpoint": "FIXTURE",
+      "user": "量子力学について教えて",
+      "answer": "量子力学は物理学の一分野。",
+      "accepted": true,
+      "agreement": 0.8,
+      "topic": "量子力学",
+      "needs_repair": false
+    },
+    {
+      "id": "inconclusive_evidence_control",
+      "checkpoint": "FIXTURE",
+      "user": "量子センサーについて教えて",
+      "answer": "話題の内容を詳しく教えて。",
+      "accepted": true,
+      "agreement": 0.8,
+      "topic": "量子センサー",
+      "evidence_status": "INSUFFICIENT",
+      "needs_repair": false
+    }
+  ]
+}
