@@ -8,6 +8,7 @@ import json
 import os
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
 ENDPOINT="https://serpapi.com/search.json"
 
@@ -23,8 +24,16 @@ def search(term,api_key=None,fetch=None):
             with urlopen(request,timeout=8) as response:data=json.load(response)
         else:
             data=fetch(params)
-        if not isinstance(data,dict) or data.get("error"):
-            return {"status":"SEARCH_FAILED","results":[]}
+        if not isinstance(data,dict):
+            return {"status":"SEARCH_FAILED","reason":"INVALID_RESPONSE","results":[]}
+        if data.get("error"):
+            # SerpApi error messages may include submitted request data.
+            # Map them to bounded reason codes instead of printing the raw body.
+            message=str(data["error"]).lower()
+            reason=("AUTH_OR_KEY" if any(w in message for w in ("api key","api_key","invalid key","unauthorized"))
+                    else "QUOTA_OR_PLAN" if any(w in message for w in ("limit","quota","credit","plan","exhaust"))
+                    else "PROVIDER_ERROR")
+            return {"status":"SEARCH_FAILED","reason":reason,"results":[]}
         results=[]
         for item in data.get("organic_results",[])[:5]:
             if not isinstance(item,dict):continue
@@ -41,6 +50,11 @@ def search(term,api_key=None,fetch=None):
                 "query":term,"results":results,
                 "provider":"SERPAPI_GOOGLE","verified":False,
                 "train_ready":False,"auto_promote":False}
+    except HTTPError as exc:
+        return {"status":"SEARCH_FAILED","reason":"HTTP_ERROR",
+                "http_status":exc.code,"results":[]}
+    except URLError as exc:
+        return {"status":"SEARCH_FAILED","reason":"NETWORK_OR_TLS","results":[]}
     except (OSError,ValueError,TypeError,KeyError,TimeoutError) as exc:
         return {"status":"SEARCH_FAILED","reason":type(exc).__name__,"results":[]}
 
