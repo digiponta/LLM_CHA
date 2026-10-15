@@ -7,6 +7,7 @@ import os
 import queue
 import re
 import subprocess
+import locale
 import sys
 import threading
 import tkinter as tk
@@ -59,6 +60,22 @@ class ConversationParser:
             self.emit("ai_continuation", line)
 
 
+def read_terminal_line():
+    """Read input with the active console codepage, not Python UTF-8 mode."""
+    if os.name == "nt" and hasattr(sys.stdin, "buffer"):
+        encoding = locale.getpreferredencoding(False)
+        # Under PYTHONUTF8=1, prefer the console input codepage.
+        try:
+            import ctypes
+            codepage = ctypes.windll.kernel32.GetConsoleCP()
+            if codepage:
+                encoding = "cp{}".format(codepage)
+        except (OSError, AttributeError, ValueError):
+            pass
+        return sys.stdin.buffer.readline().decode(encoding, errors="strict")
+    return sys.stdin.readline()
+
+
 def run():
     events = queue.Queue()
     parser = ConversationParser(lambda kind, value: events.put((kind, value)))
@@ -91,7 +108,8 @@ def run():
     command = [sys.executable, "-u", os.path.join(os.path.dirname(__file__), "chat.py")]
     kwargs = dict(cwd=os.path.dirname(__file__), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                   stderr=subprocess.STDOUT, text=True, encoding="utf-8",
-                  errors="replace", bufsize=1)
+                  errors="strict", bufsize=1,
+                  env={**os.environ, "PYTHONIOENCODING":"utf-8"})
     try:
         child = subprocess.Popen(command, **kwargs)
     except OSError as exc:
@@ -113,7 +131,7 @@ def run():
     def forward_terminal():
         try:
             while child.poll() is None:
-                line = sys.stdin.readline()
+                line = read_terminal_line()
                 if not line:
                     break
                 message = line.strip()
