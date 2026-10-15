@@ -1,0 +1,76 @@
+{
+  "cases": [
+    {
+      "id": "unknown_article",
+      "user": "今日は量子コンピュータの記事を読んだ",
+      "original": "未学習です",
+      "accepted": false,
+      "agreement": 0.333,
+      "topic": "量子コンピュータ",
+      "evidence": "量子コンピュータは量子力学の原理を計算に応用したコンピュータである。",
+      "expected": {
+        "needs_repair": true
+      }
+    },
+    {
+      "id": "low_agreement",
+      "user": "SQUIDについて教えて",
+      "original": "曖昧な回答",
+      "accepted": true,
+      "agreement": 0.087,
+      "topic": "SQUID",
+      "evidence": "SQUIDはジョセフソン接合を含む。",
+      "expected": {
+        "needs_repair": true
+      }
+    },
+    {
+      "id": "normal_answer",
+      "user": "量子力学について知りたい",
+      "original": "量子力学は物理学の分野です。",
+      "accepted": true,
+      "agreement": 0.8,
+      "topic": "量子力学",
+      "evidence": "量子力学は現代物理学の主要分野である。",
+      "expected": {
+        "needs_repair": false
+      }
+    },
+    {
+      "id": "missing_evidence",
+      "user": "量子センサーについて教えて",
+      "original": "未学習です",
+      "accepted": false,
+      "agreement": 0.2,
+      "topic": "量子センサー",
+      "evidence": "",
+      "expected": {
+        "needs_repair": true
+      }
+    },
+    {
+      "id": "nonwiki",
+      "user": "今日は散歩した",
+      "original": "そうなんだ。",
+      "accepted": true,
+      "agreement": 0.1,
+      "topic": null,
+      "evidence": "",
+      "expected": {
+        "needs_repair": false
+      }
+    },
+    {
+      "id": "unsupported_answer",
+      "user": "今日はSQUIDの記事を読んだ",
+      "original": "SQUIDは半導体を含む。",
+      "accepted": true,
+      "agreement": 0.9,
+      "topic": "SQUID",
+      "evidence": "SQUIDはジョセフソン接合を含む。",
+      "expected": {
+        "needs_repair": true
+      }
+    }
+  ]
+}
