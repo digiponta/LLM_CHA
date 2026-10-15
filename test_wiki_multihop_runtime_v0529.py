@@ -1,15 +1,21 @@
 import ast
 import unittest
 from pathlib import Path
+from urllib.parse import urlsplit, parse_qs
 from wiki_multihop_runtime_v0529 import probe
 WIKI={"status":"FOUND","title":"超伝導量子干渉計"}
 def api(secondary="量子干渉によって微弱な磁場を検出する"):
  def request(url):
-  if "prop=links" in url:return {"query":{"pages":[{"title":"超伝導量子干渉計","links":[{"title":"ジョセフソン効果"}]}]}}
-  if "ジョセフソン効果" in url:return {"query":{"pages":[{"title":"ジョセフソン効果","extract":secondary+"。"}]}}
+  params=parse_qs(urlsplit(url).query)
+  if params.get("prop")==["links"]:return {"query":{"pages":[{"title":"超伝導量子干渉計","links":[{"title":"ジョセフソン効果"}]}]}}
+  if params.get("titles")==["ジョセフソン効果"]:return {"query":{"pages":[{"title":"ジョセフソン効果","extract":secondary+"。"}]}}
   return {"query":{"pages":[{"title":"超伝導量子干渉計","extract":"ジョセフソン接合によって量子干渉が生じる。"}]}}
  return request
 class WikiMultiHopRuntimeTests(unittest.TestCase):
+ def test_mock_url_encoded_title(self):
+  from urllib.parse import quote
+  result=api()("https://ja.wikipedia.org/w/api.php?action=query&prop=extracts&titles="+quote("ジョセフソン効果"))
+  self.assertEqual(result["query"]["pages"][0]["title"],"ジョセフソン効果")
  def test_chain(self):
   r=probe(WIKI,"なぜ高感度なの？",fetch=api())
   self.assertEqual(r["status"],"CHAIN_FOUND")
