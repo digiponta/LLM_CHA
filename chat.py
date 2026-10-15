@@ -3594,6 +3594,10 @@ def main() -> None:
                     more_detail.get("seen_eligible", "-"),
                     more_detail.get("extended_chars", "-"),
                     more_detail.get("remainder_chars", "-")))
+                if more_detail.get("status")=="EVIDENCE_EXHAUSTED":
+                    for rejected in more_detail.get("rejected_samples", []):
+                        print("[wiki_evidence_reject={} ]".format(
+                            json.dumps(rejected, ensure_ascii=False)))
                 if more_detail["status"]=="FOUND":
                     print("AI> "+more_detail["answer"])
                     print("[route={}, source={}, truth_state=EXTERNAL_UNVERIFIED, verified=False, train_ready=False, quality_gate={}]".format(
