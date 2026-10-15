@@ -27,9 +27,6 @@ def respond(wiki,utterance,persona="nagato"):
     ending=PERSONA_ENDINGS[persona] if any(t in utterance for t in ("記事","読んだ","見た","話")) else (
         "どの部分を知りたい？" if persona=="nagato" else "どの部分について知りたいですか？")
     answer="Wikipediaによると、"+fact+"。 "+ending
-    # Ensure the personality suffix cannot inject factual claims.
-    if not all(part in ("Wikipediaによると、",fact,"。 ",ending) for part in (fact,ending)):
-        return None
     return {"answer":answer,"route":"PERSONA_WIKIPEDIA_GROUNDED",
         "persona":persona,"source":base["source"],"verified":False,
         "train_ready":False,"raw_generation":"SKIPPED",
