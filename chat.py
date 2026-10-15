@@ -73,6 +73,7 @@ from unknown_wiki_fallback_v0557 import fallback as cha_unknown_wiki_fallback
 from persona_wiki_topic_followup_v0558 import followup as cha_wiki_topic_followup
 from wiki_more_details_v0560 import more as cha_wiki_more_details
 from wiki_evidence_session_v0562 import EvidenceSession as ChaWikiEvidenceSession
+from wiki_evidence_continuation_v0564 import EvidenceContinuation as ChaWikiEvidenceContinuation
 from answer_quality_gate_v0542 import evaluate as cha_answer_quality_evaluate
 from semantic_proposition_v1090 import (
     add_statement as add_semantic_proposition_statement,
@@ -3376,6 +3377,7 @@ def main() -> None:
     cha_user_context = UserContext()
     cha_wiki_conversation = WikiConversation()
     cha_wiki_evidence_session = ChaWikiEvidenceSession()
+    cha_wiki_evidence_continuation = ChaWikiEvidenceContinuation()
     cha_persona_context = PersonaContext(cha_wiki_conversation.persona)
     cha_persona_wiki_cache = {}
     cha_unknown_teacher = UnknownTeaching(resolve_runtime_path("data/cha_unknown_candidates_v0510.json"))
@@ -3606,6 +3608,20 @@ def main() -> None:
                     cha_wiki_last_generated=None
                     print()
                     continue
+                if more_detail["status"]=="EVIDENCE_EXHAUSTED":
+                    continuation=cha_wiki_evidence_continuation.next(
+                        cha_wiki_conversation.current,raw_user_text,
+                        persona=cha_wiki_conversation.persona)
+                    print("[wiki_evidence_continuation={}, visited={}]".format(
+                        continuation.get("status"),len(continuation.get("visited",[]))))
+                    if continuation["status"]=="FOUND":
+                        print("AI> "+continuation["answer"])
+                        print("[route={}, source={}, truth_state=EXTERNAL_UNVERIFIED, verified=False, train_ready=False, auto_promote=False, quality_gate={}]".format(
+                            continuation["route"],continuation["source"],continuation["quality_gate"]))
+                        last_ai_reply=None
+                        cha_wiki_last_generated=None
+                        print()
+                        continue
                 expanded=cha_expand_wiki_evidence(cha_wiki_conversation.current,raw_user_text)
                 print("[wiki_evidence_expansion={}, intent={}]".format(expanded["status"],expanded["intent"]))
                 if expanded["status"] not in ("FOUND","LOOKUP_FAILED"):
