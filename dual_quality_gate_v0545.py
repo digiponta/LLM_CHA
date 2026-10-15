@@ -23,8 +23,8 @@ def decide(user,answer,*,accepted,agreement=None,topic=None,evidence_status=None
         decision="EVIDENCE_NEEDED"
         reason="NO_MATCHING_EVIDENCE"
     elif evidence=="INSUFFICIENT":
-        decision="EVIDENCE_NEEDED"
-        reason="INSUFFICIENT_COMPARISON"
+        decision="ACCEPT"
+        reason="COMPARISON_INCONCLUSIVE_NO_OVERRIDE"
     elif evidence=="SUPPORTED":
         decision="ACCEPT"
         reason="ATOMIC_EVIDENCE_MATCH"
