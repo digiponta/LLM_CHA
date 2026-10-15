@@ -66,3 +66,34 @@ def scientific_prose(sentence):
         r"(である|です|ます|れる|する|した|となる|できる|される|"
         r"と呼ぶ|と呼ばれる|記述される|表せない|表現できる|"
         r"という|がある|であり|ついてくる|となっている)$", words))
+
+
+# MediaWiki plain-text extracts can contain both visual math glyphs and TeX.
+# This removes only adjacent math-only lines, leaving Japanese prose untouched.
+_MATH_GLYPH_LINE = re.compile(r"^[\s|⟨⟩ψΨαβγδλμνπφχ′'_=+\-*/0-9c]+$", re.UNICODE)
+
+def display_latex(sentence):
+    """Display math source as LATEX( raw TeX ), without evaluating it."""
+    if not isinstance(sentence, str):
+        return sentence
+    result = []
+    cursor = 0
+    for match in re.finditer(r"\{\\displaystyle", sentence):
+        start = match.start()
+        if start < cursor:
+            continue
+        end = _math_end(sentence, start)
+        if end is None:
+            break
+        prefix = sentence[cursor:start]
+        # Trim only trailing isolated math glyphs that duplicate this TeX.
+        lines = prefix.splitlines(keepends=True)
+        while lines and (not lines[-1].strip() or _MATH_GLYPH_LINE.fullmatch(lines[-1].strip())):
+            lines.pop()
+        prefix = "".join(lines)
+        raw = sentence[start + len(MATH_OPEN):end - 1].strip()
+        result.append(prefix)
+        result.append("LATEX( " + raw + " )")
+        cursor = end
+    result.append(sentence[cursor:])
+    return re.sub(r"[ \t]*\n[ \t]*", " ", "".join(result)).strip()
