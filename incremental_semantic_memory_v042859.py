@@ -11,6 +11,7 @@ import tempfile
 from copy import deepcopy
 from pathlib import Path
 from semantic_extraction_v042858 import build_from_turns, apply_turn
+from semantic_natural_language_refs_v063 import attach_natural_language_refs
 
 VERSION="v0.4.28.59"
 
@@ -56,6 +57,7 @@ def append(memory,role,text,*,turn_id=None,recent_limit=5):
     events=staged.setdefault("topic_transitions",[])
     if current is not None and current!=previous:
         events.append({"turn_id":staged["last_turn"],"from":previous,"to":current})
+    attach_natural_language_refs(staged)
     reindex(staged)
     staged["incremental_version"]=VERSION
     # Commit only when all operations succeed.
@@ -76,6 +78,13 @@ def validate(memory):
         if not isinstance(source,int) or source<1 or source>turns:
             raise ValueError("invalid proposition provenance")
     expected=deepcopy(memory)
+    attach_natural_language_refs(expected)
+    if ("natural_language_texts" in memory or "natural_language_refs_version" in memory):
+        if memory.get("natural_language_texts") != expected["natural_language_texts"]:
+            raise ValueError("inconsistent natural-language text store")
+        for old, new in zip(memory.get("propositions", []), expected["propositions"]):
+            if old.get("natural_language_refs") != new.get("natural_language_refs"):
+                raise ValueError("inconsistent natural-language references")
     reindex(expected)
     for field in ("proposition_index","conflict_candidates"):
         if field in memory and memory[field]!=expected[field]:
