@@ -59,7 +59,8 @@ def identity_answer(model, tok):
 def train(args):
     if not 0 < args.persona_ratio < 1 or args.epochs < 1 or args.max_steps < 1:
         raise ValueError("persona_ratio must be (0,1); epochs and max_steps > 0")
-    guard(args.base_model,args.output,args.report)
+    if not args.dry_run:
+        guard(args.base_model,args.output,args.report)
     random.seed(42);torch.manual_seed(42)
     device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
     tok=Tokenizer.load(args.tokenizer)
