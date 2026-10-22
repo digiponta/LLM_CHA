@@ -177,13 +177,18 @@ def build(manifest_path, output_dir, max_works=10, max_chars=900, delay=2.0):
         (raw_dir / (str(item["work_id"]) + ".txt")).write_text(raw, encoding="utf-8")
         records.extend(chunks)
         print(f"{item['work_id']}: {len(chunks)} chunks")
+    # Also expose plain text for text-language-model training pipelines.
+    plain_path = dest / "aozora_train.txt"
+    plain_temp = plain_path.with_suffix(".tmp")
+    plain_temp.write_text("\n\n".join(r["text"] for r in records) + "\n", encoding="utf-8")
     # Only publish full dataset after all works succeed.
     temp = data_path.with_suffix(".tmp")
     temp.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in records),
                     encoding="utf-8")
     temp.replace(data_path)
+    plain_temp.replace(plain_path)
     print(json.dumps({"works": len(selected), "chunks": len(records),
-                      "output": str(data_path), "weights_modified": False},
+                      "output": str(data_path), "training_text": str(plain_path), "weights_modified": False},
                      ensure_ascii=False, indent=2))
     return records
 
