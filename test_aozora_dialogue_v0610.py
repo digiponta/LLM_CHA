@@ -23,6 +23,18 @@ class AozoraDialogueTests(unittest.TestCase):
         result = self.dialogue.respond("一般的な質問。")
         self.assertEqual(result[1]["route"], "CAT_GENERAL_CLARIFICATION")
 
+    def test_general_cat_followup(self):
+        self.dialogue.respond("猫")
+        self.dialogue.respond("一般的な質問")
+        answer, meta = self.dialogue.respond("特徴")
+        self.assertEqual(meta["route"], "CAT_GENERAL_FOLLOWUP")
+        self.assertIn("聴覚", answer)
+
+    def test_repeated_cat_keeps_prompt(self):
+        self.dialogue.respond("ネコ")
+        self.assertEqual(self.dialogue.respond("ネコ")[1]["route"], "CAT_TOPIC_CLARIFY")
+        self.assertEqual(self.dialogue.respond("夏目漱石")[1]["route"], "AOZORA_LITERATURE")
+
     def test_cat_literature_resolution(self):
         self.dialogue.respond("猫")
         self.assertEqual(self.dialogue.respond("作品")[1]["route"],"AOZORA_LITERATURE")
