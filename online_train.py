@@ -199,6 +199,40 @@ def load_replay_pairs(path: Path) -> List[Tuple[str, str]]:
     return pairs
 
 
+def split_incremental_pairs(new_pairs, other_pairs, pending_fps, *,
+                            validation_ratio=0.15, enable_validation=True):
+    """Group by fingerprint; hold out only non-pending groups.
+
+    Every pending fingerprint is represented in the training partition;
+    no fingerprint appears in both partitions.
+    """
+    grouped = {}
+    for pair in list(new_pairs) + list(other_pairs):
+        fp = pair_fingerprint(*pair)
+        grouped.setdefault(fp, []).append(pair)
+    pending = set(pending_fps)
+    missing = pending - set(grouped)
+    if missing:
+        raise ValueError("Pending training pairs missing from weighted examples")
+    train_keys = sorted(pending)
+    other_keys = sorted(set(grouped) - pending)
+    random.shuffle(other_keys)
+    val_keys = []
+    if enable_validation and len(other_keys) >= 2 and validation_ratio > 0:
+        val_count = min(len(other_keys)-1,
+                        max(1, round(len(other_keys) * validation_ratio)))
+        val_keys = other_keys[:val_count]
+    train_keys.extend(other_keys[len(val_keys):])
+    train = [pair for key in train_keys for pair in grouped[key]]
+    val = [pair for key in val_keys for pair in grouped[key]]
+    random.shuffle(train)
+    random.shuffle(val)
+    assert pending.issubset({pair_fingerprint(*p) for p in train})
+    assert not ({pair_fingerprint(*p) for p in train} &
+                {pair_fingerprint(*p) for p in val})
+    return train, val
+
+
 class ConversationDataset(Dataset):
     def __init__(
         self,
@@ -363,8 +397,19 @@ def main() -> None:
     for pair in replay_pairs:
         weighted_replay.extend([pair] * max(1, args.replay_weight))
 
-    pairs = list(weighted_new_pairs) + trusted_replay + weighted_replay + weighted_stability
-    random.shuffle(pairs)
+    # Split by unique fingerprint, not weighted copies. Every pending
+    # trusted pair must receive an optimizer update before being marked trained.
+    # Validation may use only non-pending replay/stability pairs so no
+    # pending pair is silently consumed as validation-only.
+    pending_fps = {pair_fingerprint(u, a) for u, a, _ in pending_rows}
+    train_pairs, val_pairs = split_incremental_pairs(
+        weighted_new_pairs,
+        trusted_replay + weighted_replay + weighted_stability,
+        pending_fps,
+        validation_ratio=args.validation_ratio,
+        enable_validation=len(pending_rows) >= args.tiny_threshold,
+    )
+    tiny_mode = not bool(val_pairs)
 
     tokenizer = Tokenizer.load(str(tokenizer_path))
     model, checkpoint = LanguageModel.load_checkpoint(str(base_path), device=device)
@@ -374,16 +419,6 @@ def main() -> None:
             f"Tokenizer/model vocabulary mismatch: "
             f"{tokenizer.vocab_size} != {model.vocab_size}"
         )
-
-    tiny_mode = len(pending_rows) < args.tiny_threshold
-    if tiny_mode:
-        val_pairs: List[Tuple[str, str]] = []
-        train_pairs = pairs
-    else:
-        val_count = max(1, int(round(len(pairs) * args.validation_ratio)))
-        val_count = min(val_count, len(pairs) - 1)
-        val_pairs = pairs[:val_count]
-        train_pairs = pairs[val_count:]
 
     train_ds = ConversationDataset(train_pairs, tokenizer, model.context_length)
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True)
