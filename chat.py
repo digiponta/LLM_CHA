@@ -3411,7 +3411,8 @@ def main() -> None:
     from synonym_semantic_retrieval_v0628 import trace_match
     from synonym_candidate_review_v0627 import SynonymReview
     synonym_review = SynonymReview(PROJECT_ROOT / "data" / "synonym_candidates_v0627.jsonl", synonym_lexicon)
-    from evaluate_memory_first_v0635 import load_overlay, norm
+    from evaluate_memory_first_v0635 import load_overlay
+    from approved_synonym_qa_v0637 import approved_qa_lookup
     approved_qa_overlay = load_overlay(args.approved_qa_overlay) if args.approved_qa_overlay else {}
     menu_topic_context = None
     while True:
@@ -3425,11 +3426,11 @@ def main() -> None:
             continue
         # Approved exact-QA lookup is explicit opt-in, read-only, and never intercepts commands.
         if not user_text.startswith("/") and approved_qa_overlay:
-            memory_hit = approved_qa_overlay.get(norm(user_text))
+            memory_hit = approved_qa_lookup(user_text, approved_qa_overlay, synonym_lexicon)
             if memory_hit is not None:
                 print("AI> " + memory_hit["answer"])
-                print("[route=APPROVED_QA_OVERLAY, source_id={}, model_weights_unchanged=True]".format(
-                    memory_hit["source_id"]))
+                print("[route={}, source_id={}, matched_question={}, model_weights_unchanged=True]".format(
+                    memory_hit["route"], memory_hit["source_id"], memory_hit["matched_question"]))
                 print()
                 continue
         # Explicit Japanese synonym declarations are learning actions,
