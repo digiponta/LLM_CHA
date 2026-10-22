@@ -10,7 +10,11 @@ def req(params):
 
 class EvidenceTests(unittest.TestCase):
     def test_alias(self):
-        self.assertEqual(resolve_entity("トヨタ",wiki)["title"],"トヨタ自動車")
+        self.assertEqual(resolve_entity("トヨタ",wiki,req)["title"],"トヨタ自動車")
+    def test_direct_title_skips_search_ambiguity(self):
+        def no_search(_):
+            raise AssertionError("search must not be called")
+        self.assertEqual(resolve_entity("トヨタ",no_search,req)["status"],"FOUND")
     def test_history(self):
         a=article_evidence("トヨタ","歴史",wiki,req)
         self.assertEqual(a["status"],"FOUND")
