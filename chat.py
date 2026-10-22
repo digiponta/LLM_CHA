@@ -3406,6 +3406,7 @@ def main() -> None:
     relation_context = RelationContext()
     from synonym_lexicon_v0626 import SynonymLexicon, learn_command, best_raw_mentions
     synonym_lexicon = SynonymLexicon(PROJECT_ROOT / "data" / "synonym_pairs_v0626.jsonl")
+    from synonym_semantic_retrieval_v0628 import trace_match
     from synonym_candidate_review_v0627 import SynonymReview
     synonym_review = SynonymReview(PROJECT_ROOT / "data" / "synonym_candidates_v0627.jsonl", synonym_lexicon)
     menu_topic_context = None
@@ -5463,6 +5464,7 @@ def main() -> None:
                         truth_allows_direct_retrieval(effective_truth_record(truth_store_path, alias).state)):
                     retrieval = candidate
                     print("[synonym_subject_match, input={}, matched={}]".format(retrieval_focus, alias))
+                    print("[retrieval_trace=" + trace_match(retrieval_focus, alias, "CORPUS_SUBJECT", str(corpus_memory_path), "LOCAL_RETRIEVAL").as_json() + "]")
             if retrieval.hit:
                 retrieval_truth = effective_truth_record(
                     truth_store_path,
@@ -5733,6 +5735,7 @@ def main() -> None:
                             wiki_fallback = synonym_wiki
                             print("[synonym_wiki_fallback, input={}, resolved={}]".format(
                                 dispatch.focus, synonym_term))
+                            print("[retrieval_trace=" + trace_match(dispatch.focus, synonym_term, "WIKIPEDIA", synonym_wiki.get("source","-"), "EXTERNAL_UNVERIFIED").as_json() + "]")
                             break
                 if wiki_fallback["status"]=="FOUND":
                     cha_wiki_conversation.offer(wiki_fallback["wiki_context"])
