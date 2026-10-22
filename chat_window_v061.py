@@ -1,8 +1,9 @@
-"""LLM_CHA v0.6.1: mirror terminal chat into a read-only Tkinter window.
+"""LLM_CHA v0.6.8: model-selectable terminal chat mirror.
 
 Run: python chat_window_v061.py
 The command prompt remains the input interface; chat.py runs unchanged.
 """
+import argparse
 import os
 import queue
 import re
@@ -114,15 +115,56 @@ def read_terminal_line():
     return sys.stdin.readline()
 
 
+EXPERIMENTAL_MODELS = (
+    "model/model-llm-cha-aozora-replay-v067-r2.pt",
+    "model/model-llm-cha-aozora-replay-v067.pt",
+    "model/model-llm-cha-aozora-v065.pt",
+)
+
+
+def build_chat_command(argv=None, base_dir=None):
+    """Build chat.py command; experimental checkpoints always require opt-in."""
+    parser = argparse.ArgumentParser(description="LLM_CHA conversation mirror")
+    parser.add_argument("--model", default=None, help="Explicit checkpoint")
+    parser.add_argument("--tokenizer", default=None, help="Explicit tokenizer")
+    parser.add_argument("--latest-experimental", action="store_true",
+                        help="Select newest locally available Aozora checkpoint")
+    args, rest = parser.parse_known_args(argv)
+    if args.model and args.latest_experimental:
+        parser.error("choose --model OR --latest-experimental")
+    root = os.path.abspath(base_dir or os.path.dirname(__file__))
+    model = args.model
+    if args.latest_experimental:
+        model = next((name for name in EXPERIMENTAL_MODELS
+                      if os.path.isfile(os.path.join(root, name))), None)
+        if model is None:
+            parser.error("no experimental checkpoint found")
+    command = [sys.executable, "-u", os.path.join(root, "chat.py")]
+    if model:
+        resolved = model if os.path.isabs(model) else os.path.join(root, model)
+        if not os.path.isfile(resolved):
+            parser.error("model not found: " + resolved)
+        command += ["--model", resolved]
+    if args.tokenizer or args.latest_experimental:
+        token_name = args.tokenizer or "model/tokenizer-v0.7-bpe.json"
+        resolved = token_name if os.path.isabs(token_name) else os.path.join(root, token_name)
+        if not os.path.isfile(resolved):
+            parser.error("tokenizer not found: " + resolved)
+        command += ["--tokenizer", resolved]
+    command.extend(rest)
+    return command, os.path.basename(model) if model else "chat.py default"
+
+
 def run():
+    command, model_label = build_chat_command()
     events = queue.Queue()
     parser = ConversationParser(lambda kind, value: events.put((kind, value)))
     root = tk.Tk()
-    root.title("LLM_CHA — 会話履歴 (v0.6.2)")
+    root.title("LLM_CHA — 会話履歴 (v0.6.8)")
     root.geometry("760x640")
     root.minsize(460, 280)
 
-    header = tk.Label(root, text="LLM_CHA  会話履歴", anchor="w", font=("Yu Gothic UI", 14, "bold"), padx=14, pady=10)
+    header = tk.Label(root, text="LLM_CHA  会話履歴 — " + model_label, anchor="w", font=("Yu Gothic UI", 14, "bold"), padx=14, pady=10)
     header.pack(fill="x")
     display = scrolledtext.ScrolledText(root, wrap="word", state="disabled",
                                         font=("Yu Gothic UI", 11), padx=14, pady=12)
@@ -145,7 +187,6 @@ def run():
         display.configure(state="disabled")
         display.see("end")
 
-    command = [sys.executable, "-u", os.path.join(os.path.dirname(__file__), "chat.py")]
     kwargs = dict(cwd=os.path.dirname(__file__), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                   stderr=subprocess.STDOUT, text=True, encoding="utf-8",
                   errors="strict", bufsize=1,
