@@ -274,6 +274,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Chat with the current LLM_GPU conversational model."
     )
+    parser.add_argument("--approved-qa-overlay", default=None,
+        help="Opt-in approved exact-QA overlay (read-only JSONL); disabled by default.")
     parser.add_argument("--cha-memory-root", default="data/conversation_memory_local",
         help="Opt-in v0.5.6 conversation store; use /cha-start to record accepted turns.")
     parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
@@ -3409,6 +3411,8 @@ def main() -> None:
     from synonym_semantic_retrieval_v0628 import trace_match
     from synonym_candidate_review_v0627 import SynonymReview
     synonym_review = SynonymReview(PROJECT_ROOT / "data" / "synonym_candidates_v0627.jsonl", synonym_lexicon)
+    from evaluate_memory_first_v0635 import load_overlay, norm
+    approved_qa_overlay = load_overlay(args.approved_qa_overlay) if args.approved_qa_overlay else {}
     menu_topic_context = None
     while True:
         try:
@@ -3419,6 +3423,15 @@ def main() -> None:
 
         if not user_text:
             continue
+        # Approved exact-QA lookup is explicit opt-in, read-only, and never intercepts commands.
+        if not user_text.startswith("/") and approved_qa_overlay:
+            memory_hit = approved_qa_overlay.get(norm(user_text))
+            if memory_hit is not None:
+                print("AI> " + memory_hit["answer"])
+                print("[route=APPROVED_QA_OVERLAY, source_id={}, model_weights_unchanged=True]".format(
+                    memory_hit["source_id"]))
+                print()
+                continue
         # Explicit Japanese synonym declarations are learning actions,
         # and must not be sent to unguided model generation.
         from synonym_lexicon_v0626 import learn_natural_statement
