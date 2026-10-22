@@ -5710,6 +5710,8 @@ def main() -> None:
             # source-grounded Wikipedia response before queuing teaching.
             # Explicit truth blocks and stale checkpoints must not be bypassed.
             if not truth_block and not stale_internalized:
+                from wiki_synonym_articles_v0628 import exact_title, distinct_pages, render_pages
+                direct_article = exact_title(dispatch.focus)
                 wiki_fallback=cha_unknown_wiki_fallback(
                     dispatch.focus,raw_user_text,cha_wiki_conversation.persona,
                     cha_wikipedia_lookup,cha_persona_wiki_respond,
