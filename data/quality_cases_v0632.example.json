@@ -30,6 +30,9 @@
     "prompt": "v0632実験の合言葉は何ですか",
     "expected_any": [
       "検証専用の合言葉"
+    ],
+    "acceptable_answers": [
+      "検証専用の合言葉です。"
     ]
   }
 ]
