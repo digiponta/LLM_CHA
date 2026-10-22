@@ -3415,6 +3415,10 @@ def main() -> None:
     from approved_synonym_qa_v0637 import approved_qa_lookup
     approved_qa_overlay = load_overlay(args.approved_qa_overlay) if args.approved_qa_overlay else {}
     menu_topic_context = None
+    from topic_scope_guard_v0638 import safe_greeting, scoped_followup
+    active_evidence_topic = None
+    active_evidence_extract = ""
+    active_evidence_source = ""
     while True:
         try:
             user_text = input("You> ").strip()
@@ -3424,6 +3428,21 @@ def main() -> None:
 
         if not user_text:
             continue
+        # v0.6.38: scoped followups cannot become unrelated generic Wikipedia lookups.
+        if not user_text.startswith("/"):
+            scoped = scoped_followup(user_text, active_evidence_topic, active_evidence_extract)
+            if scoped is not None:
+                print("AI> " + scoped["answer"])
+                print("[route=CONTEXT_SCOPED_EVIDENCE, topic={}, attribute={}, grounded={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(
+                    scoped["topic"], scoped["attribute"], scoped["grounded"], active_evidence_source or "-"))
+                print()
+                continue
+            greeting = safe_greeting(user_text)
+            if greeting is not None:
+                print("AI> " + greeting)
+                print("[route=SAFE_GREETING, model_generation=SKIPPED, train_ready=False]")
+                print()
+                continue
         # Approved exact-QA lookup is explicit opt-in, read-only, and never intercepts commands.
         if not user_text.startswith("/") and approved_qa_overlay:
             memory_hit = approved_qa_lookup(user_text, approved_qa_overlay, synonym_lexicon)
@@ -5583,6 +5602,9 @@ def main() -> None:
                 entity_resolved = resolve_entity(named_topic)
                 wiki_lookup_term = entity_resolved.get("title", named_topic) if entity_resolved.get("status") == "FOUND" else named_topic
                 if entity_resolved.get("status") == "FOUND" and named_topic != wiki_lookup_term:
+                    active_evidence_topic = named_topic
+                    active_evidence_extract = entity_resolved.get("extract", "")
+                    active_evidence_source = entity_resolved.get("url", "")
                     print("AI> 【Wikipediaの概要・未検証】" + entity_resolved["extract"].split("。")[0] + "。どの点について知りたい？")
                     print("[route=NAMED_TOPIC_WIKIPEDIA_EVIDENCE, term={}, resolved_title={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(
                         named_topic, wiki_lookup_term, entity_resolved["url"]))
@@ -5766,6 +5788,9 @@ def main() -> None:
                         cha_wiki_last_generated = None
                         continue
                 if wiki_fallback["status"]=="FOUND":
+                    active_evidence_topic = wiki_fallback.get("term", dispatch.focus)
+                    active_evidence_extract = ""
+                    active_evidence_source = wiki_fallback.get("source", "")
                     cha_wiki_conversation.offer(wiki_fallback["wiki_context"])
                     print("AI> "+wiki_fallback["answer"])
                     print("[route=UNKNOWN_WIKIPEDIA_FALLBACK, term={}, source={}, truth_state=EXTERNAL_UNVERIFIED, verified=False, train_ready=False, auto_promote=False, model_generation=SKIPPED]".format(
