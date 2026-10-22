@@ -13,8 +13,8 @@ class ChatApprovedOverlayTests(unittest.TestCase):
         content=Path("chat.py").read_text(encoding="utf-8")
         self.assertIn('parser.add_argument("--approved-qa-overlay", default=None',content)
         self.assertIn('if not user_text.startswith("/") and approved_qa_overlay:',content)
-        self.assertIn('route=APPROVED_QA_OVERLAY',content)
-        self.assertLess(content.index('memory_hit = approved_qa_overlay.get(norm(user_text))'),
+        self.assertIn('memory_hit["route"]',content)
+        self.assertLess(content.index('memory_hit = approved_qa_lookup(user_text, approved_qa_overlay, synonym_lexicon)'),
                         content.index('# Explicit Japanese synonym declarations'))
     def test_reviewed_fact_loaded_and_unapproved_excluded(self):
         with tempfile.TemporaryDirectory() as d:
