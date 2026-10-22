@@ -8,7 +8,7 @@ def history_events(lines, limit=3):
     ranked=[]
     for line in lines:
         text=line.strip()
-        if not (15 <= len(text) <= 300):continue
+        if not (10 <= len(text) <= 300):continue
         if any(x in text for x in ("<",">","{{","}}","[[","]]","|")):continue
         dates=DATE.findall(text)
         if not dates or not any(word in text for word in EVENT):continue
