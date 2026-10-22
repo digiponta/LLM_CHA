@@ -25,7 +25,7 @@ def route(mode, experimental_authorized=False):
 def generate(model, tokenizer, question, route_name, max_new_tokens=32):
     if route_name not in ("base","trusted","experimental"):
         raise ValueError("invalid inference route")
-    prompt="ユーザー: "+question+"\nAI: "
+    prompt="人: "+question+"\nAI: "
     ids=tokenizer.encode(prompt,add_bos=True)
     if not ids:raise ValueError("empty prompt")
     ids=ids[-model.base.context_length:]
