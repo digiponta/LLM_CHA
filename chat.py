@@ -3419,6 +3419,8 @@ def main() -> None:
     active_evidence_topic = None
     active_evidence_extract = ""
     active_evidence_source = ""
+    from multi_topic_evidence_v0639 import TopicEvidenceContext
+    topic_evidence = TopicEvidenceContext(max_topics=4)
     while True:
         try:
             user_text = input("You> ").strip()
@@ -3428,6 +3430,22 @@ def main() -> None:
 
         if not user_text:
             continue
+        # v0.6.39: explicit restoration of a previously evidenced topic.
+        if not user_text.startswith("/"):
+            restored = topic_evidence.restore(user_text)
+            if restored is not None:
+                if restored["status"] == "RESTORED":
+                    active_evidence_topic = restored["topic"]
+                    active_evidence_extract = restored["extract"]
+                    active_evidence_source = restored["source"]
+                    print("AI> {}の話題に戻りました。".format(active_evidence_topic))
+                    print("[route=TOPIC_RESTORE, topic={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(
+                        active_evidence_topic, active_evidence_source or "-"))
+                else:
+                    print("AI> その話題の記録はありません。")
+                    print("[route=TOPIC_RESTORE_MISS, requested={}]".format(restored["requested"]))
+                print()
+                continue
         # v0.6.38: scoped followups cannot become unrelated generic Wikipedia lookups.
         if not user_text.startswith("/"):
             scoped = scoped_followup(user_text, active_evidence_topic, active_evidence_extract)
@@ -5605,6 +5623,7 @@ def main() -> None:
                     active_evidence_topic = named_topic
                     active_evidence_extract = entity_resolved.get("extract", "")
                     active_evidence_source = entity_resolved.get("url", "")
+                    topic_evidence.remember(active_evidence_topic, active_evidence_extract, active_evidence_source)
                     print("AI> 【Wikipediaの概要・未検証】" + entity_resolved["extract"].split("。")[0] + "。どの点について知りたい？")
                     print("[route=NAMED_TOPIC_WIKIPEDIA_EVIDENCE, term={}, resolved_title={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(
                         named_topic, wiki_lookup_term, entity_resolved["url"]))
@@ -5791,6 +5810,7 @@ def main() -> None:
                     active_evidence_topic = wiki_fallback.get("term", dispatch.focus)
                     active_evidence_extract = ""
                     active_evidence_source = wiki_fallback.get("source", "")
+                    topic_evidence.remember(active_evidence_topic, active_evidence_extract, active_evidence_source)
                     cha_wiki_conversation.offer(wiki_fallback["wiki_context"])
                     print("AI> "+wiki_fallback["answer"])
                     print("[route=UNKNOWN_WIKIPEDIA_FALLBACK, term={}, source={}, truth_state=EXTERNAL_UNVERIFIED, verified=False, train_ready=False, auto_promote=False, model_generation=SKIPPED]".format(
