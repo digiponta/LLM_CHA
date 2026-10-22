@@ -3404,6 +3404,8 @@ def main() -> None:
 
     from semantic_relation_context_v0620 import RelationContext, grounded_attribute_answer, clarification
     relation_context = RelationContext()
+    from synonym_lexicon_v0626 import SynonymLexicon, learn_command, best_raw_mentions
+    synonym_lexicon = SynonymLexicon(PROJECT_ROOT / "data" / "synonym_pairs_v0626.jsonl")
     menu_topic_context = None
     while True:
         try:
@@ -3413,6 +3415,26 @@ def main() -> None:
             break
 
         if not user_text:
+            continue
+        if user_text.startswith("/synonym-add "):
+            try:
+                learned = learn_command(user_text, synonym_lexicon)
+                if learned is None:
+                    print("AI> 書式: /synonym-add 語A = 語B")
+                else:
+                    print("AI> 同義語を登録しました: " + " = ".join(learned["terms"]))
+                    print("[route=SYNONYM_LEARN, updated={}, model_weights_unchanged=True]".format(learned["added"]))
+            except (OSError, ValueError, KeyError) as exc:
+                print("[synonym_error={}]".format(exc))
+            print()
+            continue
+        if user_text.startswith("/synonym-list "):
+            try:
+                term = user_text[len("/synonym-list "):].strip()
+                print("AI> " + " = ".join(synonym_lexicon.expand(term)))
+            except ValueError as exc:
+                print("[synonym_error={}]".format(exc))
+            print()
             continue
         if user_text=="/wiki status":
             print("[wiki_retry_status={}, last_user={}]".format(
@@ -5378,10 +5400,21 @@ def main() -> None:
 
         if retrieval_focus:
             corpus_memory_path = resolve_runtime_path(args.corpus_memory)
+            synonym_terms = synonym_lexicon.expand(retrieval_focus)
             retrieval = retrieval_first_resolve_subject(
                 corpus_memory_path,
                 retrieval_focus,
             )
+            for alias in synonym_terms[1:]:
+                if retrieval.hit:
+                    break
+                candidate = retrieval_first_resolve_subject(corpus_memory_path, alias)
+                # Never bypass explicit truth blocks on either requested or matched term.
+                if (candidate.hit and
+                        truth_allows_direct_retrieval(effective_truth_record(truth_store_path, retrieval_focus).state) and
+                        truth_allows_direct_retrieval(effective_truth_record(truth_store_path, alias).state)):
+                    retrieval = candidate
+                    print("[synonym_subject_match, input={}, matched={}]".format(retrieval_focus, alias))
             if retrieval.hit:
                 retrieval_truth = effective_truth_record(
                     truth_store_path,
@@ -5464,7 +5497,7 @@ def main() -> None:
         if retrieval_focus and not retrieval.hit and allow_raw_evidence(user_text, retrieval_focus):
             from raw_concept_evidence_v0615 import find_mentions, present_mentions
             raw_path = resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS)
-            raw_hits = find_mentions(raw_path, retrieval_focus)
+            raw_hits = best_raw_mentions(raw_path, synonym_lexicon.expand(retrieval_focus))
             if raw_hits:
                 raw_answer = present_mentions(raw_hits)
                 print("AI> " + raw_answer)
