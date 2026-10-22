@@ -3416,6 +3416,20 @@ def main() -> None:
 
         if not user_text:
             continue
+        # Explicit Japanese synonym declarations are learning actions,
+        # and must not be sent to unguided model generation.
+        from synonym_lexicon_v0626 import learn_natural_statement
+        try:
+            natural_synonym = learn_natural_statement(user_text, synonym_lexicon)
+        except (ValueError, OSError) as exc:
+            print("[synonym_error={}]".format(exc))
+            natural_synonym = None
+        if natural_synonym is not None:
+            print("AI> 同義語を登録しました: " + " = ".join(natural_synonym["terms"]))
+            print("[route=SYNONYM_NATURAL_LEARN, updated={}, model_weights_unchanged=True]".format(
+                natural_synonym["added"]))
+            print()
+            continue
         if user_text.startswith("/synonym-add "):
             try:
                 learned = learn_command(user_text, synonym_lexicon)
