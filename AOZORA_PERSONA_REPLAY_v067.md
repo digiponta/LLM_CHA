@@ -26,9 +26,10 @@ Required input:
 - `model/model-llm-try-nagato-chat-v94.pt`
 - `model/tokenizer-v0.7-bpe.json`
 - `data/aozora_v064/aozora_semantic_corpus.jsonl`
-- `data/conversation-ja.txt` (default replay source: consecutive `人:` and
-  `AI:` lines). Alternatively specify `--persona-data some_pairs.jsonl`
-  with `{"user":"...","assistant":"..."}` records.
+- `data/nagato_chat.jsonl` (default existing persona dialogue JSONL with
+  `{"user":"...","assistant":"..."}` records). Optionally specify a different
+  `--persona-data` path. Text files with consecutive `人:` / `AI:` lines
+  are also supported.
 
 Outputs (never silently overwrite):
 - `model/model-llm-cha-aozora-replay-v067.pt`
