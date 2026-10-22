@@ -12,6 +12,17 @@ class AozoraDialogueTests(unittest.TestCase):
     def test_cat_general_resolution(self):
         self.assertEqual(self.dialogue.respond("猫")[1]["route"],"CAT_TOPIC_CLARIFY")
         self.assertEqual(self.dialogue.respond("一般的")[1]["route"],"CAT_GENERAL_CLARIFICATION")
+    def test_general_question_phrase(self):
+        self.dialogue.respond("ネコ")
+        answer, metadata = self.dialogue.respond("一般的な質問")
+        self.assertEqual(metadata["route"], "CAT_GENERAL_CLARIFICATION")
+        self.assertIn("猫の生態", answer)
+
+    def test_general_question_with_punctuation(self):
+        self.dialogue.respond("猫")
+        result = self.dialogue.respond("一般的な質問。")
+        self.assertEqual(result[1]["route"], "CAT_GENERAL_CLARIFICATION")
+
     def test_cat_literature_resolution(self):
         self.dialogue.respond("猫")
         self.assertEqual(self.dialogue.respond("作品")[1]["route"],"AOZORA_LITERATURE")
