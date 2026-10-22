@@ -5432,6 +5432,33 @@ def main() -> None:
                 last_ai_reply = raw_answer
                 continue
 
+        # v0.6.18: for named-topic dialogue, seek external evidence before
+        # accepting an unsupported raw model completion as KNOWN.
+        from topic_evidence_gate_v0618 import topic_for_external_evidence, source_is_usable
+        named_topic = topic_for_external_evidence(user_text)
+        if named_topic and (not retrieval_focus or not retrieval.hit):
+            named_truth = effective_truth_record(truth_store_path, named_topic)
+            if named_truth.state not in ("FALSE", "REJECTED", "BLOCKED", "CONTRADICTED"):
+                wiki_topic = cha_unknown_wiki_fallback(
+                    named_topic, raw_user_text, cha_wiki_conversation.persona,
+                    cha_wikipedia_lookup, cha_persona_wiki_respond,
+                    grounded=cha_wiki_grounded_reply, cache=cha_persona_wiki_cache)
+                if source_is_usable(wiki_topic):
+                    cha_wiki_conversation.offer(wiki_topic["wiki_context"])
+                    print("AI> " + wiki_topic["answer"])
+                    print("[route=NAMED_TOPIC_WIKIPEDIA_EVIDENCE, term={}, source={}, truth_state=EXTERNAL_UNVERIFIED, verified=False, train_ready=False, auto_promote=False, model_generation=SKIPPED]".format(
+                        named_topic, wiki_topic["source"]))
+                    print()
+                    last_ai_reply = None
+                    cha_wiki_last_generated = None
+                    continue
+                print("[named_topic_evidence={}, term={}]".format(
+                    wiki_topic.get("status","UNAVAILABLE"), named_topic))
+                print("AI> {}について、確かな回答根拠を取得できなかった。どの点について話したい？".format(named_topic))
+                print("[route=NAMED_TOPIC_CLARIFY, train_ready=False, model_generation=SKIPPED]")
+                print()
+                continue
+
         semantic_result = semantic_knowledge.resolve(
             user_text
         )
