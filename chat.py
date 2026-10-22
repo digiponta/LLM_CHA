@@ -3406,6 +3406,8 @@ def main() -> None:
     relation_context = RelationContext()
     from synonym_lexicon_v0626 import SynonymLexicon, learn_command, best_raw_mentions
     synonym_lexicon = SynonymLexicon(PROJECT_ROOT / "data" / "synonym_pairs_v0626.jsonl")
+    from synonym_candidate_review_v0627 import SynonymReview
+    synonym_review = SynonymReview(PROJECT_ROOT / "data" / "synonym_candidates_v0627.jsonl", synonym_lexicon)
     menu_topic_context = None
     while True:
         try:
@@ -3428,6 +3430,31 @@ def main() -> None:
             print("AI> 同義語を登録しました: " + " = ".join(natural_synonym["terms"]))
             print("[route=SYNONYM_NATURAL_LEARN, updated={}, model_weights_unchanged=True]".format(
                 natural_synonym["added"]))
+            print()
+            continue
+        if user_text.startswith("/synonym-propose "):
+            source_text = user_text[len("/synonym-propose "):].strip()
+            proposed = synonym_review.propose(source_text)
+            print("AI> " + (", ".join("#{} {} = {}".format(r["id"],r["a"],r["b"]) for r in proposed)
+                              if proposed else "新しい同義語候補はありません。"))
+            print("[route=SYNONYM_CANDIDATE, pending={}, auto_promote=False]".format(len(synonym_review.pending())))
+            print()
+            continue
+        if user_text=="/synonym-pending":
+            pending = synonym_review.pending()
+            print("AI> " + (", ".join("#{} {} = {}".format(r["id"],r["a"],r["b"]) for r in pending)
+                              if pending else "承認待ちの候補はありません。"))
+            print()
+            continue
+        if user_text.startswith("/synonym-approve ") or user_text.startswith("/synonym-reject "):
+            approved = user_text.startswith("/synonym-approve ")
+            try:
+                record_id=int(user_text.split()[-1])
+                decision=synonym_review.decide(record_id,approved)
+                print("AI> " + ("候補 #{} を {}しました。".format(record_id,"承認" if approved else "拒否")
+                                 if decision else "承認待ちの候補IDが見つかりません。"))
+            except (ValueError,OSError,KeyError) as exc:
+                print("[synonym_review_error={}]".format(exc))
             print()
             continue
         if user_text.startswith("/synonym-add "):
