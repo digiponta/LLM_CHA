@@ -55,10 +55,12 @@ class ConversationParser:
             content = clean_message(line[len(AI_PREFIX):])
             if content:
                 self.emit("ai", content)
-        elif line.startswith("[") or not line.strip() or line.startswith("You>"):
+        elif line.startswith("[") or line.startswith("You>"):
+            # Diagnostics and prompts terminate the current assistant message.
             self.in_ai = False
         elif self.in_ai:
-            # Continuations may contain multiline equations or explanations.
+            # A blank line inside an answer is a paragraph separator, not
+            # its end. Keep collecting through the provenance/source lines.
             self.emit("ai_continuation", line)
 
 
