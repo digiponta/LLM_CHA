@@ -185,7 +185,7 @@ def load_replay_pairs(path: Path) -> List[Tuple[str, str]]:
         return []
     pairs: List[Tuple[str, str]] = []
     pending_user: str | None = None
-    for raw in path.read_text(encoding="utf-8").splitlines():
+    for raw in path.read_text(encoding="utf-8-sig").splitlines():
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
