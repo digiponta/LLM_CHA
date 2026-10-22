@@ -61,6 +61,28 @@ def article_evidence(term, attribute, lookup_fn=lookup, request_fn=_request):
     segments=[p.strip() for p in re.split(r"(?<=[。！？])|\n+",full) if p.strip()]
     hits=[p for p in segments if 12 <= len(p) <= 350 and
           (not words or any(w in p for w in words))]
+    if not hits and attribute == "歴史":
+        # MediaWiki parse sections are useful when TextExtracts returns only the intro.
+        try:
+            sections_data=request_fn({"action":"parse","page":title,"prop":"sections","format":"json"})
+            sections=sections_data.get("parse",{}).get("sections",[])
+            relevant=[section for section in sections
+                      if any(word in re.sub(r"<[^>]+>","",section.get("line",""))
+                             for word in ("歴史","沿革"))]
+            for section in relevant[:3]:
+                section_data=request_fn({"action":"parse","page":title,
+                    "prop":"wikitext","section":section["index"],"format":"json"})
+                raw=section_data.get("parse",{}).get("wikitext",{})
+                raw=raw.get("*","") if isinstance(raw,dict) else str(raw)
+                # Only use reasonably readable text, not raw wiki markup.
+                candidates=[line.strip() for line in raw.splitlines()
+                    if 18 <= len(line.strip()) <= 300 and
+                    not re.search(r"[{}\\[\\]<>|]",line)]
+                if candidates:
+                    hits=candidates[:1]
+                    break
+        except (OSError,ValueError,KeyError,TimeoutError,TypeError):
+            pass
     if not hits:
         return {"status":"INSUFFICIENT","title":title,"source":wiki["url"],"reason":"NO_ATTRIBUTE_SENTENCE","extract_chars":len(full)}
     answer="【Wikipediaの関連記述・未検証】"+hits[0]
