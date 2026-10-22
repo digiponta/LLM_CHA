@@ -14,7 +14,7 @@ class AozoraDialogue:
             return None
         if self.pending_cat:
             self.pending_cat=False
-            if re.fullmatch(r"(一般的|一般|動物|普通の猫|動物として|生き物として)[。！!？?\s]*",text):
+            if re.fullmatch(r"(一般的(?:な質問|な話|な猫の話)?|一般(?:的な質問)?|動物(?:の話)?|普通の猫|動物として|生き物として)[。！!？?\\s]*",text):
                 self.active_work=None
                 return ("一般的な猫の話ですね。猫の生態、特徴、飼育のどれについて知りたいですか？",
                         {"route":"CAT_GENERAL_CLARIFICATION","train_ready":False})
