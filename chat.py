@@ -5403,6 +5403,22 @@ def main() -> None:
                         f"truth_state={retrieval_truth.state}]"
                     )
 
+        # v0.6.15: subject miss -> search raw evidence without assuming subjecthood.
+        # Truth-blocked indexed records are NOT bypassed via raw corpus fallback.
+        if retrieval_focus and not retrieval.hit:
+            from raw_concept_evidence_v0615 import find_mentions, present_mentions
+            raw_path = resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS)
+            raw_hits = find_mentions(raw_path, retrieval_focus)
+            if raw_hits:
+                raw_answer = present_mentions(raw_hits)
+                print("AI> " + raw_answer)
+                print("[route=RAW_CONCEPT_EVIDENCE, concept={}, hits={}, source={}, truth_state=UNVERIFIED, train_ready=False, auto_promote=False]".format(
+                    repr(retrieval_focus), len(raw_hits), str(raw_path)))
+                print()
+                history.append((user_text, raw_answer))
+                last_ai_reply = raw_answer
+                continue
+
         semantic_result = semantic_knowledge.resolve(
             user_text
         )
