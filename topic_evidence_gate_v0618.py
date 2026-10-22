@@ -6,7 +6,7 @@ _TOPIC = re.compile(r"^(.{2,40}?)(?:の話題|について話して|について
 def topic_for_external_evidence(utterance):
     value=utterance.strip()
     if not value or value.startswith("/"): return None
-    match=_TOP.fullmatch(value)
+    match=_TOPIC.fullmatch(value)
     if not match: return None
     subject=match.group(1).strip()
     if len(subject)<2 or subject in {"私","あなた","貴方","長門","こんにちは","ありがとう"}:
