@@ -93,7 +93,7 @@ def load_chat_jsonl(path: Path) -> List[Tuple[str, str, str]]:
     pairs: List[Tuple[str, str, str]] = []
     if not path.exists():
         return pairs
-    for line_no, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+    for line_no, raw in enumerate(path.read_text(encoding="utf-8-sig").splitlines(), 1):
         if not raw.strip():
             continue
         try:
