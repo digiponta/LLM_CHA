@@ -19,25 +19,36 @@ ATTRIBUTE_WORDS = {
 # A documented title alias, not a free-form ambiguous-result guess.
 ENTITY_TITLES = {"トヨタ": "トヨタ自動車"}
 
-def resolve_entity(term, lookup_fn=lookup):
-    candidate=lookup_fn(term)
-    if candidate.get("status") == "FOUND":
-        return candidate
+def resolve_entity(term, lookup_fn=lookup, request_fn=_request):
+    # A known, explicit article title must be fetched directly: search-result
+    # ambiguity does not imply that the Wikipedia page itself is ambiguous.
     alias=ENTITY_TITLES.get(term)
-    if alias and candidate.get("status") in ("AMBIGUOUS", "NOT_FOUND", "NO_EXTRACT"):
-        alternative=lookup_fn(alias)
-        if alternative.get("status")=="FOUND" and alternative.get("title")==alias:
-            return alternative
+    if alias:
+        try:
+            data=request_fn({"action":"query","prop":"extracts|info",
+                "inprop":"url","titles":alias,"redirects":1,
+                "explaintext":1,"exintro":1,"exchars":900,
+                "format":"json","formatversion":2})
+            pages=data.get("query",{}).get("pages",[])
+            if pages and not pages[0].get("missing") and pages[0].get("extract","").strip():
+                page=pages[0]
+                title=page.get("title",alias)
+                return {"status":"FOUND","term":term,"title":title,
+                    "extract":page["extract"],"url":"https://ja.wikipedia.org/wiki/"+
+                    quote(title.replace(" ","_")),"truth_state":"EXTERNAL_UNVERIFIED"}
+        except (OSError,ValueError,KeyError,TimeoutError,TypeError):
+            pass
+    candidate=lookup_fn(term)
     return candidate
 
 def article_evidence(term, attribute, lookup_fn=lookup, request_fn=_request):
-    wiki=resolve_entity(term, lookup_fn)
+    wiki=resolve_entity(term, lookup_fn, request_fn)
     if wiki.get("status") != "FOUND":
-        return {"status":wiki.get("status","NOT_FOUND"),"candidates":wiki.get("candidates",[])}
+        return {"status":wiki.get("status","NOT_FOUND"),"candidates":wiki.get("candidates",[]),"reason":"ENTITY_RESOLUTION"}
     title=wiki["title"]
     try:
         data=request_fn({"action":"query","prop":"extracts","titles":title,
-              "redirects":1,"explaintext":1,"exintro":0,"exchars":12000,
+              "redirects":1,"explaintext":1,"exintro":0,"exchars":10000,
               "format":"json","formatversion":2})
         pages=data.get("query",{}).get("pages",[])
         full=pages[0].get("extract","") if pages else ""
@@ -51,7 +62,7 @@ def article_evidence(term, attribute, lookup_fn=lookup, request_fn=_request):
     hits=[p for p in segments if 12 <= len(p) <= 350 and
           (not words or any(w in p for w in words))]
     if not hits:
-        return {"status":"INSUFFICIENT","title":title,"source":wiki["url"]}
+        return {"status":"INSUFFICIENT","title":title,"source":wiki["url"],"reason":"NO_ATTRIBUTE_SENTENCE","extract_chars":len(full)}
     answer="【Wikipediaの関連記述・未検証】"+hits[0]
     return {"status":"FOUND","title":title,"source":wiki["url"],"answer":answer,
             "truth_state":"EXTERNAL_UNVERIFIED","train_ready":False,"auto_promote":False}
