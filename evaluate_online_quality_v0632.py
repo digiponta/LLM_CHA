@@ -68,6 +68,9 @@ def main():
     p.add_argument("--min-new-accuracy",type=float,default=1.0)
     p.add_argument("--output",default="results/quality_gate_v0632.json")
     args=p.parse_args()
+    for label, candidate in (("before",args.before),("after",args.after),("tokenizer",args.tokenizer),("cases",args.cases)):
+        if not Path(candidate).is_file():
+            raise SystemExit("Missing {} file: {}. The --after checkpoint must first be created by online_train.py; this evaluator does not train.".format(label,candidate))
     cases=load_cases(args.cases)
     if not any(c["group"]=="new" for c in cases):raise ValueError("at least one new knowledge case required")
     tokenizer=Tokenizer.load(args.tokenizer)
