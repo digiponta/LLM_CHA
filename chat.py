@@ -3480,7 +3480,14 @@ def main() -> None:
             continue
         # v0.6.10: stateful, opt-in literature dialogue; preserve teaching guards.
         if aozora_dialogue is not None and not user_text.startswith("/") and cha_unknown_teacher.pending is None and cha_correction_session.pending is None:
-            literature_result = aozora_dialogue.respond(user_text)
+            # Treat an explicitly learned cat alias as the canonical cat topic.
+            # Keep the raw user utterance for logs and other routes.
+            literature_query = user_text
+            if (user_text in synonym_lexicon.expand("猫")
+                    and user_text != "猫"):
+                literature_query = "猫"
+                print("[synonym_topic_route, input={}, canonical=猫]".format(user_text))
+            literature_result = aozora_dialogue.respond(literature_query)
             if literature_result is not None:
                 literature_answer, literature_meta = literature_result
                 print("AI> " + literature_answer)
