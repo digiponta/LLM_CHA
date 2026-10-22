@@ -42,11 +42,11 @@ python prepare_aozora_corpus_v064.py --manifest data/aozora_manifest.json --max-
 
 Output:
 - `data/aozora_v064/raw/<work_id>.txt` — original decoded text for audit.
-- `data/aozora_v064/aozora_semantic_corpus.jsonl` — cleaned chunks
+- `data/aozora_v064/aozora_train.txt` — plain UTF-8 learning text for a separately configured language-model training run.\n- `data/aozora_v064/aozora_semantic_corpus.jsonl` — cleaned chunks
   containing author/title/source links, SHA-256 source checksum and
   `natural_language_refs`.
 
-Use the JSONL for review and for a **separately designed and evaluated**
+Review the JSONL; use the TXT as input for a **separately configured and evaluated**
 fine-tuning pipeline. Do not feed it directly into personal-fact
 Semantic Memory or truth-promote fictional statements. Narrative literature
 requires train/eval splitting by **work**, not random chunk, to avoid leakage.
