@@ -31,7 +31,7 @@ def validate_work(item):
         raise ValueError("work requires ID/title/author/URL/card/rights")
     if item["rights_checked"] is not True or item["rights_basis"] != "public_domain":
         raise ValueError("only explicitly reviewed public-domain works supported")
-    for key in ("zip_url", "card_url"):
+    if not re.fullmatch(r"[0-9A-Za-z_-]{1,64}", str(item["work_id"])):\n        raise ValueError("unsafe work_id")\n    for key in ("zip_url", "card_url"):
         url = urllib.parse.urlsplit(item[key])
         if (url.scheme != "https" or url.hostname not in AOZORA_HOSTS
                 or url.username or url.password or url.port not in (None, 443)):
