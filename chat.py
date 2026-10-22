@@ -3573,8 +3573,10 @@ def main() -> None:
         if relation is not None and relation["subject"] != "スターバックス":
             # No answer is invented from a Wikipedia article that lacks attribute evidence.
             try:
-                relation_wiki = cha_wikipedia_lookup(relation["subject"], context=raw_user_text)
-                relation_grounded = grounded_attribute_answer(relation, relation_wiki)
+                from wikipedia_relation_evidence_v0621 import article_evidence
+                relation_article = article_evidence(relation["subject"], relation["attribute"])
+                relation_grounded = ({"answer":relation_article["answer"],"source":relation_article["source"]}
+                                     if relation_article["status"] == "FOUND" else None)
             except (OSError, ValueError, KeyError, TimeoutError):
                 relation_grounded = None
             if relation_grounded:
@@ -5477,8 +5479,11 @@ def main() -> None:
         if named_topic and (not retrieval_focus or not retrieval.hit):
             named_truth = effective_truth_record(truth_store_path, named_topic)
             if named_truth.state not in ("FALSE", "REJECTED", "BLOCKED", "CONTRADICTED"):
+                from wikipedia_relation_evidence_v0621 import resolve_entity
+                entity_resolved = resolve_entity(named_topic)
+                wiki_lookup_term = entity_resolved.get("title", named_topic) if entity_resolved.get("status") == "FOUND" else named_topic
                 wiki_topic = cha_unknown_wiki_fallback(
-                    named_topic, raw_user_text, cha_wiki_conversation.persona,
+                    wiki_lookup_term, raw_user_text, cha_wiki_conversation.persona,
                     cha_wikipedia_lookup, cha_persona_wiki_respond,
                     grounded=cha_wiki_grounded_reply, cache=cha_persona_wiki_cache)
                 if source_is_usable(wiki_topic):
