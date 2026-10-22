@@ -241,6 +241,7 @@ class ConversationDataset(Dataset):
         context_length: int,
     ):
         self.rows = []
+        self.fingerprints = []
         self.pad_id = tokenizer.pad_id
 
         for user_text, answer_text in pairs:
@@ -275,6 +276,7 @@ class ConversationDataset(Dataset):
             y += [tokenizer.pad_id] * pad_count
             mask += [0.0] * pad_count
 
+            self.fingerprints.append(pair_fingerprint(user_text, answer_text))
             self.rows.append((
                 torch.tensor(x, dtype=torch.long),
                 torch.tensor(y, dtype=torch.long),
@@ -428,6 +430,11 @@ def main() -> None:
         val_ds = ConversationDataset(val_pairs, tokenizer, model.context_length)
         val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False)
 
+    # Batches use an index-aware dataset so we can audit actual optimizer steps.
+    indexed_train_ds = torch.utils.data.TensorDataset(
+        torch.arange(len(train_ds), dtype=torch.long))
+    train_loader = DataLoader(indexed_train_ds, batch_size=args.batch_size, shuffle=True)
+    training_exposure = {}
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=args.learning_rate,
@@ -473,13 +480,17 @@ def main() -> None:
         batches = 0
         started = time.perf_counter()
 
-        for x, y, mask in train_loader:
-            x, y, mask = x.to(device), y.to(device), mask.to(device)
+        for (indices,) in train_loader:
+            batch = [train_ds[int(i)] for i in indices]
+            x, y, mask = (torch.stack([row[j] for row in batch]).to(device) for j in range(3))
             optimizer.zero_grad(set_to_none=True)
             loss = masked_loss(model, x, y, mask)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
+            for i in indices:
+                fp = train_ds.fingerprints[int(i)]
+                training_exposure[fp] = training_exposure.get(fp, 0) + 1
             total += float(loss.item())
             batches += 1
 
@@ -578,10 +589,11 @@ def main() -> None:
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     consumed_fingerprints = set(checkpoint_fingerprints)
-    consumed_fingerprints.update(
-        pair_fingerprint(user, answer)
-        for user, answer, _ in pending_rows
-    )
+    new_confirmed = {pair_fingerprint(u, a) for u, a, _ in pending_rows
+                     if training_exposure.get(pair_fingerprint(u, a), 0) > 0}
+    if len(new_confirmed) != len(pending_rows):
+        raise RuntimeError("Not every pending pair received an optimizer step")
+    consumed_fingerprints.update(new_confirmed)
 
     model.save_checkpoint(
         str(output_path),
@@ -591,15 +603,14 @@ def main() -> None:
         metadata={
             "knowledge_binding_version": "v10.11.6",
             "trained_fingerprints": sorted(consumed_fingerprints),
+            "training_exposure_counts_v0630": {fp: training_exposure[fp]
+                for fp in sorted(new_confirmed)},
             "base_model": str(base_path),
             "chat_data": str(chat_path),
         },
     )
 
-    trained_fingerprints.update(
-        pair_fingerprint(user, answer)
-        for user, answer, _ in pending_rows
-    )
+    trained_fingerprints.update(new_confirmed)
     save_training_state(state_path, trained_fingerprints)
 
     print()
