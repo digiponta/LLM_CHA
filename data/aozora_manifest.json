@@ -1,0 +1,20 @@
+[
+  {
+    "work_id": "1567",
+    "title": "走れメロス",
+    "author": "太宰治",
+    "card_url": "https://www.aozora.gr.jp/cards/000035/card1567.html",
+    "zip_url": "https://www.aozora.gr.jp/cards/000035/files/1567_ruby_4948.zip",
+    "rights_checked": true,
+    "rights_basis": "public_domain"
+  },
+  {
+    "work_id": "789",
+    "title": "吾輩は猫である",
+    "author": "夏目漱石",
+    "card_url": "https://www.aozora.gr.jp/cards/000148/card789.html",
+    "zip_url": "https://www.aozora.gr.jp/cards/000148/files/789_ruby_5639.zip",
+    "rights_checked": true,
+    "rights_basis": "public_domain"
+  }
+]
