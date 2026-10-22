@@ -11,6 +11,13 @@ class SynonymTests(unittest.TestCase):
             self.assertTrue(result["added"])
             self.assertIn("猫",l.expand("ぬこ"))
             self.assertIn("ぬこ",SynonymLexicon(Path(d)/"terms.jsonl").expand("猫"))
+    def test_natural_alias_with_comma(self):
+        with tempfile.TemporaryDirectory() as d:
+            lex=SynonymLexicon(Path(d)/"synonyms.jsonl")
+            result=learn_natural_statement("「ぬこ」は、猫の別名",lex)
+            self.assertIsNotNone(result)
+            self.assertIn("ぬこ",lex.expand("猫"))
+            self.assertIn("猫",lex.expand("ぬこ"))
     def test_natural_statement_not_a_generic_request(self):
         with tempfile.TemporaryDirectory() as d:
             l=SynonymLexicon(Path(d)/"terms.jsonl")
