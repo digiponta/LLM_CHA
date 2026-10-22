@@ -80,7 +80,7 @@ def article_evidence(term, attribute, lookup_fn=lookup, request_fn=_request):
                     line=line.strip()
                     if not (18 <= len(line) <= 300):
                         return False
-                    if re.search(r"<|>|\\{\\{|\\}\\}|\\[\\[|\\]\\]|\\[https?://|\\|",line):
+                    if any(token in line for token in ("<", ">", "{{", "}}", "[[", "]]", "[http", "|")):
                         return False
                     if line.startswith(("=", "*", "#", ";", ":", "!", "{", "}")):
                         return False
