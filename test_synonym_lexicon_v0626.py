@@ -1,9 +1,20 @@
 import tempfile
 import unittest
 from pathlib import Path
-from synonym_lexicon_v0626 import SynonymLexicon,learn_command,best_raw_mentions
+from synonym_lexicon_v0626 import SynonymLexicon,learn_command,best_raw_mentions,learn_natural_statement
 
 class SynonymTests(unittest.TestCase):
+    def test_natural_alias(self):
+        with tempfile.TemporaryDirectory() as d:
+            l=SynonymLexicon(Path(d)/"terms.jsonl")
+            result=learn_natural_statement("「ぬこ」も猫の別名",l)
+            self.assertTrue(result["added"])
+            self.assertIn("猫",l.expand("ぬこ"))
+            self.assertIn("ぬこ",SynonymLexicon(Path(d)/"terms.jsonl").expand("猫"))
+    def test_natural_statement_not_a_generic_request(self):
+        with tempfile.TemporaryDirectory() as d:
+            l=SynonymLexicon(Path(d)/"terms.jsonl")
+            self.assertIsNone(learn_natural_statement("猫の特徴は",l))
     def test_cat(self):
         with tempfile.TemporaryDirectory() as d:
             l=SynonymLexicon(Path(d)/"terms.jsonl")
