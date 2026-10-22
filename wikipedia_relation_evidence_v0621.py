@@ -90,12 +90,20 @@ def article_evidence(term, attribute, lookup_fn=lookup, request_fn=_request):
                 candidates=[line.strip() for line in raw.splitlines()
                             if readable_line(line)]
                 if candidates:
-                    hits=candidates[:1]
+                    hits=candidates
                     break
         except (OSError,ValueError,KeyError,TimeoutError,TypeError):
             pass
     if not hits:
         return {"status":"INSUFFICIENT","title":title,"source":wiki["url"],"reason":"NO_ATTRIBUTE_SENTENCE","extract_chars":len(full)}
-    answer="【Wikipediaの関連記述・未検証】"+hits[0]
+    if attribute == "歴史":
+        from history_evidence_rank_v0625 import history_events
+        events = history_events(hits)
+        if not events:
+            return {"status":"INSUFFICIENT","title":title,"source":wiki["url"],
+                    "reason":"NO_DATED_HISTORY","extract_chars":len(full)}
+        answer="【Wikipediaの年代付き記録・未検証】"+" / ".join(events)
+    else:
+        answer="【Wikipediaの関連記述・未検証】"+hits[0]
     return {"status":"FOUND","title":title,"source":wiki["url"],"answer":answer,
             "truth_state":"EXTERNAL_UNVERIFIED","train_ready":False,"auto_promote":False}
