@@ -84,3 +84,22 @@ def best_raw_mentions(path, terms, max_results=3):
                 hits.append(row)
                 if len(hits)>=max_results:return hits
     return hits
+
+def learn_natural_statement(text, lexicon):
+    """Parse explicit Japanese alias assertions; do not infer from similarity."""
+    term=r"[一-龯ぁ-んァ-ヶーA-Za-z0-9]{1,40}"
+    patterns=[
+        rf"^[「『]?({term})[」』]?も[「『]?({term})[」』]?の(?:別名|同義語|言い換え)(?:です|だ|である)?[。！!]?\s*$",
+        rf"^[「『]?({term})[」』]?は[「『]?({term})[」』]?の(?:別名|同義語)(?:です|だ|である)?[。！!]?\s*$",
+        rf"^[「『]?({term})[」』]?と[「『]?({term})[」』]?は(?:同義語|同じ意味)(?:です|だ|である)?[。！!]?\s*$",
+    ]
+    for i,pattern in enumerate(patterns):
+        m=re.fullmatch(pattern,text.strip())
+        if m:
+            left,right=m.groups()
+            if i in (0,1):
+                left,right=right,left
+            changed=lexicon.add(left,right)
+            return {"added":changed,"terms":lexicon.expand(left),
+                    "source":"USER_STATEMENT"}
+    return None
