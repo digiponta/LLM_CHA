@@ -3390,6 +3390,8 @@ def main() -> None:
     cha_wiki_retry_status: str = "NEVER_RUN"
     cha_wiki_last_generated: str | None = None
 
+    from identity_context_v0617 import IdentityContext
+    identity_context = IdentityContext()
     aozora_dialogue = None
     if os.environ.get("LLM_CHA_AOZORA_ROUTER", "0") == "1":
         from aozora_literature_router_v069 import load_catalog
@@ -5405,10 +5407,11 @@ def main() -> None:
 
         # v0.6.16: dialogue/persona intent precedes lexical raw corpus retrieval.
         from raw_evidence_priority_v0616 import conversational_intercept, allow_raw_evidence
-        immediate_reply = conversational_intercept(user_text)
-        if immediate_reply is not None:
+        identity_result = identity_context.respond(user_text)
+        if identity_result is not None:
+            immediate_reply, identity_route = identity_result
             print("AI> " + immediate_reply)
-            print("[route=CONVERSATION_CLARIFICATION, train_ready=False]")
+            print("[route={}, train_ready=False]".format(identity_route))
             print()
             last_ai_reply = immediate_reply
             continue
