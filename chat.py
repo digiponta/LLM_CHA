@@ -3390,6 +3390,16 @@ def main() -> None:
     cha_wiki_retry_status: str = "NEVER_RUN"
     cha_wiki_last_generated: str | None = None
 
+    aozora_dialogue = None
+    if os.environ.get("LLM_CHA_AOZORA_ROUTER", "0") == "1":
+        from aozora_literature_router_v069 import load_catalog
+        from aozora_dialogue_v0610 import AozoraDialogue
+        try:
+            aozora_dialogue = AozoraDialogue(load_catalog(
+                PROJECT_ROOT / "data" / "aozora_v064" / "aozora_semantic_corpus.jsonl"))
+        except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+            print("[aozora initialization unavailable: {}]".format(exc))
+
     while True:
         try:
             user_text = input("You> ").strip()
@@ -3427,19 +3437,13 @@ def main() -> None:
                 print("[route={}, source={}, truth_state=EXTERNAL_UNVERIFIED, promoted=False]".format(result["route"],result["source"]))
             print()
             continue
-        # v0.6.9 opt-in literature routing: no writes or automatic promotion.
-        if os.environ.get("LLM_CHA_AOZORA_ROUTER", "0") == "1" and not user_text.startswith("/"):
-            from aozora_literature_router_v069 import load_catalog, route_literature
-            corpus_path = PROJECT_ROOT / "data" / "aozora_v064" / "aozora_semantic_corpus.jsonl"
-            try:
-                literature_result = route_literature(user_text, load_catalog(corpus_path))
-            except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
-                print("[aozora lookup unavailable: {}]".format(exc))
-                literature_result = None
-            if literature_result is not None and cha_unknown_teacher.pending is None and cha_correction_session.pending is None:
+        # v0.6.10: stateful, opt-in literature dialogue; preserve teaching guards.
+        if aozora_dialogue is not None and not user_text.startswith("/") and cha_unknown_teacher.pending is None and cha_correction_session.pending is None:
+            literature_result = aozora_dialogue.respond(user_text)
+            if literature_result is not None:
                 literature_answer, literature_meta = literature_result
                 print("AI> " + literature_answer)
-                print("[aozora="+json.dumps(literature_meta, ensure_ascii=False)+"]")
+                print("[aozora="+json.dumps(literature_meta,ensure_ascii=False)+"]")
                 print()
                 continue
         if not user_text.startswith("/"):
