@@ -5712,6 +5712,28 @@ def main() -> None:
                     dispatch.focus,raw_user_text,cha_wiki_conversation.persona,
                     cha_wikipedia_lookup,cha_persona_wiki_respond,
                     grounded=cha_wiki_grounded_reply,cache=cha_persona_wiki_cache)
+                # v0.6.27: when the surface form is UNKNOWN on Wikipedia,
+                # retry approved lexical equivalents without changing the
+                # user's query, the source trust state, or model weights.
+                if wiki_fallback["status"]!="FOUND":
+                    for synonym_term in synonym_lexicon.expand(dispatch.focus)[1:]:
+                        if not truth_allows_direct_retrieval(
+                                effective_truth_record(truth_store_path, dispatch.focus).state):
+                            break
+                        if not truth_allows_direct_retrieval(
+                                effective_truth_record(truth_store_path, synonym_term).state):
+                            continue
+                        synonym_wiki = cha_unknown_wiki_fallback(
+                            synonym_term, synonym_term + "とは",
+                            cha_wiki_conversation.persona,
+                            cha_wikipedia_lookup, cha_persona_wiki_respond,
+                            grounded=cha_wiki_grounded_reply,
+                            cache=cha_persona_wiki_cache)
+                        if synonym_wiki["status"]=="FOUND":
+                            wiki_fallback = synonym_wiki
+                            print("[synonym_wiki_fallback, input={}, resolved={}]".format(
+                                dispatch.focus, synonym_term))
+                            break
                 if wiki_fallback["status"]=="FOUND":
                     cha_wiki_conversation.offer(wiki_fallback["wiki_context"])
                     print("AI> "+wiki_fallback["answer"])
