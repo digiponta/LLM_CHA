@@ -3402,6 +3402,8 @@ def main() -> None:
         except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
             print("[aozora initialization unavailable: {}]".format(exc))
 
+    from semantic_relation_context_v0620 import RelationContext, grounded_attribute_answer, clarification
+    relation_context = RelationContext()
     menu_topic_context = None
     while True:
         try:
@@ -3567,6 +3569,24 @@ def main() -> None:
             continue
 
         raw_user_text = user_text
+        relation = relation_context.observe(raw_user_text)
+        if relation is not None and relation["subject"] != "スターバックス":
+            # No answer is invented from a Wikipedia article that lacks attribute evidence.
+            try:
+                relation_wiki = cha_wikipedia_lookup(relation["subject"], context=raw_user_text)
+                relation_grounded = grounded_attribute_answer(relation, relation_wiki)
+            except (OSError, ValueError, KeyError, TimeoutError):
+                relation_grounded = None
+            if relation_grounded:
+                print("AI> " + relation_grounded["answer"])
+                print("[route=SEMANTIC_RELATION_WIKIPEDIA, subject={}, attribute={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(
+                    relation["subject"], relation["attribute"], relation_grounded["source"]))
+            else:
+                print("AI> " + clarification(relation))
+                print("[route=SEMANTIC_RELATION_CLARIFY, subject={}, attribute={}, train_ready=False]".format(
+                    relation["subject"], relation["attribute"]))
+            print()
+            continue
         # v0.6.19: intent resolution precedes unrestricted model generation.
         from menu_intent_v0619 import menu_request, menu_answer
         if raw_user_text in ("スターバックス", "スターバックスの話題"):
