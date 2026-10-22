@@ -5403,9 +5403,19 @@ def main() -> None:
                         f"truth_state={retrieval_truth.state}]"
                     )
 
+        # v0.6.16: dialogue/persona intent precedes lexical raw corpus retrieval.
+        from raw_evidence_priority_v0616 import conversational_intercept, allow_raw_evidence
+        immediate_reply = conversational_intercept(user_text)
+        if immediate_reply is not None:
+            print("AI> " + immediate_reply)
+            print("[route=CONVERSATION_CLARIFICATION, train_ready=False]")
+            print()
+            last_ai_reply = immediate_reply
+            continue
+
         # v0.6.15: subject miss -> search raw evidence without assuming subjecthood.
         # Truth-blocked indexed records are NOT bypassed via raw corpus fallback.
-        if retrieval_focus and not retrieval.hit:
+        if retrieval_focus and not retrieval.hit and allow_raw_evidence(user_text, retrieval_focus):
             from raw_concept_evidence_v0615 import find_mentions, present_mentions
             raw_path = resolve_runtime_path(DEFAULT_RAW_KNOWLEDGE_CORPUS)
             raw_hits = find_mentions(raw_path, retrieval_focus)
