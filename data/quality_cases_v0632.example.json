@@ -1,0 +1,35 @@
+[
+  {
+    "id": "identity",
+    "group": "persona",
+    "prompt": "貴方は誰",
+    "expected_any": [
+      "長門有希"
+    ]
+  },
+  {
+    "id": "greeting",
+    "group": "persona",
+    "prompt": "こんばんは",
+    "expected_any": [
+      "こんばんは"
+    ]
+  },
+  {
+    "id": "cat",
+    "group": "known",
+    "prompt": "猫",
+    "expected_any": [
+      "猫",
+      "ネコ"
+    ]
+  },
+  {
+    "id": "new_training_example",
+    "group": "new",
+    "prompt": "v0632実験の合言葉は何ですか",
+    "expected_any": [
+      "検証専用の合言葉"
+    ]
+  }
+]
