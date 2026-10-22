@@ -74,10 +74,21 @@ def article_evidence(term, attribute, lookup_fn=lookup, request_fn=_request):
                     "prop":"wikitext","section":section["index"],"format":"json"})
                 raw=section_data.get("parse",{}).get("wikitext",{})
                 raw=raw.get("*","") if isinstance(raw,dict) else str(raw)
-                # Only use reasonably readable text, not raw wiki markup.
+                # Reject all wiki/XML markup before treating a passage as prose.
+                # Do not return citation fragments or partial reference tags.
+                def readable_line(line):
+                    line=line.strip()
+                    if not (18 <= len(line) <= 300):
+                        return False
+                    if re.search(r"<|>|\\{\\{|\\}\\}|\\[\\[|\\]\\]|\\[https?://|\\|",line):
+                        return False
+                    if line.startswith(("=", "*", "#", ";", ":", "!", "{", "}")):
+                        return False
+                    if any(mark in line for mark in ("ref>", "citation", "脚注")):
+                        return False
+                    return True
                 candidates=[line.strip() for line in raw.splitlines()
-                    if 18 <= len(line.strip()) <= 300 and
-                    not re.search(r"[{}\\[\\]<>|]",line)]
+                            if readable_line(line)]
                 if candidates:
                     hits=candidates[:1]
                     break
