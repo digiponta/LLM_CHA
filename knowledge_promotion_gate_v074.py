@@ -11,6 +11,8 @@ def promote(approved,candidates,record_id,reviewer,evidence,decision,report_path
         raise ValueError("reviewer and evidence required")
     if len(reviewer)>256 or len(evidence)>12000:
         raise ValueError("review metadata too large")
+    if report_path and Path(report_path).resolve() in (Path(approved).resolve(),Path(candidates).resolve()):
+        raise ValueError("audit path overlaps memory")
     mem=DualMemory(approved,candidates)
     if not any(r["id"]==record_id and r["status"]=="PENDING" for r in mem.candidates()):
         raise ValueError("pending candidate not found")
