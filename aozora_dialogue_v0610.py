@@ -49,7 +49,7 @@ class AozoraDialogue:
                 self.general_cat=False
                 self.active_work=meta["work_id"]
             return result
-        if self.active_work=="789" and re.fullmatch(r"(猫の名前は|猫の名前|主人公の名前は|主人公の名前)[？?]?",text):
+        if self.active_work=="789" and re.fullmatch(r"(猫の名前は|猫の名前|主人公の名前は|主人公の名前|名前は|名前)[？?]?",text):
             return ("『吾輩は猫である』の主人公の猫には名前がありません。冒頭でも名前がまだないと語られます。",
                     {"route":"AOZORA_CONTEXT_FOLLOWUP","work_id":"789",
                      "truth_state":"SOURCE_BASED_SUMMARY","train_ready":False,"promoted":False})
