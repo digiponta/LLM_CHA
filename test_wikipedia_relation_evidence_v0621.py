@@ -6,7 +6,7 @@ def wiki(term):
     return {"status":"FOUND","title":term,"url":"https://ja.wikipedia.org/wiki/"+term,"extract":"日本の企業。"}
 
 def req(params):
-    return {"query":{"pages":[{"extract":"これは企業の説明。\n本社は愛知県豊田市に置かれている。\n会社の歴史と創業について記述されている。"}]}}
+    return {"query":{"pages":[{"extract":"これは企業の説明。\n本社は愛知県豊田市に置かれている。\n1937年に会社を創業した。"}]}}
 
 class EvidenceTests(unittest.TestCase):
     def test_alias(self):
@@ -18,7 +18,7 @@ class EvidenceTests(unittest.TestCase):
     def test_history(self):
         a=article_evidence("トヨタ","歴史",wiki,req)
         self.assertEqual(a["status"],"FOUND")
-        self.assertIn("歴史",a["answer"])
+        self.assertIn("1937年",a["answer"])
     def test_location(self):
         a=article_evidence("トヨタ","所在地",wiki,req)
         self.assertEqual(a["status"],"FOUND")
