@@ -3421,6 +3421,8 @@ def main() -> None:
     active_evidence_source = ""
     from multi_topic_evidence_v0639 import TopicEvidenceContext
     topic_evidence = TopicEvidenceContext(max_topics=4)
+    from persistent_topic_context_v0640 import save_context, load_context
+    topic_context_file = PROJECT_ROOT / "data" / "topic_context_v0640.json"
     while True:
         try:
             user_text = input("You> ").strip()
@@ -3429,6 +3431,30 @@ def main() -> None:
             break
 
         if not user_text:
+            continue
+        if user_text in ("/context-save", "/context-load", "/context-clear"):
+            try:
+                if user_text == "/context-save":
+                    save_context(topic_evidence, topic_context_file)
+                    print("[route=CONTEXT_SAVE, file={}, topics={}]".format(topic_context_file,len(topic_evidence.items)))
+                elif user_text == "/context-load":
+                    restored_context = load_context(topic_context_file, max_topics=4)
+                    topic_evidence = restored_context
+                    current = topic_evidence.current()
+                    active_evidence_topic = current["topic"] if current else None
+                    active_evidence_extract = current["extract"] if current else ""
+                    active_evidence_source = current["source"] if current else ""
+                    print("[route=CONTEXT_LOAD, file={}, topics={}, active={}]".format(
+                        topic_context_file,len(topic_evidence.items),topic_evidence.active))
+                else:
+                    topic_evidence.reset()
+                    active_evidence_topic = None
+                    active_evidence_extract = ""
+                    active_evidence_source = ""
+                    print("[route=CONTEXT_CLEAR, scope=session, saved_file_unchanged=True]")
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                print("[context_error={}]".format(exc))
+            print()
             continue
         # v0.6.39: explicit restoration of a previously evidenced topic.
         if not user_text.startswith("/"):
