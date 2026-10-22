@@ -9,6 +9,15 @@ class AozoraDialogueTests(unittest.TestCase):
         result=self.dialogue.respond("猫の名前は")
         self.assertEqual(result[1]["route"],"AOZORA_CONTEXT_FOLLOWUP")
         self.assertIn("名前がありません",result[0])
+    def test_elliptical_name_followup(self):
+        self.dialogue.respond("吾輩は猫")
+        answer, meta = self.dialogue.respond("名前は")
+        self.assertEqual(meta["route"], "AOZORA_CONTEXT_FOLLOWUP")
+        self.assertIn("名前がありません", answer)
+
+    def test_name_without_context_not_intercepted(self):
+        self.assertIsNone(self.dialogue.respond("名前は"))
+
     def test_cat_general_resolution(self):
         self.assertEqual(self.dialogue.respond("猫")[1]["route"],"CAT_TOPIC_CLARIFY")
         self.assertEqual(self.dialogue.respond("一般的")[1]["route"],"CAT_GENERAL_CLARIFICATION")
