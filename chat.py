@@ -3575,6 +3575,9 @@ def main() -> None:
             try:
                 from wikipedia_relation_evidence_v0621 import article_evidence
                 relation_article = article_evidence(relation["subject"], relation["attribute"])
+                print("[relation_evidence_status={}, reason={}, subject={}, attribute={}, extract_chars={}]".format(
+                    relation_article.get("status"), relation_article.get("reason","-"),
+                    relation["subject"], relation["attribute"], relation_article.get("extract_chars","-")))
                 relation_grounded = ({"answer":relation_article["answer"],"source":relation_article["source"]}
                                      if relation_article["status"] == "FOUND" else None)
             except (OSError, ValueError, KeyError, TimeoutError):
@@ -5482,6 +5485,12 @@ def main() -> None:
                 from wikipedia_relation_evidence_v0621 import resolve_entity
                 entity_resolved = resolve_entity(named_topic)
                 wiki_lookup_term = entity_resolved.get("title", named_topic) if entity_resolved.get("status") == "FOUND" else named_topic
+                if entity_resolved.get("status") == "FOUND" and named_topic != wiki_lookup_term:
+                    print("AI> 【Wikipediaの概要・未検証】" + entity_resolved["extract"].split("。")[0] + "。どの点について知りたい？")
+                    print("[route=NAMED_TOPIC_WIKIPEDIA_EVIDENCE, term={}, resolved_title={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(
+                        named_topic, wiki_lookup_term, entity_resolved["url"]))
+                    print()
+                    continue
                 wiki_topic = cha_unknown_wiki_fallback(
                     wiki_lookup_term, raw_user_text, cha_wiki_conversation.persona,
                     cha_wikipedia_lookup, cha_persona_wiki_respond,
