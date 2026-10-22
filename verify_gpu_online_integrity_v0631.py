@@ -13,7 +13,9 @@ from online_train import pair_fingerprint
 
 def model_digest(path):
     checkpoint=torch.load(path,map_location="cpu",weights_only=False)
-    state=checkpoint.get("model_state_dict") or checkpoint.get("model") or checkpoint.get("state_dict")
+    state=checkpoint.get("model_state_dict")
+    if state is None:
+        state=checkpoint.get("state_dict")
     if state is None:
         return None
     h=hashlib.sha256()
@@ -57,7 +59,9 @@ def run_probe(base_model,tokenizer,trainer="online_train.py",output_report="resu
             result["fingerprint_checkpoint_recorded"]=fp in metadata.get("trained_fingerprints",[])
             result["fingerprint_state_recorded"]=fp in json.loads(state.read_text(encoding="utf-8")).get("trained_fingerprints",[])
             result["model_weights_differ"]=model_digest(base_model)!=model_digest(output)
-            second=subprocess.run(command,capture_output=True,text=True,encoding="utf-8",errors="replace")
+            next_command=list(command)
+            next_command[next_command.index("--base-model")+1]=str(output)
+            second=subprocess.run(next_command,capture_output=True,text=True,encoding="utf-8",errors="replace")
             result["second_returncode"]=second.returncode
             result["second_skipped"]=second.returncode==3 and "training skipped" in second.stdout
             result["pass"]=all((result["base_checkpoint_unchanged"],
