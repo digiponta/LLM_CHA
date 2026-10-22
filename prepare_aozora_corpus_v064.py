@@ -31,7 +31,9 @@ def validate_work(item):
         raise ValueError("work requires ID/title/author/URL/card/rights")
     if item["rights_checked"] is not True or item["rights_basis"] != "public_domain":
         raise ValueError("only explicitly reviewed public-domain works supported")
-    if not re.fullmatch(r"[0-9A-Za-z_-]{1,64}", str(item["work_id"])):\n        raise ValueError("unsafe work_id")\n    for key in ("zip_url", "card_url"):
+    if not re.fullmatch(r"[0-9A-Za-z_-]{1,64}", str(item["work_id"])):
+        raise ValueError("unsafe work_id")
+    for key in ("zip_url", "card_url"):
         url = urllib.parse.urlsplit(item[key])
         if (url.scheme != "https" or url.hostname not in AOZORA_HOSTS
                 or url.username or url.password or url.port not in (None, 443)):
@@ -74,7 +76,7 @@ def clean_aozora(text):
     # Header/footer separators in the standard Aozora text format.
     parts = re.split(r"(?m)^-{10,}\s*$", text)
     if len(parts) >= 3:
-        text = "-".join(parts[2:]) if False else "\n".join(parts[2:])
+        text = "\n".join(parts[2:])
     text = re.split(r"(?m)^底本[：:]|^入力[：:]|^校正[：:]", text, maxsplit=1)[0]
     text = ANNOTATION.sub("", text)
     text = RUBY.sub("", text).replace("｜", "")
