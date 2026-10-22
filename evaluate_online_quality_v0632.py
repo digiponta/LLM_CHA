@@ -87,6 +87,11 @@ def main():
     result=compare(assessments["before"],assessments["after"],cases,
                    args.max_forgetting,args.min_new_accuracy)
     result["answers"]=answers
+    from response_quality_gate_v0633 import gate_quality_report
+    quality = gate_quality_report(result,cases)
+    result["response_quality_v0633"]=quality
+    result["legacy_keyword_gate_pass"]=result["pass"]
+    result["pass"]=bool(result["pass"] and quality["pass"])
     result["device"]=str(device)
     result["before_checkpoint"]=args.before
     result["after_checkpoint"]=args.after
