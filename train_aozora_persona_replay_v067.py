@@ -131,7 +131,7 @@ def main():
     p.add_argument("--base-model",default="model/model-llm-try-nagato-chat-v94.pt")
     p.add_argument("--tokenizer",default="model/tokenizer-v0.7-bpe.json")
     p.add_argument("--corpus",default="data/aozora_v064/aozora_semantic_corpus.jsonl")
-    p.add_argument("--persona-data",default="data/conversation-ja.txt")
+    p.add_argument("--persona-data",default="data/nagato_chat.jsonl")
     p.add_argument("--validation-work",default="1567")
     p.add_argument("--output",default="model/model-llm-cha-aozora-replay-v067.pt")
     p.add_argument("--report",default="results/aozora_replay_v067.json")
