@@ -42,6 +42,12 @@ class AozoraDialogue:
             self.pending_cat=True
             return ("猫についての一般的な質問ですか。それとも夏目漱石の『吾輩は猫である』についてですか？",
                     {"route":"CAT_TOPIC_CLARIFY","train_ready":False})
+        if "789" in self.catalog and re.fullmatch(
+                r"(?:吾輩は猫である|吾輩は猫)(?:の)?(?:猫の|主人公の)?名前は?[？?]?",text):
+            self.active_work="789"
+            return ("『吾輩は猫である』の主人公の猫には名前がありません。",
+                    {"route":"AOZORA_DIRECT_QUESTION","work_id":"789",
+                     "truth_state":"SOURCE_BASED_SUMMARY","train_ready":False,"promoted":False})
         result=route_literature(text,self.catalog)
         if result is not None:
             meta=result[1]
