@@ -5739,6 +5739,18 @@ def main() -> None:
                                 dispatch.focus, synonym_term))
                             print("[retrieval_trace=" + trace_match(dispatch.focus, synonym_term, "WIKIPEDIA", synonym_wiki.get("source","-"), "EXTERNAL_UNVERIFIED").as_json() + "]")
                             break
+                if direct_article is not None:
+                    synonym_article = None
+                    if wiki_fallback["status"] == "FOUND":
+                        synonym_article = exact_title(wiki_fallback.get("term", dispatch.focus))
+                    distinct = distinct_pages([direct_article, synonym_article])
+                    if len(distinct) > 1 or wiki_fallback["status"] != "FOUND":
+                        print("AI> " + render_pages(distinct))
+                        print("[route=WIKIPEDIA_SYNONYM_ARTICLES, count={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(len(distinct)))
+                        print()
+                        last_ai_reply = None
+                        cha_wiki_last_generated = None
+                        continue
                 if wiki_fallback["status"]=="FOUND":
                     cha_wiki_conversation.offer(wiki_fallback["wiki_context"])
                     print("AI> "+wiki_fallback["answer"])
