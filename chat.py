@@ -3402,6 +3402,7 @@ def main() -> None:
         except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
             print("[aozora initialization unavailable: {}]".format(exc))
 
+    menu_topic_context = None
     while True:
         try:
             user_text = input("You> ").strip()
@@ -3566,6 +3567,23 @@ def main() -> None:
             continue
 
         raw_user_text = user_text
+        # v0.6.19: intent resolution precedes unrestricted model generation.
+        from menu_intent_v0619 import menu_request, menu_answer
+        if raw_user_text in ("スターバックス", "スターバックスの話題"):
+            menu_topic_context = "スターバックス"
+        menu_intent = menu_request(raw_user_text, menu_topic_context)
+        if menu_intent is not None:
+            menu_reply = menu_answer(menu_intent)
+            print("AI> " + menu_reply)
+            print("[route=MENU_INTENT_CLARIFY, topic={}, aspect={}, truth_state=NO_UNSUPPORTED_MENU_FACTS, train_ready=False]".format(
+                menu_intent.get("topic","UNRESOLVED"), menu_intent["aspect"]))
+            if menu_intent["status"] == "FOUND":
+                menu_topic_context = menu_intent["topic"]
+            print()
+            last_ai_reply = menu_reply
+            continue
+        if raw_user_text not in ("スターバックス", "スターバックスの話題"):
+            menu_topic_context = None
         cha_sharing=cha_persona_context.handle(raw_user_text)
         if cha_sharing is not None:
             wiki_auto=cha_persona_auto_wiki_enrich(
