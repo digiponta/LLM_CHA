@@ -5652,10 +5652,20 @@ def main() -> None:
                             "【未検証の記録】" + shown
                             if decision.state == "UNVERIFIED" else shown
                         )
+                        if retrieval_truth.state == "UNVERIFIED" and retrieval.route == "CORPUS_MEMORY":
+                            from raw_wiki_parallel_v0735 import parallel_evidence
+                            corpus_wiki=parallel_evidence(display_answer,retrieval_focus,cha_wikipedia_lookup)
+                            display_answer=corpus_wiki["answer"]
+                            print("[raw_wiki_parallel={}, truth_state=EXTERNAL_UNVERIFIED, auto_promote=False]".format(corpus_wiki["wiki_status"]))
                         print(f"AI> {display_answer}")
                         print(f"[grounded-expansion=INITIAL, shown={shown_count}, total={total_count}]")
                     else:
                         shown = retrieval.answer
+                        if retrieval_truth.state == "UNVERIFIED" and retrieval.route == "CORPUS_MEMORY":
+                            from raw_wiki_parallel_v0735 import parallel_evidence
+                            corpus_wiki=parallel_evidence(shown,retrieval_focus,cha_wikipedia_lookup)
+                            shown=corpus_wiki["answer"]
+                            print("[raw_wiki_parallel={}, truth_state=EXTERNAL_UNVERIFIED, auto_promote=False]".format(corpus_wiki["wiki_status"]))
                         print(f"AI> {shown}")
                     function_part = ""
                     if retrieval.function_structure is not None:
@@ -5701,7 +5711,11 @@ def main() -> None:
             raw_hits = best_raw_mentions(raw_path, synonym_lexicon.expand(retrieval_focus))
             if raw_hits:
                 raw_answer = present_mentions(raw_hits)
+                from raw_wiki_parallel_v0735 import parallel_evidence
+                raw_wiki = parallel_evidence(raw_answer, retrieval_focus, cha_wikipedia_lookup)
+                raw_answer = raw_wiki["answer"]
                 print("AI> " + raw_answer)
+                print("[raw_wiki_parallel={}, truth_state=EXTERNAL_UNVERIFIED, auto_promote=False]".format(raw_wiki["wiki_status"]))
                 print("[route=RAW_CONCEPT_EVIDENCE, concept={}, hits={}, source={}, truth_state=UNVERIFIED, train_ready=False, auto_promote=False]".format(
                     repr(retrieval_focus), len(raw_hits), str(raw_path)))
                 print()
