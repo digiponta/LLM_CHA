@@ -41,7 +41,7 @@ def compare(checkpoint_paths,probes,backend_factory):
     lost=sum(x["exact"] and not last[k]["exact"] for k,x in first.items())
     return {"version":"v0.7.26","checkpoints":steps,"initially_correct":previously_correct,
             "lost_correct":lost,
-            "forgetting_rate":lost/previously_correct if previously_correct else None,
+            "forgetting_rate":lost/previously_correct if previously_correct and len(steps)>1 else None,
             "forgetting_measurable":previously_correct>0 and len(steps)>1,
             "auto_promote":False,"factual_verification":"NOT_PERFORMED"}
 
