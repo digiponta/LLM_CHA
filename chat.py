@@ -3462,8 +3462,9 @@ def main() -> None:
             PROJECT_ROOT / "model" / "tokenizer-v0.7-bpe.json")
         if restored_backend is not None:
             memory_first_generator = restored_backend
-        print("[experimental startup restore: status={}, checked={}, checkpoint={}]".format(
+        print("[experimental startup restore: status={}, checked={}, candidate_count={}, checkpoint={}]".format(
             restore_info["status"],restore_info["checked"],
+            restore_info.get("candidate_count",0),
             restore_info.get("checkpoint","-")))
     while True:
         try:
