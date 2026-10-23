@@ -15,6 +15,11 @@ class ParaphraseTests(unittest.TestCase):
     def test_no_unqualified_rows(self):
         self.assertEqual(prepare([{"question":"普通のQA","id":"1"}]),
                          {"train":[],"holdout":[]})
+    def test_incomplete_source_record_rejected(self):
+        with self.assertRaisesRegex(ValueError,"incomplete Approved"):
+            prepare([{"question":"原文証拠：真空管 #abcdef123456","id":"1"}])
+    def test_non_source_without_question(self):
+        self.assertEqual(prepare([{"id":"1"}]),{"train":[],"holdout":[]})
     def test_probe_groups(self):
         rows=[{"id":"x","user":"宇宙の原文記述は",
                "question":"原文証拠：宇宙 #abcdefabcdef",
