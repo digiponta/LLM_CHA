@@ -10,7 +10,7 @@ def grams(text):
     compact=re.sub(r"[^一-龯ぁ-んァ-ヶーa-z0-9]","",str(text).lower())
     return {compact[i:i+3] for i in range(max(0,len(compact)-2))}
 
-def retrieve(memory,question,*,min_overlap=2):
+def retrieve(memory,question,*,min_overlap=1):
     pending=[x for x in memory.candidates() if x["status"]=="PENDING"]
     query=grams(question)
     corpus=[grams(row["question"]) for row in pending]
@@ -29,7 +29,7 @@ def retrieve(memory,question,*,min_overlap=2):
         return {"status":"UNKNOWN","reason":"ambiguous","record":None}
     return {"status":"MATCH","reason":"unique_character_trigrams","record":scored[0][1]}
 
-def route(memory,question,*,min_overlap=2):
+def route(memory,question,*,min_overlap=1):
     hit=retrieve(memory,question,min_overlap=min_overlap)
     if hit["status"]!="MATCH":
         return {"route":"EXPERIMENTAL_UNKNOWN","answer":None,"truth_state":"UNKNOWN",
