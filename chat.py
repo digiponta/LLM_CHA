@@ -3423,6 +3423,8 @@ def main() -> None:
     corpus_followup_context = None
     corpus_evidence_cursor = None
     last_explicit_knowledge_topic = None
+    from followup_exhaustion_v074424 import FollowupExhaustion
+    followup_exhaustion = FollowupExhaustion()
     from multi_topic_evidence_v0639 import TopicEvidenceContext
     topic_evidence = TopicEvidenceContext(max_topics=4)
     from persistent_topic_context_v0640 import save_context, load_context
@@ -3768,10 +3770,12 @@ def main() -> None:
         # This guards the fallback route when a follow-up has no evidence.
         if raw_user_text.endswith(("とは", "とは？", "とは?")):
             last_explicit_knowledge_topic = raw_user_text.split("とは", 1)[0].strip()
+            followup_exhaustion.reset()
         elif raw_user_text.strip().rstrip("。！？? ") not in (
                 "もっと詳しく", "もう少し詳しく", "詳しく", "詳しく教えて",
                 "もっと詳しく教えて", "もう少し詳しく教えて"):
             last_explicit_knowledge_topic = None
+            followup_exhaustion.reset()
         # v0.7.44.15: corpus follow-ups are intentionally scoped to the
         # immediately preceding corpus reply. No further evidence is invented.
         from corpus_followup_v074415 import corpus_followup, FOLLOWUPS
@@ -5864,8 +5868,7 @@ def main() -> None:
                     "もっと詳しく教えて", "もう少し詳しく教えて")):
             # Only reached when established evidence routes did not answer.
             # Never let identity/model generation masquerade as topic details.
-            print("AI> 取得した資料には、「{}」について追加で説明できる明確な根拠がない。".format(
-                last_explicit_knowledge_topic))
+            print("AI> " + followup_exhaustion.respond(last_explicit_knowledge_topic))
             print("[route=FOLLOWUP_RELEVANCE_NO_EVIDENCE, topic={}, train_ready=False, auto_promote=False]".format(
                 last_explicit_knowledge_topic))
             print()
