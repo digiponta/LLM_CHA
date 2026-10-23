@@ -14,7 +14,7 @@ class CandidateAwareTests(unittest.TestCase):
         self.memory.propose("v072実験の合言葉は何ですか","候補の実験回答です。","sandbox:v072")
     def tearDown(self):self.tmp.cleanup()
     def ask(self,q):
-        return "v072実験の合言葉は専用の符号です。"
+        return "候補の実験回答です。"
     def test_only_pending_candidate(self):
         result=gate_review_fallback("v072実験の合言葉は何ですか",
             self.approved,self.pending,self.ask,resolution="GATE_REVIEW",enabled=True)
