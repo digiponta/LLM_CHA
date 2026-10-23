@@ -11,6 +11,7 @@ from pathlib import Path
 import queue
 import subprocess
 import sys
+import time
 import threading
 import tkinter as tk
 from tkinter import scrolledtext, messagebox
@@ -111,7 +112,7 @@ def run(argv=None):
 
     tk.Button(entry_frame, text="送信", command=submit).pack(side="left", padx=6)
     tk.Button(entry_frame, text="/sleep", command=lambda:send("/sleep",False)).pack(side="left")
-    pending_status = {"command": None}
+    pending_status = {"command": None, "started": None}
     def request_status(command="/semstatus"):
         if child.poll() is not None:
             messagebox.showwarning("状態確認", "chat.pyが終了しています。")
@@ -120,12 +121,14 @@ def run(argv=None):
             status.set("状態確認: 前のコマンドの完了待ち")
             return
         pending_status["command"] = command
+        pending_status["started"] = time.monotonic()
         with capture_mutex:
             command_capture.start()
         if not send(command, False):
             with capture_mutex:
                 command_capture.active = False
             pending_status["command"] = None
+            pending_status["started"] = None
             messagebox.showerror("状態確認", "コマンドを送信できませんでした。")
         else:
             status.set("状態確認: {} の結果を取得中".format(command))
@@ -165,6 +168,7 @@ def run(argv=None):
                 dialog = tk.Toplevel(root)
                 command = pending_status["command"] or "status"
                 pending_status["command"] = None
+                pending_status["started"] = None
                 dialog.title("LLM_CHA " + command)
                 dialog.geometry("780x520")
                 output_view = scrolledtext.ScrolledText(dialog, wrap="word",
@@ -180,9 +184,20 @@ def run(argv=None):
                 if pending_status["command"] is not None:
                     command = pending_status["command"]
                     pending_status["command"] = None
+                    pending_status["started"] = None
                     messagebox.showwarning("状態確認", "{} の実行中にchat.pyが終了しました。".format(command))
                 status.set(f"chat.py 終了 (exit={value})")
                 entry.configure(state="disabled")
+        if (pending_status["command"] is not None and pending_status["started"] is not None
+                and time.monotonic() - pending_status["started"] > 20):
+            command = pending_status["command"]
+            pending_status["command"] = None
+            pending_status["started"] = None
+            with capture_mutex:
+                command_capture.active = False
+                command_capture.buffer = ""
+            status.set("状態確認: {} がタイムアウトしました".format(command))
+            messagebox.showwarning("状態確認", "応答待ちが20秒を超えました: " + command)
         root.after(70, poll)
 
     def close():
