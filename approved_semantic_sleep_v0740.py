@@ -43,7 +43,7 @@ def synchronize(approved_path, sync_path):
         ident=record["id"]
         if ident in existing:
             old=existing[ident]
-            if (old["answer"],old["question"],old["source_id"]) != (
+            if (old["assistant"],old["question"],old["source_id"]) != (
                     record["answer"],record["question"],record["source_id"]):
                 raise ValueError("approved id content changed; sync refused")
             continue
