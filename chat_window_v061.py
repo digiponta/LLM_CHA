@@ -164,7 +164,7 @@ def run():
     parser = ConversationParser(lambda kind, value: events.put((kind, value)))
     status_parser = StatusParser(lambda value: events.put(("status", value)))
     root = tk.Tk()
-    root.title("LLM_CHA — Trusted / Experimental (v0.7.36)")
+    root.title("LLM_CHA — Trusted / Experimental (v0.7.39)")
     root.geometry("960x700")
     root.minsize(460, 280)
 
@@ -176,6 +176,7 @@ def run():
         ("experimental", "Experimental: not active / waiting"),
         ("candidate", "Candidates: unknown"),
         ("route", "Last route: unknown"),
+        ("approval", "Source approval: unknown"),
     )}
     bar = tk.Frame(root, padx=10, pady=5)
     bar.pack(fill="x")
@@ -187,7 +188,9 @@ def run():
         tk.Label(first_row, textvariable=status_vars[name], anchor="w",
                  font=("Yu Gothic UI", 9), padx=6).pack(side="left")
     tk.Label(second_row, textvariable=status_vars["route"], anchor="w",
-             font=("Yu Gothic UI", 9), padx=6).pack(fill="x")
+             font=("Yu Gothic UI", 9), padx=6).pack(side="left")
+    tk.Label(second_row, textvariable=status_vars["approval"], anchor="w",
+             font=("Yu Gothic UI", 9), padx=6).pack(side="left")
     display = scrolledtext.ScrolledText(root, wrap="word", state="disabled",
                                         font=("Yu Gothic UI", 11), padx=14, pady=12)
     display.pack(fill="both", expand=True, padx=10, pady=(0, 10))
