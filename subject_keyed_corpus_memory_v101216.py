@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, asdict
 import json
+import hashlib
 from pathlib import Path
 from typing import Iterable
 
@@ -30,10 +31,17 @@ class CorpusMemoryRecord:
     object_description: str
     source_text: str
     source: str
+    proposition_id: str = ""
 
     @property
     def mapping(self) -> str:
         return f"{self.subject} => {self.statement}"
+
+
+def stable_proposition_id(subject: str, statement: str, source: str) -> str:
+    """Deterministic identity, scoped to source and normalized proposition."""
+    identity = json.dumps([subject, statement, source], ensure_ascii=False, separators=(",", ":"))
+    return "cp-" + hashlib.sha256(identity.encode("utf-8")).hexdigest()[:24]
 
 
 def normalize_record(row: dict) -> CorpusMemoryRecord:
@@ -52,6 +60,7 @@ def normalize_record(row: dict) -> CorpusMemoryRecord:
         object_description=object_description,
         source_text=source_text,
         source=source,
+        proposition_id=str(row.get("proposition_id") or stable_proposition_id(subject, statement, source)),
     )
 
 
@@ -68,13 +77,19 @@ def dedupe_records(rows: Iterable[CorpusMemoryRecord]) -> list[CorpusMemoryRecor
 
 
 def save_memory(path: Path, rows: Iterable[CorpusMemoryRecord]) -> None:
-    records = dedupe_records(rows)
+    records = [normalize_record(asdict(row)) for row in dedupe_records(rows)]
+    ids = {}
+    for row in records:
+        identity = (row.subject, row.statement, row.source)
+        if row.proposition_id in ids and ids[row.proposition_id] != identity:
+            raise ValueError("conflicting proposition_id: " + row.proposition_id)
+        ids[row.proposition_id] = identity
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         for row in records:
             payload = asdict(row)
             payload["mapping"] = row.mapping
-            payload["version"] = "v10.12.16"
+            payload["version"] = "v0.7.44.18"
             handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
@@ -91,7 +106,14 @@ def load_memory(path: Path) -> list[CorpusMemoryRecord]:
         except json.JSONDecodeError as exc:
             raise ValueError(f"invalid corpus memory JSON line {line_no}: {exc}") from exc
         rows.append(normalize_record(item))
-    return dedupe_records(rows)
+    unique = dedupe_records(rows)
+    ids = {}
+    for row in unique:
+        identity = (row.subject, row.statement, row.source)
+        if row.proposition_id in ids and ids[row.proposition_id] != identity:
+            raise ValueError("conflicting proposition_id: " + row.proposition_id)
+        ids[row.proposition_id] = identity
+    return unique
 
 
 def lookup_subject(path: Path, subject: str) -> list[CorpusMemoryRecord]:
