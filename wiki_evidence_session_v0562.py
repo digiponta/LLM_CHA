@@ -3,6 +3,7 @@ import re
 from wikipedia_acquisition_v0517 import _request
 from wiki_persona_multiturn_v0520 import FOLLOWUPS
 from scientific_evidence_v0563 import scientific_sentences, scientific_prose, display_latex
+from wiki_math_integrity_v074421 import safe_evidence_sentence
 
 def readable_evidence(sentence):
     """Reject equation markup, captions, fragments and text without prose."""
@@ -63,7 +64,7 @@ class EvidenceSession:
                 remainder=remainder[cut+1:] if cut>=0 else ""
             segments=scientific_sentences(remainder)
             sentences=[s for s in segments if 20<=len(s)<=1000]
-            eligible=[s for s in sentences if s in extended and
+            eligible=[s for s in sentences if s in extended and safe_evidence_sentence(s) and
                       (readable_evidence(s) or _prose_fallback(s) or scientific_prose(s))]
             for sentence in eligible:
                 if sentence in self.seen:continue
