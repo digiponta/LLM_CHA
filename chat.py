@@ -6001,6 +6001,10 @@ def main() -> None:
                 block_reply=wiki_append["answer"]
                 print("[experimental_wiki_append={}, truth_state=EXTERNAL_UNVERIFIED, auto_promote=False]".format(
                     wiki_append["wiki_status"]))
+            if experimental_fallback and experimental_fallback.get("reference_audit"):
+                audit=experimental_fallback["reference_audit"]
+                print("[candidate_reference: status={}, count={}, threshold={}, promoted={}]".format(
+                    audit["status"],audit["reference_count"],audit["threshold"],audit["promoted"]))
             print(f"AI> {block_reply}")
             if experimental_fallback is not None:
                 print("[experimental_route={}, truth_state={}, quality_reason={}, auto_promote=False]".format(
@@ -6429,6 +6433,10 @@ def main() -> None:
             reply=wiki_append["answer"]
             print("[experimental_wiki_append={}, truth_state=EXTERNAL_UNVERIFIED, auto_promote=False]".format(
                 wiki_append["wiki_status"]))
+        if candidate_fallback and candidate_fallback.get("reference_audit"):
+            audit=candidate_fallback["reference_audit"]
+            print("[candidate_reference: status={}, count={}, threshold={}, promoted={}]".format(
+                audit["status"],audit["reference_count"],audit["threshold"],audit["promoted"]))
         cha_wiki_last_generated = reply
         print(f"AI> {reply}")
         if candidate_fallback is not None:
