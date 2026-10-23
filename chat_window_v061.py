@@ -164,7 +164,7 @@ def run():
     parser = ConversationParser(lambda kind, value: events.put((kind, value)))
     status_parser = StatusParser(lambda value: events.put(("status", value)))
     root = tk.Tk()
-    root.title("LLM_CHA — Trusted / Experimental (v0.7.32)")
+    root.title("LLM_CHA — Trusted / Experimental (v0.7.36)")
     root.geometry("960x700")
     root.minsize(460, 280)
 
@@ -194,6 +194,9 @@ def run():
     display.tag_configure("user", foreground="#1266ac", spacing1=12, spacing3=6)
     display.tag_configure("ai", foreground="#174b34", spacing1=12, spacing3=6)
     display.tag_configure("ai_continuation", foreground="#174b34")
+    display.tag_configure("source_raw", foreground="#845422", spacing1=5)
+    display.tag_configure("source_wiki", foreground="#245ea8", spacing1=7)
+    display.tag_configure("source_link", foreground="#245ea8", underline=True)
 
     gui_images = []  # Keep Tk PhotoImage references alive.
 
@@ -205,7 +208,15 @@ def run():
         else:
             output = message + "\n"
         display.configure(state="normal")
-        insert_gui_message(display, output, kind, gui_images) if kind != "user" else display.insert("end", output, kind)
+        selected = kind
+        if kind != "user":
+            if "【Wikipedia検索結果・外部情報・未検証】" in message:
+                selected = "source_wiki"
+            elif message.startswith("出典：https://"):
+                selected = "source_link"
+            elif "【原文中の関連記述・未検証】" in message:
+                selected = "source_raw"
+        insert_gui_message(display, output, selected, gui_images) if kind != "user" else display.insert("end", output, kind)
         display.configure(state="disabled")
         display.see("end")
 
