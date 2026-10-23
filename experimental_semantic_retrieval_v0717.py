@@ -10,24 +10,34 @@ def grams(text):
     compact=re.sub(r"[^一-龯ぁ-んァ-ヶーa-z0-9]","",str(text).lower())
     return {compact[i:i+3] for i in range(max(0,len(compact)-2))}
 
+def salient_grams(text):
+    # Remove question boilerplate BEFORE matching. Generic phrases like
+    # 'の符号' must not authorize a Candidate when only one record exists.
+    normalized=str(text).lower()
+    normalized=re.sub(r"v[0-9]+", "", normalized)
+    for word in ("実験","について","対応する","何ですか","教えてください",
+                 "教えて","符号","番号","とは","ですか"):
+        normalized=normalized.replace(word,"")
+    normalized=re.sub(r"[のはをでにがと？?、。\\s]", "", normalized)
+    compact=re.sub(r"[^一-龯ぁ-んァ-ヶーa-z0-9]", "", normalized)
+    return {compact[i:i+2] for i in range(max(0,len(compact)-1))}
+
 def retrieve(memory,question,*,min_overlap=1):
     pending=[x for x in memory.candidates() if x["status"]=="PENDING"]
-    query=grams(question)
-    corpus=[grams(row["question"]) for row in pending]
-    # Remove common n-grams occurring in multiple unrelated candidates;
-    # this prevents generic prompts like 'v079実験の符号' from matching.
-    from collections import Counter
-    frequency=Counter(g for features in corpus for g in features)
+    query=salient_grams(question)
+    if not query:
+        return {"status":"UNKNOWN","reason":"no_salient_query","record":None}
+    corpus=[salient_grams(row["question"]) for row in pending]
     scored=[]
     for row,features in zip(pending,corpus):
-        rare={g for g in query & features if frequency[g]==1}
-        if len(rare)>=min_overlap:
-            scored.append((len(rare),row))
+        overlap=len(query & features)
+        if overlap>=min_overlap:
+            scored.append((overlap,row))
     scored.sort(key=lambda pair:pair[0],reverse=True)
     if not scored:return {"status":"UNKNOWN","reason":"no_candidate","record":None}
     if len(scored)>1 and scored[0][0]==scored[1][0]:
         return {"status":"UNKNOWN","reason":"ambiguous","record":None}
-    return {"status":"MATCH","reason":"unique_character_trigrams","record":scored[0][1]}
+    return {"status":"MATCH","reason":"salient_character_bigrams","record":scored[0][1]}
 
 def route(memory,question,*,min_overlap=1):
     hit=retrieve(memory,question,min_overlap=min_overlap)
