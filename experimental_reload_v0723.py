@@ -37,7 +37,7 @@ def reload_after_sleep(result,approved_path,candidate_path,base_path,
     try:
         backend=validated_backend(result["checkpoint"],base_path,tokenizer_path,
                                   pending,backend_class=backend_class)
-    except (OSError,ValueError,RuntimeError,KeyError,TypeError) as exc:
+    except Exception as exc:  # Invalid checkpoint or backend initialization: fail closed.
         return old_backend,{"status":"REJECTED","reason":type(exc).__name__}
     return backend,{"status":"LOADED","checkpoint":result["checkpoint"],
                     "candidate_count":len(pending),"trusted_changed":False}
