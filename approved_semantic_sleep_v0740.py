@@ -68,28 +68,39 @@ def synchronize(approved_path, sync_path):
     return {"approved":len(approved),"synced":len(existing),"added":added}
 
 def queue_approved(sync_path, learning_log_path, learning_state_path):
+    """Queue or repair APPROVED sleep pairs; count outstanding untrained pairs."""
     rows=_load_jsonl(sync_path)
     trained=load_trained_fingerprints(learning_state_path)
     logpath=Path(learning_log_path)
-    existing=set()
-    if logpath.exists():
-        for row in _load_jsonl(logpath):
-            user=str(row.get("user","")).strip()
-            answer=str(row.get("assistant","")).strip()
-            if user and answer:
-                existing.add(pair_fingerprint(user,answer))
-    pending=[]
+    logrows=_load_jsonl(logpath)
+    existing={}
+    for index,row in enumerate(logrows):
+        user=str(row.get("user","")).strip()
+        answer=str(row.get("assistant","")).strip()
+        if user and answer:
+            existing[pair_fingerprint(user,answer)]=index
+    queued=0
+    repaired=0
+    outstanding=0
     for row in rows:
         fp=row["fingerprint"]
-        if fp in trained or fp in existing:continue
-        pending.append({"user":row["user"],"assistant":row["assistant"],
-                        "source":"reference-approved-semantic-sleep",
+        if fp in trained:
+            continue
+        outstanding+=1
+        if fp in existing:
+            old=logrows[existing[fp]]
+            if old.get("source")=="reference-approved-semantic-sleep":
+                old["source"]="semantic-sleep"
+                repaired+=1
+            continue
+        logrows.append({"user":row["user"],"assistant":row["assistant"],
+                        "source":"semantic-sleep",
                         "semantic_origin":row["semantic_origin"],
                         "approved_id":row["id"],"fingerprint":fp,
                         "truth_state":row["truth_state"]})
-        existing.add(fp)
-    if pending:
-        logpath.parent.mkdir(parents=True,exist_ok=True)
-        with logpath.open("a",encoding="utf-8") as f:
-            for row in pending:f.write(json.dumps(row,ensure_ascii=False)+"\n")
-    return {"approved_records":len(rows),"queued":len(pending)}
+        existing[fp]=len(logrows)-1
+        queued+=1
+    if queued or repaired:
+        _atomic_jsonl(logpath,logrows)
+    return {"approved_records":len(rows),"queued":queued,
+            "repaired":repaired,"outstanding":outstanding}
