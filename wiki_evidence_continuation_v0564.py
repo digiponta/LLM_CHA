@@ -8,6 +8,7 @@ from urllib.parse import quote
 from wikipedia_acquisition_v0517 import _request
 from wiki_persona_multiturn_v0520 import FOLLOWUPS
 from scientific_evidence_v0563 import scientific_sentences, scientific_prose, display_latex
+from wiki_math_integrity_v074421 import safe_evidence_sentence
 
 class EvidenceContinuation:
     def __init__(self):
@@ -58,7 +59,7 @@ class EvidenceContinuation:
                 for sentence in scientific_sentences(extract):
                     if not 20 <= len(sentence) <= 1000 or title not in sentence:
                         continue
-                    if not scientific_prose(sentence):
+                    if not safe_evidence_sentence(sentence) or not scientific_prose(sentence):
                         continue
                     key = (linked_title, sentence)
                     if key in self.seen:
@@ -69,6 +70,7 @@ class EvidenceContinuation:
                               if persona == "nagato" else
                               "関連するWikipedia記事「"+linked_title+"」には、"+display+"。と記載されています。")
                     return {"status":"FOUND","answer":answer,"title":linked_title,
+                            "origin_title":title,"evidence_scope":"RELATED_ARTICLE",
                             "source":"https://ja.wikipedia.org/wiki/"+quote(linked_title.replace(" ","_")),
                             "route":"PERSONA_WIKIPEDIA_EVIDENCE_CONTINUATION",
                             "quality_gate":"LINKED_ARTICLE_EXPLICIT_TOPIC_EXACT_SPAN",
