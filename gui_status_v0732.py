@@ -13,7 +13,10 @@ def parse_status(line):
                     "trusted_pending":f"Trusted pending: {p.group(1)}" if p else None}
     if text.startswith("[experimental startup restore:"):
         m=re.search(r"\bstatus=([A-Z_]+)",text)
-        return {"experimental":f"Experimental: {m.group(1)}" if m else "Experimental: unknown"}
+        count=re.search(r"\bcandidate_count=(\d+)",text)
+        result={"experimental":f"Experimental: {m.group(1)}" if m else "Experimental: unknown"}
+        if count:result["candidate"]=f"Candidates: {count.group(1)} PENDING"
+        return result
     if text.startswith("[experimental sleep:"):
         status=re.search(r"\bstatus=([A-Z_]+)",text)
         pending=re.search(r"\bpending=(\d+)",text)
@@ -25,6 +28,13 @@ def parse_status(line):
     if text.startswith("[retrieval-first="):
         route=re.search(r"\broute=([A-Z_]+)",text)
         return {"route":f"Last route: {route.group(1)}" if route else "Last route: Trusted retrieval"}
+    if text.startswith("[route="):
+        route=re.search(r"\broute=([A-Z_]+)",text)
+        truth=re.search(r"\btruth_state=([A-Z_]+)",text)
+        value=route.group(1) if route else "UNKNOWN"
+        return {"route":"Last route: "+value+(" (unverified)" if truth and "UNVERIFIED" in truth.group(1) else "")}
+    if text.startswith("[experimental_route="):
+        return {"route":"Last route: EXPERIMENTAL_UNKNOWN"}
     if text.startswith("[route=RAW_CONCEPT_EVIDENCE"):
         return {"route":"Last route: RAW_CONCEPT_EVIDENCE (unverified)"}
     return {}
