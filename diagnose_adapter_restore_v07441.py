@@ -94,6 +94,16 @@ def diagnose(checkpoint, *, state=None, approved=None, candidates=None, load_pay
     if any(not isinstance(k, str) or not torch.is_tensor(v) for k, v in weights.items()):
         return fail("MODEL_INCOMPATIBLE")
     result["checks"]["tensor_count"] = len(weights)
+    config = payload.get("config")
+    expected = ("vocab_size", "d_model", "num_layers", "hidden_dim")
+    if not isinstance(config, dict) or any(k not in config for k in expected):
+        return fail("SCHEMA_MISMATCH")
+    try:
+        if any(int(config[k]) <= 0 for k in expected):
+            return fail("MODEL_INCOMPATIBLE")
+    except (TypeError, ValueError, OverflowError):
+        return fail("MODEL_INCOMPATIBLE")
+    result["checks"]["config"] = {k: config[k] for k in expected}
     # Validation of architecture needs the actual LanguageModel loader, not only tensor shapes.
     result["restore_status"] = "PREFLIGHT_OK"
     result["reason"] = "RUNTIME_RESTORE_NOT_TESTED"
