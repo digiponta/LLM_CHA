@@ -66,7 +66,7 @@ def main():
     if Path(args.stability).exists():protected.append(Path(args.stability).resolve())
     if Path(args.output).resolve() in protected:raise ValueError("output overlaps input")
     before_hash={str(x):sha(x) for x in protected}
-    state=load_trained_fingerprints(args.state)
+    state=load_trained_fingerprints(Path(args.state))
     checkpoint=checkpoint_trained_fingerprints(Path(args.after))
     binding=status_for_pairs(ledger,state,checkpoint)
     if args.stability and Path(args.stability).exists():
