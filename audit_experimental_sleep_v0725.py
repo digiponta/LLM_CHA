@@ -42,7 +42,7 @@ def audit(base_path,tokenizer_path,approved_path,candidates_path,adapter_path,
     if Path(output_path).resolve() in paths:raise ValueError("output overlaps protected input")
     pre={str(p):sha256(p) for p in paths}
     missing=[str(p) for p in paths if not p.exists()]
-    if missing:raise FileNotFoundError(", ".join(missing))
+    # Empty Approved Memory is valid; DualMemory.approved() treats a missing\n    # Approved JSONL as zero approved records. All other inputs are required.\n    required_missing=[p for p in missing if p!=str(Path(approved_path).resolve())]\n    if required_missing:raise FileNotFoundError(", ".join(required_missing))
     memory=DualMemory(approved_path,candidates_path)
     pending=[r for r in memory.candidates() if r["status"]=="PENDING"]
     if not pending:raise ValueError("no PENDING candidates")
@@ -79,7 +79,7 @@ def audit(base_path,tokenizer_path,approved_path,candidates_path,adapter_path,
     approved_eval=evaluate_rows(model,tokenizer,approved,max_tokens=max_tokens)
     post={str(p):sha256(p) for p in paths}
     unchanged=pre==post
-    report={"version":"v0.7.25","device":str(device),
+    report={"version":"v0.7.25","device":str(device),\n      "approved_store_absent":not Path(approved_path).exists(),
       "comparison":"same frozen Base versus Experimental Adapter after sleep; before-training inference was NOT recorded",
       "training":train,"holdout":hold,"approved_probe":approved_eval,
       "approved_probe_available":bool(approved),
