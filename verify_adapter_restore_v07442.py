@@ -5,7 +5,7 @@ from pathlib import Path
 from diagnose_adapter_restore_v07441 import diagnose
 
 
-def verify(checkpoint, state=None, device="cpu"):
+def verify(checkpoint, state=None, device="cpu", base_checkpoint=None):
     pre = diagnose(checkpoint, state=state)
     result = {"version":"v0.7.44.2","preflight":pre,
               "runtime_restore_verified":False,"status":"FAILED","reason":pre["reason"],
@@ -49,11 +49,35 @@ def verify(checkpoint, state=None, device="cpu"):
             "checkpoint_only":sorted(checkpoint_fps-state_fps),
             "state_only":sorted(state_fps-checkpoint_fps),
         }
-        if checkpoint_fps != state_fps:
-            result["reason"] = "FINGERPRINT_MISMATCH"
+        if not state_fps.issubset(checkpoint_fps):
+            result["reason"] = "STATE_FINGERPRINT_MISSING_FROM_CHECKPOINT"
             return result
+        inherited = checkpoint_fps - state_fps
+        result["fingerprints"]["inherited_count"] = len(inherited)
+        result["fingerprints"]["base_provenance_verified"] = False
+        if base_checkpoint:
+            try:
+                base_payload = torch.load(str(base_checkpoint), map_location="cpu", weights_only=True)
+                base_metadata = base_payload.get("metadata", {})
+                base_values = base_metadata.get("trained_fingerprints", [])
+                if not isinstance(base_values, (list, tuple, set)):
+                    raise ValueError("invalid base fingerprint format")
+                base_fps = {str(v) for v in base_values}
+            except (OSError, RuntimeError, ValueError, TypeError, KeyError) as exc:
+                result["reason"] = "BASE_CHECKPOINT_UNREADABLE"
+                result["error_type"] = type(exc).__name__
+                return result
+            result["fingerprints"]["base_count"] = len(base_fps)
+            result["fingerprints"]["unexpected_checkpoint_fingerprints"] = sorted(checkpoint_fps - (base_fps | state_fps))
+            result["fingerprints"]["missing_base_fingerprints"] = sorted(base_fps - checkpoint_fps)
+            if checkpoint_fps != base_fps | state_fps:
+                result["reason"] = "BASE_PROVENANCE_MISMATCH"
+                return result
+            result["fingerprints"]["base_provenance_verified"] = True
     result["status"] = "RESTORE_OK"
-    result["reason"] = "MODEL_LOADED_AND_BINDINGS_CHECKED" if state else "MODEL_LOADED_STATE_NOT_CHECKED"
+    result["reason"] = ("MODEL_LOADED_BASE_AND_STATE_VERIFIED" if base_checkpoint and state
+                        else "MODEL_LOADED_STATE_SUBSET_ONLY" if state
+                        else "MODEL_LOADED_STATE_NOT_CHECKED")
     return result
 
 
@@ -61,13 +85,14 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--checkpoint",default="results/approved_paraphrase_v0743/experimental-trusted.pt")
     p.add_argument("--state",default="results/approved_paraphrase_v0743/learning_state.json")
+    p.add_argument("--base-checkpoint",help="Optional trusted base checkpoint for provenance verification")
     p.add_argument("--device",choices=("cpu","cuda"),default="cpu")
     p.add_argument("--output",default="results/restore_diagnostic_v07442.json")
     args=p.parse_args()
-    protected={Path(x).resolve() for x in (args.checkpoint,args.state)}
+    protected={Path(x).resolve() for x in (args.checkpoint,args.state,args.base_checkpoint) if x}
     if Path(args.output).resolve() in protected:
         p.error("output overlaps protected input")
-    result=verify(args.checkpoint,args.state,args.device)
+    result=verify(args.checkpoint,args.state,args.device,args.base_checkpoint)
     data=json.dumps(result,ensure_ascii=False,indent=2)+"\n"
     out=Path(args.output)
     out.parent.mkdir(parents=True,exist_ok=True)
