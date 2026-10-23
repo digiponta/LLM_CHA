@@ -3435,6 +3435,23 @@ def main() -> None:
             PROJECT_ROOT / "results" / "adapter_sweep_v077_full" /
                 "r16_e30_lr1e-03" / "experimental-adapter.pt",
         )
+    # v0.7.21 Memory-First is separately opt-in; default chat.py unchanged.
+    memory_first_enabled = os.environ.get("LLM_CHA_MEMORY_FIRST", "0") == "1"
+    memory_first_mode = os.environ.get("LLM_CHA_MEMORY_FIRST_MODE", "evidence")
+    if memory_first_enabled and memory_first_mode not in ("evidence", "constrained"):
+        raise ValueError("LLM_CHA_MEMORY_FIRST_MODE must be evidence or constrained")
+    from dual_runtime_bridge_v0721 import resolve as cha_memory_first_resolve
+    memory_first_generator = None
+    if memory_first_enabled and memory_first_mode == "constrained":
+        if experimental_backend is None:
+            from experimental_backend_v0711 import ExperimentalBackend
+            memory_first_generator = ExperimentalBackend(
+                PROJECT_ROOT / "model" / "model-gpu-v1.6.2-online.pt",
+                PROJECT_ROOT / "model" / "tokenizer-v0.7-bpe.json",
+                PROJECT_ROOT / "results" / "multi_fact_v0715" / "experimental-adapter.pt",
+            )
+        else:
+            memory_first_generator = experimental_backend
     while True:
         try:
             user_text = input("You> ").strip()
@@ -5893,7 +5910,22 @@ def main() -> None:
                 )
             )
             experimental_fallback = None
-            if resolution_name == "UNKNOWN_KNOWLEDGE" and experimental_backend is not None:
+            if resolution_name == "UNKNOWN_KNOWLEDGE" and memory_first_enabled:
+                try:
+                    experimental_fallback = cha_memory_first_resolve(
+                        raw_user_text,
+                        PROJECT_ROOT / "data" / "approved_v071.jsonl",
+                        PROJECT_ROOT / "data" / "candidates_v071.jsonl",
+                        enabled=True, mode=memory_first_mode,
+                        generator=memory_first_generator,
+                        resolution=resolution_name)
+                    if experimental_fallback and experimental_fallback.get("answer"):
+                        block_reply = experimental_fallback["answer"]
+                except (OSError, ValueError, RuntimeError, KeyError, ImportError) as exc:
+                    experimental_fallback = {"route":"EXPERIMENTAL_UNAVAILABLE",
+                        "reason":type(exc).__name__, "truth_state":"UNKNOWN",
+                        "auto_promote":False}
+            if resolution_name == "UNKNOWN_KNOWLEDGE" and not memory_first_enabled and experimental_backend is not None:
                 try:
                     experimental_fallback = fallback_on_structured_unknown(
                         raw_user_text, experimental_backend, allow=True)
@@ -6288,7 +6320,23 @@ def main() -> None:
         # v0.7.12: only an explicitly UNKNOWN GATE_REVIEW may consult
         # a matching PENDING Candidate, never an accepted Trusted answer.
         candidate_fallback = None
-        if (not accepted and experimental_backend is not None
+        if (not accepted and memory_first_enabled and internalized_record is None
+                and not recovery_reply and args.unknown_rejection
+                and reason == "low response agreement"):
+            try:
+                candidate_fallback = cha_memory_first_resolve(
+                    raw_user_text,
+                    PROJECT_ROOT / "data" / "approved_v071.jsonl",
+                    PROJECT_ROOT / "data" / "candidates_v071.jsonl",
+                    enabled=True,mode=memory_first_mode,
+                    generator=memory_first_generator,resolution="GATE_REVIEW")
+                if candidate_fallback and candidate_fallback.get("answer"):
+                    reply = candidate_fallback["answer"]
+            except (OSError, ValueError, RuntimeError, KeyError, ImportError) as exc:
+                candidate_fallback = {"route":"EXPERIMENTAL_UNAVAILABLE",
+                    "reason":type(exc).__name__,"truth_state":"UNKNOWN",
+                    "auto_promote":False}
+        if (not accepted and not memory_first_enabled and experimental_backend is not None
                 and internalized_record is None and not recovery_reply
                 and args.unknown_rejection):
             try:
