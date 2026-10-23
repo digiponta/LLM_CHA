@@ -6514,10 +6514,26 @@ def main() -> None:
         if (os.environ.get("LLM_CHA_RESPONSE_GATE", "0") == "1"
                 and accepted and candidate_fallback is None):
             from response_quality_gate_v07443 import assess_response
+            cha_persona_raw_audit = cha_persona_audit(
+                "MODEL_GENERATION", reply, persona=cha_wiki_conversation.persona,
+                persona_applied=False)
+            cha_persona_gap = bool(cha_persona_raw_audit.get("persona_gap"))
             cha_quality_decision = assess_response(
-                reply, persona_gap=False, route="GENERATED", truth_state="UNKNOWN")
+                reply, persona_gap=cha_persona_gap, route="GENERATED",
+                truth_state="UNKNOWN")
+            # A missing persona presentation alone should not suppress all
+            # answers. A suspicious low-token-confidence / agreement response
+            # cannot pass on fluent-looking text alone.
+            cha_low_signal = (primary.min_confidence < 0.10
+                              or agreement < 0.10)
             cha_quality_guard_status = cha_quality_decision.action
-            if cha_quality_decision.action != "ACCEPT":
+            if cha_low_signal:
+                cha_quality_guard_status = "LOW_SIGNAL_REJECT"
+            elif cha_quality_guard_status == "REVIEW":
+                # No live reviewer is available. Allow only high-signal text,
+                # but clearly mark that persona presentation remains missing.
+                cha_quality_guard_status = "PERSONA_GAP_OBSERVED"
+            if cha_quality_guard_status in ("RETRY", "HOLD", "LOW_SIGNAL_REJECT"):
                 reply = "回答をうまく生成できませんでした。もう一度質問してください。"
                 # Do not admit a failed generated reply into context/learning.
                 accepted = False
