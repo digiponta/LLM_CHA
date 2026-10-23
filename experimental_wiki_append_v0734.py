@@ -4,6 +4,7 @@ External Wikipedia text is not verified, approved, or training-ready.
 Never replace the model/candidate answer; fail closed on missing evidence.
 """
 import re
+from wiki_lead_v0736 import wiki_lead
 
 def term_from_question(question):
     if not isinstance(question,str):return None
@@ -31,9 +32,8 @@ def append_wikipedia(answer,question,*,lookup):
     if not (isinstance(url,str) and url.startswith("https://ja.wikipedia.org/wiki/")
             and isinstance(title,str) and title.strip() and isinstance(extract,str) and extract.strip()):
         return {"answer":answer,"wiki_status":"INVALID_EVIDENCE"}
-    summary=re.split(r"[。\n]",extract.strip(),maxsplit=1)[0].strip()
+    summary=wiki_lead(extract)
     if not summary:return {"answer":answer,"wiki_status":"EMPTY_EXTRACT"}
-    summary=summary[:240].rstrip("。")+"。"
     appended=(answer+"\n【Wikipedia検索結果・外部情報・未検証】"
               +title+"："+summary+"\n出典："+url)
     return {"answer":appended,"wiki_status":"APPENDED","wiki_source":url,
