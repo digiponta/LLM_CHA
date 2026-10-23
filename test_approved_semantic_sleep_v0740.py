@@ -48,6 +48,26 @@ class ApprovedSemanticSleepTests(unittest.TestCase):
         m.propose("別の質問","保留中の答え","local")
         synchronize(self.approved,self.synced)
         self.assertEqual(len(_load_jsonl(self.synced)),1)
+    def test_legacy_queued_source_repaired_and_outstanding(self):
+        synchronize(self.approved,self.synced)
+        first=queue_approved(self.synced,self.log,self.state)
+        self.assertEqual(first["queued"],1)
+        self.assertEqual(first["outstanding"],1)
+        rows=_load_jsonl(self.log)
+        rows[0]["source"]="reference-approved-semantic-sleep"
+        from approved_semantic_sleep_v0740 import _atomic_jsonl
+        _atomic_jsonl(self.log,rows)
+        again=queue_approved(self.synced,self.log,self.state)
+        self.assertEqual(again["queued"],0)
+        self.assertEqual(again["repaired"],1)
+        self.assertEqual(again["outstanding"],1)
+        self.assertEqual(_load_jsonl(self.log)[0]["source"],"semantic-sleep")
+    def test_existing_untrained_still_outstanding(self):
+        synchronize(self.approved,self.synced)
+        queue_approved(self.synced,self.log,self.state)
+        again=queue_approved(self.synced,self.log,self.state)
+        self.assertEqual(again["queued"],0)
+        self.assertEqual(again["outstanding"],1)
     def test_missing_approved(self):
         self.approved.unlink()
         out=synchronize(self.approved,self.synced)
