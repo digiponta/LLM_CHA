@@ -10,6 +10,17 @@ class AuditV0725Tests(unittest.TestCase):
             a=sha256(p)
             p.write_text("after")
             self.assertNotEqual(a,sha256(p))
+    def test_missing_approved_is_valid_empty_store(self):
+        from dual_semantic_memory_v071 import DualMemory
+        with tempfile.TemporaryDirectory() as t:
+            root=Path(t)
+            approved=root/"approved_v071.jsonl"
+            candidate=root/"candidates_v071.jsonl"
+            m=DualMemory(approved,candidate)
+            m.propose("質問","答え","test")
+            self.assertFalse(approved.exists())
+            self.assertEqual(m.approved(),[])
+            self.assertIsNone(sha256(approved))
     def test_missing_hash(self):
         self.assertIsNone(sha256("/nonexistent/llm-cha-0725-test"))
     def test_compare_counts(self):
