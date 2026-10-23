@@ -6285,8 +6285,35 @@ def main() -> None:
         if not reply:
             reply = UNKNOWN_REPLY if args.unknown_rejection else "(no response)"
 
+        # v0.7.12: only an explicitly UNKNOWN GATE_REVIEW may consult
+        # a matching PENDING Candidate, never an accepted Trusted answer.
+        candidate_fallback = None
+        if (not accepted and experimental_backend is not None
+                and internalized_record is None and not recovery_reply
+                and args.unknown_rejection):
+            try:
+                from candidate_aware_fallback_v0712 import gate_review_fallback
+                candidate_fallback = gate_review_fallback(
+                    raw_user_text,
+                    PROJECT_ROOT / "data" / "approved_v071.jsonl",
+                    PROJECT_ROOT / "data" / "candidates_v071.jsonl",
+                    experimental_backend,
+                    resolution="GATE_REVIEW" if reason == "low response agreement" else "OTHER",
+                    enabled=True,
+                )
+                if candidate_fallback and candidate_fallback["answer"]:
+                    reply = candidate_fallback["answer"]
+            except (OSError, ValueError, RuntimeError, KeyError, ImportError) as exc:
+                candidate_fallback = {"route":"EXPERIMENTAL_UNAVAILABLE",
+                                      "truth_state":"UNKNOWN",
+                                      "reason":type(exc).__name__,
+                                      "auto_promote":False}
         cha_wiki_last_generated = reply
         print(f"AI> {reply}")
+        if candidate_fallback is not None:
+            print("[experimental_route={}, truth_state={}, reason={}, auto_promote=False]".format(
+                candidate_fallback["route"],candidate_fallback["truth_state"],
+                candidate_fallback["reason"]))
         print("[persona_audit="+json.dumps(cha_persona_audit(
             "MODEL_GENERATION",reply,persona=cha_wiki_conversation.persona,
             persona_applied=False),ensure_ascii=False)+"]")
