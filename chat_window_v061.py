@@ -14,6 +14,7 @@ import threading
 import tkinter as tk
 from tkinter import scrolledtext
 from gui_latex_v062 import insert_gui_message
+from gui_status_v0732 import StatusParser
 
 PROMPT = "You> "
 AI_PREFIX = "AI> "
@@ -161,13 +162,26 @@ def run():
     command, model_label = build_chat_command()
     events = queue.Queue()
     parser = ConversationParser(lambda kind, value: events.put((kind, value)))
+    status_parser = StatusParser(lambda value: events.put(("status", value)))
     root = tk.Tk()
-    root.title("LLM_CHA — 会話履歴 (v0.6.8)")
+    root.title("LLM_CHA — Trusted / Experimental (v0.7.32)")
     root.geometry("760x640")
     root.minsize(460, 280)
 
     header = tk.Label(root, text="LLM_CHA  会話履歴 — " + model_label, anchor="w", font=("Yu Gothic UI", 14, "bold"), padx=14, pady=10)
     header.pack(fill="x")
+    status_vars = {name: tk.StringVar(value=label) for name, label in (
+        ("trusted", "Trusted: initializing"),
+        ("trusted_pending", "Trusted pending: unknown"),
+        ("experimental", "Experimental: not active / waiting"),
+        ("candidate", "Candidates: unknown"),
+        ("route", "Last route: unknown"),
+    )}
+    bar = tk.Frame(root, padx=10, pady=4)
+    bar.pack(fill="x")
+    for name in ("trusted", "trusted_pending", "experimental", "candidate", "route"):
+        tk.Label(bar, textvariable=status_vars[name], anchor="w",
+                 font=("Yu Gothic UI", 9), padx=6).pack(side="left")
     display = scrolledtext.ScrolledText(root, wrap="word", state="disabled",
                                         font=("Yu Gothic UI", 11), padx=14, pady=12)
     display.pack(fill="both", expand=True, padx=10, pady=(0, 10))
@@ -211,6 +225,7 @@ def run():
                     sys.stdout.write(visible)
                     sys.stdout.flush()
                 parser.feed(char)
+                status_parser.feed(char)
         finally:
             events.put(("exit", child.wait()))
 
@@ -240,6 +255,11 @@ def run():
                 kind, value = events.get_nowait()
             except queue.Empty:
                 break
+            if kind == "status":
+                for name, text in value.items():
+                    if name in status_vars and text is not None:
+                        status_vars[name].set(text)
+                continue
             if kind == "exit":
                 closing_for_exit = True
                 root.destroy()
