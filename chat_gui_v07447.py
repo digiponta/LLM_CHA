@@ -18,6 +18,7 @@ from tkinter import scrolledtext, messagebox
 from chat_window_v061 import ConversationParser, build_chat_command
 from gui_latex_v062 import insert_gui_message
 from gui_status_v0732 import StatusParser
+from gui_command_capture_v074411 import CommandOutputCapture
 
 
 def create_process(command, quality_gate=True):
@@ -87,6 +88,8 @@ def run(argv=None):
         root.destroy()
         raise SystemExit(f"chat.py 起動失敗: {exc}")
     mutex = threading.Lock()
+    command_capture = CommandOutputCapture()
+    capture_mutex = threading.Lock()
 
     def send(value, echo=True):
         if child.poll() is not None:
@@ -108,7 +111,19 @@ def run(argv=None):
 
     tk.Button(entry_frame, text="送信", command=submit).pack(side="left", padx=6)
     tk.Button(entry_frame, text="/sleep", command=lambda:send("/sleep",False)).pack(side="left")
-    tk.Button(entry_frame, text="/status", command=lambda:send("/status",False)).pack(side="left", padx=(6,0))
+    def request_status():
+        if child.poll() is not None:
+            messagebox.showwarning("状態確認", "chat.pyが終了しています。")
+            return
+        with capture_mutex:
+            command_capture.start()
+        if not send("/semstatus", False):
+            with capture_mutex:
+                command_capture.active = False
+            messagebox.showerror("状態確認", "コマンドを送信できませんでした。")
+        else:
+            status.set("状態確認: /semstatus の結果を取得中")
+    tk.Button(entry_frame, text="状態確認", command=request_status).pack(side="left", padx=(6,0))
     entry.bind("<Return>", submit)
     entry.focus_set()
 
@@ -120,7 +135,10 @@ def run(argv=None):
                     break
                 parser_stream.feed(char)
                 status_parser.feed(char)
-                # Terminal diagnostics stay in the GUI status; not in conversation pane.
+                with capture_mutex:
+                    captured = command_capture.feed(char)
+                if captured is not None:
+                    events.put(("command_output", captured))
         finally:
             events.put(("exit", child.wait()))
 
@@ -134,6 +152,16 @@ def run(argv=None):
                 break
             if kind in ("user", "ai", "ai_continuation"):
                 display(kind, value)
+            elif kind == "command_output":
+                dialog = tk.Toplevel(root)
+                dialog.title("LLM_CHA /semstatus")
+                dialog.geometry("780x520")
+                output_view = scrolledtext.ScrolledText(dialog, wrap="word",
+                    font=("Consolas", 10))
+                output_view.pack(fill="both", expand=True, padx=8, pady=8)
+                output_view.insert("1.0", value or "状態情報がありません。")
+                output_view.configure(state="disabled")
+                status.set("状態確認: 完了")
             elif kind == "status":
                 if "route" in value and value["route"]:
                     status.set(f"Model: {model_label} | Quality Gate: {quality_status} | {value['route']}")
