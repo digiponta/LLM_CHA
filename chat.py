@@ -5653,6 +5653,18 @@ def main() -> None:
                             if decision.state == "UNVERIFIED" else shown
                         )
                         if retrieval_truth.state == "UNVERIFIED" and retrieval.route == "CORPUS_MEMORY":
+                            from evidence_reference_v0738 import count_evidence
+                            evidence_count=count_evidence(
+                                PROJECT_ROOT / "data" / "approved_v071.jsonl",
+                                PROJECT_ROOT / "data" / "candidates_v071.jsonl",
+                                retrieval_focus, retrieval.answer,
+                                retrieval.provenance,
+                                threshold=int(os.environ.get("LLM_CHA_AUTO_APPROVE_REFERENCES","10")),
+                                route="CORPUS_MEMORY")
+                            print("[evidence_reference: status={}, count={}, promoted={}]".format(
+                                evidence_count["status"],evidence_count.get("reference_count"),
+                                evidence_count["promoted"]))
+
                             from raw_wiki_parallel_v0735 import parallel_evidence
                             corpus_wiki=parallel_evidence(display_answer,retrieval_focus,cha_wikipedia_lookup)
                             display_answer=corpus_wiki["answer"]
@@ -5662,6 +5674,18 @@ def main() -> None:
                     else:
                         shown = retrieval.answer
                         if retrieval_truth.state == "UNVERIFIED" and retrieval.route == "CORPUS_MEMORY":
+                            from evidence_reference_v0738 import count_evidence
+                            evidence_count=count_evidence(
+                                PROJECT_ROOT / "data" / "approved_v071.jsonl",
+                                PROJECT_ROOT / "data" / "candidates_v071.jsonl",
+                                retrieval_focus, retrieval.answer,
+                                retrieval.provenance,
+                                threshold=int(os.environ.get("LLM_CHA_AUTO_APPROVE_REFERENCES","10")),
+                                route="CORPUS_MEMORY")
+                            print("[evidence_reference: status={}, count={}, promoted={}]".format(
+                                evidence_count["status"],evidence_count.get("reference_count"),
+                                evidence_count["promoted"]))
+
                             from raw_wiki_parallel_v0735 import parallel_evidence
                             corpus_wiki=parallel_evidence(shown,retrieval_focus,cha_wikipedia_lookup)
                             shown=corpus_wiki["answer"]
@@ -5711,6 +5735,16 @@ def main() -> None:
             raw_hits = best_raw_mentions(raw_path, synonym_lexicon.expand(retrieval_focus))
             if raw_hits:
                 raw_answer = present_mentions(raw_hits)
+                from evidence_reference_v0738 import count_evidence
+                evidence_count=count_evidence(
+                    PROJECT_ROOT / "data" / "approved_v071.jsonl",
+                    PROJECT_ROOT / "data" / "candidates_v071.jsonl",
+                    retrieval_focus, raw_answer, str(raw_path),
+                    threshold=int(os.environ.get("LLM_CHA_AUTO_APPROVE_REFERENCES","10")),
+                    route="RAW_CONCEPT_EVIDENCE")
+                print("[evidence_reference: status={}, count={}, promoted={}]".format(
+                    evidence_count["status"],evidence_count.get("reference_count"),
+                    evidence_count["promoted"]))
                 from raw_wiki_parallel_v0735 import parallel_evidence
                 raw_wiki = parallel_evidence(raw_answer, retrieval_focus, cha_wikipedia_lookup)
                 raw_answer = raw_wiki["answer"]
