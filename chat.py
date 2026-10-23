@@ -6507,8 +6507,24 @@ def main() -> None:
             audit=candidate_fallback["reference_audit"]
             print("[candidate_reference: status={}, count={}, threshold={}, promoted={}]".format(
                 audit["status"],audit["reference_count"],audit["threshold"],audit["promoted"]))
+        # v0.7.44.5 opt-in guard for accepted raw model generation only.
+        # Do not alter Trusted retrieval, Candidate fallback or Wikipedia evidence.
+        cha_quality_guard_status = None
+        if (os.environ.get("LLM_CHA_RESPONSE_GATE", "0") == "1"
+                and accepted and candidate_fallback is None):
+            from response_quality_gate_v07443 import assess_response
+            cha_quality_decision = assess_response(
+                reply, persona_gap=False, route="GENERATED", truth_state="UNKNOWN")
+            cha_quality_guard_status = cha_quality_decision.action
+            if cha_quality_decision.action != "ACCEPT":
+                reply = "回答をうまく生成できませんでした。もう一度質問してください。"
+                # Do not admit a failed generated reply into context/learning.
+                accepted = False
         cha_wiki_last_generated = reply
         print(f"AI> {reply}")
+        if cha_quality_guard_status is not None:
+            print("[response_quality_gate={}, opt_in=True, train_ready={}]".format(
+                cha_quality_guard_status, accepted))
         if candidate_fallback is not None:
             print("[experimental_route={}, truth_state={}, reason={}, auto_promote=False]".format(
                 candidate_fallback["route"],candidate_fallback["truth_state"],
