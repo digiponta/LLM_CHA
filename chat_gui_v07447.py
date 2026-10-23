@@ -27,6 +27,7 @@ def create_process(command, quality_gate=True):
     env["LLM_CHA_RESPONSE_GATE"] = "1" if quality_gate else "0"
     env["LLM_CHA_DAILY_CHAT"] = "1"
     env["LLM_CHA_TOPIC_NORMALIZE"] = "1"
+    env["LLM_CHA_CORPUS_FOLLOWUP"] = "1"
     return subprocess.Popen(
         command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT, text=True, encoding="utf-8",
