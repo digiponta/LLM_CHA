@@ -3421,6 +3421,7 @@ def main() -> None:
     active_evidence_extract = ""
     active_evidence_source = ""
     corpus_followup_context = None
+    corpus_evidence_cursor = None
     from multi_topic_evidence_v0639 import TopicEvidenceContext
     topic_evidence = TopicEvidenceContext(max_topics=4)
     from persistent_topic_context_v0640 import save_context, load_context
@@ -3768,6 +3769,17 @@ def main() -> None:
         if os.environ.get("LLM_CHA_CORPUS_FOLLOWUP", "0") == "1":
             guarded_followup = corpus_followup(raw_user_text, corpus_followup_context)
             if guarded_followup is not None:
+                # The cursor never returns an already presented proposition.
+                if (corpus_evidence_cursor is not None
+                        and corpus_evidence_cursor.subject == corpus_followup_context["subject"]):
+                    from evidence_cursor_v074416 import render_unverified
+                    next_record = corpus_evidence_cursor.next_evidence(corpus_followup_context["subject"])
+                    if next_record is not None:
+                        print("AI> " + render_unverified(next_record))
+                        print("[route=CORPUS_EVIDENCE_CURSOR, proposition_id={}, truth_state=UNVERIFIED, train_ready=False, auto_promote=False]".format(next_record.proposition_id))
+                        print()
+                        last_ai_reply = None
+                        continue
                 print("AI> " + guarded_followup["answer"])
                 print("[route={}, topic={}, truth_state=UNVERIFIED, train_ready=False, auto_promote=False]".format(
                     guarded_followup["route"], corpus_followup_context["subject"]))
@@ -3778,6 +3790,7 @@ def main() -> None:
         # Invalidate on any non-follow-up user turn to avoid topic leakage.
         if raw_user_text.strip().rstrip("。!?？") not in FOLLOWUPS:
             corpus_followup_context = None
+            corpus_evidence_cursor = None
         # v0.7.44.10 opt-in narrow Japanese daily-chat intent guard.
         # Never promote a conversational acknowledgement to trusted evidence.
         if os.environ.get("LLM_CHA_DAILY_CHAT", "0") == "1":
@@ -5803,6 +5816,18 @@ def main() -> None:
                             "subject": retrieval.subject,
                             "truth_state": retrieval_truth.state,
                         }
+                        from corpus_cursor_bridge_v074417 import bridge_records
+                        from evidence_cursor_v074416 import EvidenceCursor
+                        cursor_preflight = bridge_records(
+                            retrieval.records, retrieval.subject, retrieval_truth.state)
+                        corpus_evidence_cursor = EvidenceCursor()
+                        if cursor_preflight.status == "READY":
+                            # Use the actual answer shown, not generated paraphrases.
+                            corpus_evidence_cursor.reset(
+                                retrieval.subject, list(cursor_preflight.evidence), shown)
+                        print("[corpus_cursor=status:{}, records={}, missing_ids={}, remaining={}]".format(
+                            cursor_preflight.status, cursor_preflight.count,
+                            cursor_preflight.missing_ids, corpus_evidence_cursor.remaining()))
                     history.append((user_text, shown))
                     last_ai_reply = shown
                     continue
