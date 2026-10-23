@@ -11,6 +11,9 @@ class QualityGateTests(unittest.TestCase):
           ("宇宙","宇宙全体を時間的な量化回の結果。"),
         ]:
             self.assertFalse(quality_gate(question,answer)[0])
+    def test_regression_rejection_reasons(self):
+        self.assertEqual(quality_gate("宇宙","宇宙全体を時間的な量化回の結果。")[1],"malformed_generation")
+        self.assertEqual(quality_gate("猫","ネコ: コェル落。候補。候補に。")[1],"malformed_generation")
     def test_unverified_answer_remains_unverified(self):
         r=fallback_on_structured_unknown("トヨタとは",lambda q:"トヨタは自動車メーカーです。",allow=True)
         self.assertEqual(r["truth_state"],"EXPERIMENTAL_UNVERIFIED")
