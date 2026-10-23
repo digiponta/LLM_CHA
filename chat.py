@@ -3422,6 +3422,7 @@ def main() -> None:
     active_evidence_source = ""
     corpus_followup_context = None
     corpus_evidence_cursor = None
+    last_explicit_knowledge_topic = None
     from multi_topic_evidence_v0639 import TopicEvidenceContext
     topic_evidence = TopicEvidenceContext(max_topics=4)
     from persistent_topic_context_v0640 import save_context, load_context
@@ -3763,6 +3764,14 @@ def main() -> None:
             continue
 
         raw_user_text = user_text
+        # v0.7.44.23: remember explicit knowledge topic, not any model reply.
+        # This guards the fallback route when a follow-up has no evidence.
+        if raw_user_text.endswith(("とは", "とは？", "とは?")):
+            last_explicit_knowledge_topic = raw_user_text.split("とは", 1)[0].strip()
+        elif raw_user_text.strip().rstrip("。！？? ") not in (
+                "もっと詳しく", "もう少し詳しく", "詳しく", "詳しく教えて",
+                "もっと詳しく教えて", "もう少し詳しく教えて"):
+            last_explicit_knowledge_topic = None
         # v0.7.44.15: corpus follow-ups are intentionally scoped to the
         # immediately preceding corpus reply. No further evidence is invented.
         from corpus_followup_v074415 import corpus_followup, FOLLOWUPS
@@ -5848,6 +5857,20 @@ def main() -> None:
 
         # v0.6.16: dialogue/persona intent precedes lexical raw corpus retrieval.
         from raw_evidence_priority_v0616 import conversational_intercept, allow_raw_evidence
+        if (os.environ.get("LLM_CHA_FOLLOWUP_RELEVANCE", "0") == "1"
+                and last_explicit_knowledge_topic
+                and raw_user_text.strip().rstrip("。！？? ") in (
+                    "もっと詳しく", "もう少し詳しく", "詳しく", "詳しく教えて",
+                    "もっと詳しく教えて", "もう少し詳しく教えて")):
+            # Only reached when established evidence routes did not answer.
+            # Never let identity/model generation masquerade as topic details.
+            print("AI> 取得した資料には、「{}」について追加で説明できる明確な根拠がない。".format(
+                last_explicit_knowledge_topic))
+            print("[route=FOLLOWUP_RELEVANCE_NO_EVIDENCE, topic={}, train_ready=False, auto_promote=False]".format(
+                last_explicit_knowledge_topic))
+            print()
+            last_ai_reply = None
+            continue
         identity_result = identity_context.respond(user_text)
         if identity_result is not None:
             immediate_reply, identity_route = identity_result
