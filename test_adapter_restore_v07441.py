@@ -49,7 +49,7 @@ class RestoreDiagnosticsTests(unittest.TestCase):
             self.skipTest("torch not installed")
         with tempfile.TemporaryDirectory() as tmp:
             p = Path(tmp) / "a.pt"
-            torch.save({"model_state_dict": {"a.weight": torch.ones(2)}}, p)
+            torch.save({"config": {"vocab_size": 10, "d_model": 4, "num_layers": 1, "hidden_dim": 8}, "model_state_dict": {"a.weight": torch.ones(2)}}, p)
             r = diagnose(p)
             self.assertEqual(r["restore_status"], "PREFLIGHT_OK")
             self.assertFalse(r["runtime_restore_verified"])
