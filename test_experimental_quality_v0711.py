@@ -25,6 +25,11 @@ class QualityGateTests(unittest.TestCase):
         r=fallback_on_structured_unknown("トヨタとは",lambda q:"回答回答回答回答回答回答",allow=True)
         self.assertEqual(r["truth_state"],"UNKNOWN")
         self.assertIsNone(r["answer"])
+    def test_guard_is_executable_code_not_comment(self):
+        import ast
+        tree=ast.parse(Path(__file__).with_name("experimental_quality_gate_v0711.py").read_text(encoding="utf-8"))
+        names=[node.value for node in ast.walk(tree) if isinstance(node,ast.Constant) and isinstance(node.value,str)]
+        self.assertIn("malformed_generation",names)
     def test_runtime_wiring_is_parseable(self):
         source=Path(__file__).with_name("chat.py").read_text(encoding="utf-8")
         ast.parse(source)
