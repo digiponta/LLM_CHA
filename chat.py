@@ -6554,7 +6554,8 @@ def main() -> None:
                         raw_user_text, synonym_lexicon,
                         _synonym_lookup, _synonym_truth_allowed)
                     if cha_recovered is not None:
-                        reply = cha_recovered["answer"]
+                        from response_presentation_v07449 import present_synonym_recovery
+                        reply = present_synonym_recovery(raw_user_text, cha_recovered["term"], cha_recovered["answer"])
                         cha_quality_guard_status = "SYNONYM_WIKIPEDIA_RECOVERY"
                         print("[synonym_recovery=FOUND, term={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(
                             cha_recovered["term"], cha_recovered["source"]))
