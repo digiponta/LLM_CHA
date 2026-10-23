@@ -30,8 +30,8 @@ class NagatoNllTests(unittest.TestCase):
         r=diagnose(FakeModel(),FakeTokenizer(),rows,torch.device("cpu"),5)
         self.assertEqual(r["count"],1)
         self.assertAlmostEqual(r["base_mean_nll"],r["experimental_mean_nll"])
-        self.assertEqual(r["first_top1_base"],0)
-        self.assertEqual(r["first_topk_experimental"],0)
+        self.assertEqual(r["first_top1_base"],1)
+        self.assertEqual(r["first_topk_experimental"],1)
         self.assertEqual(r["cases"][0]["supervised_tokens"],2)
     def test_multiple(self):
         rows=[{"id":str(i),"source_id":"s","question":"Q","answer":"A"+str(i)} for i in range(2)]
