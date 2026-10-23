@@ -3950,6 +3950,9 @@ def main() -> None:
                     print("[wiki_evidence_continuation={}, visited={}]".format(
                         continuation.get("status"),len(continuation.get("visited",[]))))
                     if continuation["status"]=="FOUND":
+                        print("[wiki_evidence_scope={}, origin_title={}, article_title={}, source={}, truth_state=EXTERNAL_UNVERIFIED]".format(
+                            continuation.get("evidence_scope","UNKNOWN"), continuation.get("origin_title","-"),
+                            continuation.get("title","-"), continuation.get("source","-")))
                         print("AI> "+continuation["answer"])
                         print("[route={}, source={}, truth_state=EXTERNAL_UNVERIFIED, verified=False, train_ready=False, auto_promote=False, quality_gate={}]".format(
                             continuation["route"],continuation["source"],continuation["quality_gate"]))
