@@ -3231,7 +3231,7 @@ def main() -> None:
     print("  /teachq Q => A teach an explicit question/answer pair")
     print("  /good         approve and save the previous AI answer for learning")
     print("  /train        run incremental training and reload checkpoint")
-    print("  /sleep        internalize pending Nagato Semantic Memory into the LLM")
+    print("  /sleep        train PENDING candidates in Experimental Adapter; trusted Semantic Sleep remains separate")
     print("  /sleep status show Semantic Memory / internalized / pending counts")
     print("  /trainbatch   batch-train all active verification repair tasks")
     print("  /batchstatus  show verification-aware batch repair plan")
@@ -5016,6 +5016,25 @@ def main() -> None:
             continue
 
         if command == "/sleep":
+            # v0.7.22: PENDING candidates are trained ONLY on the isolated
+            # Experimental Adapter; never append them to Trusted learning_log.
+            try:
+                from experimental_sleep_v0722 import experimental_sleep
+                experimental_sleep_result = experimental_sleep(
+                    PROJECT_ROOT / "data" / "approved_v071.jsonl",
+                    PROJECT_ROOT / "data" / "candidates_v071.jsonl",
+                    PROJECT_ROOT / "model" / "model-gpu-v1.6.2-online.pt",
+                    PROJECT_ROOT / "model" / "tokenizer-v0.7-bpe.json",
+                    PROJECT_ROOT / "results" / "experimental_sleep_v0722",
+                )
+                print("[experimental sleep: status={}, pending={}, checkpoint={}, auto_promote=False]".format(
+                    experimental_sleep_result["status"],experimental_sleep_result["pending"],
+                    experimental_sleep_result.get("checkpoint","-")))
+            except (OSError, ValueError, RuntimeError, KeyError, ImportError) as exc:
+                print("[experimental sleep FAILED: {}: {}]".format(type(exc).__name__,exc))
+                print("[Trusted sleep skipped to avoid partial dual sleep execution]")
+                print()
+                continue
             queued, before_sleep = prepare_semantic_sleep_pairs(
                 nagato_semantic_memory_path,
                 learning_log,
