@@ -12,7 +12,7 @@ def quality_gate(question, answer):
     if len(text)>450:return False,"too_long"
     if any(tag in text for tag in ("候補の実験回答","回答回答","回収録答")):
         return False,"experiment_leakage"
-    if re.search(r"(.)\1{3,}",text):
+    # Known malformed fragments observed in the v0.7.10 pilot. This is a\n    # narrow regression guard, not a general semantic or factual validator.\n    if any(fragment in text for fragment in ("量化回", "コェル落")):\n        return False,"malformed_generation"\n    if re.search(r"(.)\1{3,}",text):
         return False,"repetition"
     if re.search(r"(.{2,10})\1{2,}",text):
         return False,"phrase_loop"
