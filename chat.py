@@ -5061,6 +5061,18 @@ def main() -> None:
                 print("[experimental adapter reload: status={}, reason={}, checkpoint={}]".format(
                     reload_info["status"],reload_info.get("reason","-"),
                     reload_info.get("checkpoint","-")))
+            # v0.7.40: independently sync operationally Approved records.
+            # This does not assert factual truth or mutate Trusted weights.
+            from approved_semantic_sleep_v0740 import synchronize, queue_approved
+            approved_sync=synchronize(
+                PROJECT_ROOT / "data" / "approved_v071.jsonl",
+                PROJECT_ROOT / "data" / "approved_semantic_memory_v0740.jsonl")
+            approved_queue=queue_approved(
+                PROJECT_ROOT / "data" / "approved_semantic_memory_v0740.jsonl",
+                learning_log, learning_state)
+            print("[approved semantic sync: approved={}, synced={}, added={}, queued={}]".format(
+                approved_sync["approved"],approved_sync["synced"],approved_sync["added"],
+                approved_queue["queued"]))
             queued, before_sleep = prepare_semantic_sleep_pairs(
                 nagato_semantic_memory_path,
                 learning_log,
@@ -5080,7 +5092,7 @@ def main() -> None:
                 f"newly_queued={queued}, "
                 f"conditional_queued={conditional_queued}]"
             )
-            if before_sleep.pending == 0 and conditional_queued == 0:
+            if before_sleep.pending == 0 and conditional_queued == 0 and approved_queue["queued"] == 0:
                 print("[semantic sleep: all semantic memory is already internalized]")
                 print()
                 continue
