@@ -18,10 +18,10 @@ def validate_candidate_response(question, generated, record):
         return {"accepted":False,"reason":"too_long"}
     if actual == expected:
         return {"accepted":True,"reason":"candidate_exact_consistency"}
-    passed, reason=quality_gate(question,actual)
-    # A nonmatching generated answer is NOT supported by this candidate,
-    # even when the generic textual heuristic considers it fluent.
-    return {"accepted":False,"reason":"candidate_answer_mismatch" if passed else reason}
+    # This route is authorized solely by exact Candidate consistency.
+    # An unequal answer is always a mismatch, irrespective of the generic
+    # text-quality heuristic (which may report an unrelated rejection reason).
+    return {"accepted":False,"reason":"candidate_answer_mismatch"}
 
 def candidate_answer_fallback(question, backend, record):
     generated=backend(question)
