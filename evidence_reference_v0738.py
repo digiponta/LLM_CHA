@@ -16,7 +16,7 @@ def count_evidence(approved_path,candidate_path,concept,answer,source_id,
     if len(answer)>12000:
         return {"status":"OVERSIZE","promoted":False}
     memory=DualMemory(approved_path,candidate_path)
-    question="原文証拠："+concept.strip()
+    question="原文証拠："+concept.strip()+" #"+__import__("hashlib").sha256((source_id.strip()+"#"+route).encode("utf-8")).hexdigest()[:12]
     # Stable identity includes source, so an identical answer from a
     # different corpus is not automatically treated as the same evidence.
     marker=source_id.strip()+"#"+route
