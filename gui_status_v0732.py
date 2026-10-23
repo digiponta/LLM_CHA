@@ -25,6 +25,10 @@ def parse_status(line):
     if text.startswith("[experimental adapter reload:"):
         status=re.search(r"\bstatus=([A-Z_]+)",text)
         return {"experimental":"Adapter: "+(status.group(1) if status else "unknown")}
+    if text.startswith("[evidence_approval:"):
+        state=re.search(r"\bstate=([A-Z_]+)",text)
+        count=re.search(r"\bcount=(\d+)",text)
+        return {"approval":"Source approval: "+(state.group(1) if state else "UNKNOWN")+((" / "+count.group(1)+" refs") if count else "")}
     if text.startswith("[retrieval-first="):
         route=re.search(r"\broute=([A-Z_]+)",text)
         return {"route":f"Last route: {route.group(1)}" if route else "Last route: Trusted retrieval"}
