@@ -26,6 +26,14 @@ class ApprovedSemanticSleepTests(unittest.TestCase):
         self.assertEqual(row["source_id"],"corpus#CORPUS_MEMORY")
         self.assertEqual(row["user"],"真空管の原文記述は")
         self.assertEqual(row["truth_state"],"UNVERIFIED")
+    def test_sync_rejects_changed_approved_content(self):
+        synchronize(self.approved,self.synced)
+        from dual_semantic_memory_v071 import read_store,write_store
+        modified=read_store(self.approved,"APPROVED")
+        modified[0]["answer"]="変更済みの文"
+        write_store(self.approved,modified,"APPROVED")
+        with self.assertRaisesRegex(ValueError,"approved id content changed"):
+            synchronize(self.approved,self.synced)
     def test_queue_only_once(self):
         synchronize(self.approved,self.synced)
         one=queue_approved(self.synced,self.log,self.state)
