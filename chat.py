@@ -3774,6 +3774,16 @@ def main() -> None:
                 last_ai_reply = None
                 cha_wiki_last_generated = None
                 continue
+        # v0.7.44.14: opt-in, narrowly scoped alias normalization.
+        # Preserve the literal utterance for provenance and diagnostics;
+        # only the downstream lookup query is rewritten.
+        if os.environ.get("LLM_CHA_TOPIC_NORMALIZE", "0") == "1":
+            from topic_recovery_v074413 import resolve as cha_topic_resolve
+            cha_topic_plan = cha_topic_resolve(raw_user_text)
+            if cha_topic_plan.status == "NORMALIZED":
+                user_text = cha_topic_plan.query
+                print("[topic_normalization=ALIAS, from={}, to={}, train_ready=False, auto_promote=False]".format(
+                    raw_user_text, user_text))
         relation = relation_context.observe(raw_user_text)
         if relation is not None and relation["subject"] != "スターバックス":
             # No answer is invented from a Wikipedia article that lacks attribute evidence.
