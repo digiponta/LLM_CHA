@@ -5980,6 +5980,13 @@ def main() -> None:
                     experimental_fallback = {"route": "EXPERIMENTAL_UNAVAILABLE",
                                              "reason": type(exc).__name__,
                                              "truth_state": "UNKNOWN", "auto_promote": False}
+            if (experimental_fallback and experimental_fallback.get("answer")
+                    and experimental_fallback.get("truth_state")=="EXPERIMENTAL_UNVERIFIED"):
+                from experimental_wiki_append_v0734 import append_wikipedia
+                wiki_append=append_wikipedia(block_reply,raw_user_text,lookup=cha_wikipedia_lookup)
+                block_reply=wiki_append["answer"]
+                print("[experimental_wiki_append={}, truth_state=EXTERNAL_UNVERIFIED, auto_promote=False]".format(
+                    wiki_append["wiki_status"]))
             print(f"AI> {block_reply}")
             if experimental_fallback is not None:
                 print("[experimental_route={}, truth_state={}, quality_reason={}, auto_promote=False]".format(
@@ -6401,6 +6408,13 @@ def main() -> None:
                                       "truth_state":"UNKNOWN",
                                       "reason":type(exc).__name__,
                                       "auto_promote":False}
+        if (candidate_fallback and candidate_fallback.get("answer")
+                and candidate_fallback.get("truth_state")=="EXPERIMENTAL_UNVERIFIED"):
+            from experimental_wiki_append_v0734 import append_wikipedia
+            wiki_append=append_wikipedia(reply,raw_user_text,lookup=cha_wikipedia_lookup)
+            reply=wiki_append["answer"]
+            print("[experimental_wiki_append={}, truth_state=EXTERNAL_UNVERIFIED, auto_promote=False]".format(
+                wiki_append["wiki_status"]))
         cha_wiki_last_generated = reply
         print(f"AI> {reply}")
         if candidate_fallback is not None:
