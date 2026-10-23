@@ -3452,6 +3452,19 @@ def main() -> None:
             )
         else:
             memory_first_generator = experimental_backend
+    if memory_first_enabled and memory_first_mode == "constrained":
+        from experimental_restore_v0724 import restore_latest
+        restored_backend, restore_info = restore_latest(
+            PROJECT_ROOT / "results" / "experimental_sleep_v0722",
+            PROJECT_ROOT / "data" / "approved_v071.jsonl",
+            PROJECT_ROOT / "data" / "candidates_v071.jsonl",
+            PROJECT_ROOT / "model" / "model-gpu-v1.6.2-online.pt",
+            PROJECT_ROOT / "model" / "tokenizer-v0.7-bpe.json")
+        if restored_backend is not None:
+            memory_first_generator = restored_backend
+        print("[experimental startup restore: status={}, checked={}, checkpoint={}]".format(
+            restore_info["status"],restore_info["checked"],
+            restore_info.get("checkpoint","-")))
     while True:
         try:
             user_text = input("You> ").strip()
