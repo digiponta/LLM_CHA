@@ -3766,6 +3766,32 @@ def main() -> None:
             continue
 
         raw_user_text = user_text
+        # v0.7.44.25: resolve explicitly selected aspect from current source.
+        # No sentence is generated when the article lacks aspect evidence.
+        if (os.environ.get("LLM_CHA_ASPECT_EVIDENCE","0") == "1"
+                and last_explicit_knowledge_topic):
+            from aspect_evidence_v074425 import choose_aspect, extract_aspect
+            aspect = choose_aspect(raw_user_text)
+            if aspect is not None:
+                allowed = truth_allows_direct_retrieval(
+                    effective_truth_record(truth_store_path, last_explicit_knowledge_topic).state)
+                wiki_for_aspect = cha_wiki_conversation.current
+                if (allowed and isinstance(wiki_for_aspect, dict)
+                        and wiki_for_aspect.get("title") == last_explicit_knowledge_topic):
+                    selected = extract_aspect(wiki_for_aspect, aspect)
+                else:
+                    selected = None
+                if selected is not None:
+                    print("AI> " + selected["answer"])
+                    print("[route=ASPECT_EVIDENCE, topic={}, aspect={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(
+                        last_explicit_knowledge_topic, aspect, selected["source"]))
+                else:
+                    print("AI> 「{}」の「{}」について、現在の資料には明確な根拠がない。".format(
+                        last_explicit_knowledge_topic, aspect))
+                    print("[route=ASPECT_EVIDENCE_INSUFFICIENT, train_ready=False, auto_promote=False]")
+                print()
+                last_ai_reply = None
+                continue
         # v0.7.44.23: remember explicit knowledge topic, not any model reply.
         # This guards the fallback route when a follow-up has no evidence.
         if raw_user_text.endswith(("とは", "とは？", "とは?")):
