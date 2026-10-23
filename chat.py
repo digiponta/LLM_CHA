@@ -5664,6 +5664,14 @@ def main() -> None:
                             print("[evidence_reference: status={}, count={}, promoted={}]".format(
                                 evidence_count["status"],evidence_count.get("reference_count"),
                                 evidence_count["promoted"]))
+                            from approved_evidence_state_v0739 import evidence_state
+                            approval=evidence_state(
+                                PROJECT_ROOT / "data" / "approved_v071.jsonl",
+                                PROJECT_ROOT / "data" / "candidates_v071.jsonl",
+                                retrieval_focus, retrieval.answer, retrieval.provenance,
+                                "CORPUS_MEMORY")
+                            print("[evidence_approval: state={}, count={}, factual_truth={}]".format(
+                                approval["approval_state"],approval.get("reference_count","-"),approval["truth_state"]))
 
                             from raw_wiki_parallel_v0735 import parallel_evidence
                             corpus_wiki=parallel_evidence(display_answer,retrieval_focus,cha_wikipedia_lookup)
@@ -5685,6 +5693,14 @@ def main() -> None:
                             print("[evidence_reference: status={}, count={}, promoted={}]".format(
                                 evidence_count["status"],evidence_count.get("reference_count"),
                                 evidence_count["promoted"]))
+                            from approved_evidence_state_v0739 import evidence_state
+                            approval=evidence_state(
+                                PROJECT_ROOT / "data" / "approved_v071.jsonl",
+                                PROJECT_ROOT / "data" / "candidates_v071.jsonl",
+                                retrieval_focus, retrieval.answer, retrieval.provenance,
+                                "CORPUS_MEMORY")
+                            print("[evidence_approval: state={}, count={}, factual_truth={}]".format(
+                                approval["approval_state"],approval.get("reference_count","-"),approval["truth_state"]))
 
                             from raw_wiki_parallel_v0735 import parallel_evidence
                             corpus_wiki=parallel_evidence(shown,retrieval_focus,cha_wikipedia_lookup)
@@ -5745,6 +5761,14 @@ def main() -> None:
                 print("[evidence_reference: status={}, count={}, promoted={}]".format(
                     evidence_count["status"],evidence_count.get("reference_count"),
                     evidence_count["promoted"]))
+                from approved_evidence_state_v0739 import evidence_state
+                approval=evidence_state(
+                    PROJECT_ROOT / "data" / "approved_v071.jsonl",
+                    PROJECT_ROOT / "data" / "candidates_v071.jsonl",
+                    retrieval_focus, raw_answer, str(raw_path),
+                    "RAW_CONCEPT_EVIDENCE")
+                print("[evidence_approval: state={}, count={}, factual_truth={}]".format(
+                    approval["approval_state"],approval.get("reference_count","-"),approval["truth_state"]))
                 from raw_wiki_parallel_v0735 import parallel_evidence
                 raw_wiki = parallel_evidence(raw_answer, retrieval_focus, cha_wikipedia_lookup)
                 raw_answer = raw_wiki["answer"]
