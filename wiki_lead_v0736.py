@@ -14,5 +14,5 @@ def wiki_lead(extract,max_chars=240):
             if len(candidate)>=18 and not candidate.endswith(("とは、。","は、。","とは。")):
                 return candidate[:max_chars].rstrip("、")+"…" if len(candidate)>max_chars else candidate
     if len(text)>max_chars:return text[:max_chars].rstrip("、。 ")+"…"
-    if text.endswith(("とは、","は、","とは","は")):return None
+    if text.endswith(("とは、","は、","とは","は","とは、。","は、。")):return None
     return text if text.endswith("。") else text+"。"
