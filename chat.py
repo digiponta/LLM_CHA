@@ -5070,9 +5070,9 @@ def main() -> None:
             approved_queue=queue_approved(
                 PROJECT_ROOT / "data" / "approved_semantic_memory_v0740.jsonl",
                 learning_log, learning_state)
-            print("[approved semantic sync: approved={}, synced={}, added={}, queued={}]".format(
+            print("[approved semantic sync: approved={}, synced={}, added={}, queued={}, repaired={}, outstanding={}]".format(
                 approved_sync["approved"],approved_sync["synced"],approved_sync["added"],
-                approved_queue["queued"]))
+                approved_queue["queued"],approved_queue["repaired"],approved_queue["outstanding"]))
             queued, before_sleep = prepare_semantic_sleep_pairs(
                 nagato_semantic_memory_path,
                 learning_log,
@@ -5092,7 +5092,7 @@ def main() -> None:
                 f"newly_queued={queued}, "
                 f"conditional_queued={conditional_queued}]"
             )
-            if before_sleep.pending == 0 and conditional_queued == 0 and approved_queue["queued"] == 0:
+            if before_sleep.pending == 0 and conditional_queued == 0 and approved_queue["outstanding"] == 0:
                 print("[semantic sleep: all semantic memory is already internalized]")
                 print()
                 continue
