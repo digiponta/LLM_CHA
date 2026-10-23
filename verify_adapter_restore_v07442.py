@@ -68,7 +68,7 @@ def main():
     if Path(args.output).resolve() in protected:
         p.error("output overlaps protected input")
     result=verify(args.checkpoint,args.state,args.device)
-    data=json.dumps(result,ensure_ascii=False,indent=2)+"\\n"
+    data=json.dumps(result,ensure_ascii=False,indent=2)+"\n"
     out=Path(args.output)
     out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(data,encoding="utf-8")
