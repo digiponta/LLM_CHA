@@ -3827,7 +3827,12 @@ def main() -> None:
                         cache=cha_persona_wiki_cache)
                     if (normalized_wiki.get("status") == "FOUND"
                             and normalized_wiki.get("answer")
-                            and normalized_wiki.get("source")):
+                            and normalized_wiki.get("source")
+                            and normalized_wiki.get("wiki_context")):
+                        # v0.7.44.20: a successful alias lookup must become
+                        # the active evidence context for subsequent follow-ups.
+                        # Otherwise older topics (e.g. 量子ビット) leak through.
+                        cha_wiki_conversation.offer(normalized_wiki["wiki_context"])
                         print("AI> " + normalized_wiki["answer"])
                         print("[route=TOPIC_ALIAS_WIKIPEDIA, input={}, topic={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(
                             raw_user_text, target, normalized_wiki["source"]))
