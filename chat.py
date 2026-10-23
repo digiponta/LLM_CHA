@@ -3420,6 +3420,7 @@ def main() -> None:
     active_evidence_topic = None
     active_evidence_extract = ""
     active_evidence_source = ""
+    corpus_followup_context = None
     from multi_topic_evidence_v0639 import TopicEvidenceContext
     topic_evidence = TopicEvidenceContext(max_topics=4)
     from persistent_topic_context_v0640 import save_context, load_context
@@ -3761,6 +3762,22 @@ def main() -> None:
             continue
 
         raw_user_text = user_text
+        # v0.7.44.15: corpus follow-ups are intentionally scoped to the
+        # immediately preceding corpus reply. No further evidence is invented.
+        from corpus_followup_v074415 import corpus_followup, FOLLOWUPS
+        if os.environ.get("LLM_CHA_CORPUS_FOLLOWUP", "0") == "1":
+            guarded_followup = corpus_followup(raw_user_text, corpus_followup_context)
+            if guarded_followup is not None:
+                print("AI> " + guarded_followup["answer"])
+                print("[route={}, topic={}, truth_state=UNVERIFIED, train_ready=False, auto_promote=False]".format(
+                    guarded_followup["route"], corpus_followup_context["subject"]))
+                print()
+                corpus_followup_context = None
+                last_ai_reply = None
+                continue
+        # Invalidate on any non-follow-up user turn to avoid topic leakage.
+        if raw_user_text.strip().rstrip("。!?？") not in FOLLOWUPS:
+            corpus_followup_context = None
         # v0.7.44.10 opt-in narrow Japanese daily-chat intent guard.
         # Never promote a conversational acknowledgement to trusted evidence.
         if os.environ.get("LLM_CHA_DAILY_CHAT", "0") == "1":
@@ -5779,6 +5796,13 @@ def main() -> None:
                     )
                     print("[0 generated probe tokens, corpus-memory retrieval]")
                     print()
+                    if (os.environ.get("LLM_CHA_CORPUS_FOLLOWUP", "0") == "1"
+                            and retrieval.route == "CORPUS_MEMORY"
+                            and retrieval_truth.state == "UNVERIFIED"):
+                        corpus_followup_context = {
+                            "subject": retrieval.subject,
+                            "truth_state": retrieval_truth.state,
+                        }
                     history.append((user_text, shown))
                     last_ai_reply = shown
                     continue
