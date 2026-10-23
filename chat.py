@@ -3761,6 +3761,19 @@ def main() -> None:
             continue
 
         raw_user_text = user_text
+        # v0.7.44.10 opt-in narrow Japanese daily-chat intent guard.
+        # Never promote a conversational acknowledgement to trusted evidence.
+        if os.environ.get("LLM_CHA_DAILY_CHAT", "0") == "1":
+            from daily_chat_intent_v074410 import chat_reply
+            daily_reply = chat_reply(raw_user_text, synonym_lexicon)
+            if daily_reply is not None:
+                print("AI> " + daily_reply["answer"])
+                print("[route=DAILY_CHAT_INTENT, intent={}, persona=ngt_presentation, truth_state=NONFACTUAL, train_ready=False, auto_promote=False]".format(
+                    daily_reply["intent"]))
+                print()
+                last_ai_reply = None
+                cha_wiki_last_generated = None
+                continue
         relation = relation_context.observe(raw_user_text)
         if relation is not None and relation["subject"] != "スターバックス":
             # No answer is invented from a Wikipedia article that lacks attribute evidence.
