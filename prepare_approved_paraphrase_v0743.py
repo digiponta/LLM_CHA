@@ -16,9 +16,11 @@ def forms(subject):
 def prepare(rows):
     train=[];holdout=[]
     for row in rows:
-        question=row["user"]
-        if not (row["question"].startswith("原文証拠：") and " #" in row["question"]):
+        question=row.get("question","")
+        if not (isinstance(question,str) and question.startswith("原文証拠：") and " #" in question):
             continue
+        if not all(isinstance(row.get(k),str) and row[k].strip() for k in ("id","assistant","source_id","user")):
+            raise ValueError("incomplete Approved source-evidence record")
         subject=row["question"][len("原文証拠："):].rsplit(" #",1)[0]
         samples=forms(subject)
         if len(set(samples["train"]) & set(samples["holdout"])):raise ValueError("split leakage")
