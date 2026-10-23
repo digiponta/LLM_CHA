@@ -95,8 +95,7 @@ def audit(base_path,tokenizer_path,approved_path,candidates_path,adapter_path,
     if not unchanged:raise RuntimeError("protected experiment inputs changed during audit")
     out=Path(output_path)
     out.parent.mkdir(parents=True,exist_ok=True)
-    out.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"
-",encoding="utf-8")
+    out.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     return report
 
 def main():
