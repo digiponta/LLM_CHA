@@ -32,6 +32,12 @@ class ExperimentalRAGTests(unittest.TestCase):
         def forbidden(p):raise AssertionError("backend invoked")
         r=run_question(self.memory,"紫の窓の符号",forbidden)
         self.assertEqual(r["truth_state"],"UNKNOWN")
+    def test_generic_subject_does_not_select_single_candidate(self):
+        def forbidden(prompt):
+            raise AssertionError("unrelated backend invoked")
+        for question in ("紫の窓の符号", "赤い橋の符号", "符号を教えて"):
+            result=run_question(self.memory,question,forbidden)
+            self.assertEqual(result["truth_state"],"UNKNOWN")
     def test_optin(self):
         r=run_question(self.memory,"青い鍵の符号を教えて",
                        lambda p:1/0,enabled=False)
