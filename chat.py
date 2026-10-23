@@ -3781,9 +3781,30 @@ def main() -> None:
             from topic_recovery_v074413 import resolve as cha_topic_resolve
             cha_topic_plan = cha_topic_resolve(raw_user_text)
             if cha_topic_plan.status == "NORMALIZED":
-                user_text = cha_topic_plan.query
-                print("[topic_normalization=ALIAS, from={}, to={}, train_ready=False, auto_promote=False]".format(
-                    raw_user_text, user_text))
+                # Existing downstream handlers also read raw_user_text, so
+                # reassigning user_text alone would NOT reliably reroute it.
+                # Resolve the normalized query via the established wiki path.
+                target = cha_topic_plan.topic
+                if (truth_allows_direct_retrieval(
+                        effective_truth_record(truth_store_path, raw_user_text).state)
+                        and truth_allows_direct_retrieval(
+                            effective_truth_record(truth_store_path, target).state)):
+                    normalized_wiki = cha_unknown_wiki_fallback(
+                        target, cha_topic_plan.query,
+                        cha_wiki_conversation.persona, cha_wikipedia_lookup,
+                        cha_persona_wiki_respond,
+                        grounded=cha_wiki_grounded_reply,
+                        cache=cha_persona_wiki_cache)
+                    if (normalized_wiki.get("status") == "FOUND"
+                            and normalized_wiki.get("answer")
+                            and normalized_wiki.get("source")):
+                        print("AI> " + normalized_wiki["answer"])
+                        print("[route=TOPIC_ALIAS_WIKIPEDIA, input={}, topic={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(
+                            raw_user_text, target, normalized_wiki["source"]))
+                        print()
+                        last_ai_reply = None
+                        cha_wiki_last_generated = None
+                        continue
         relation = relation_context.observe(raw_user_text)
         if relation is not None and relation["subject"] != "スターバックス":
             # No answer is invented from a Wikipedia article that lacks attribute evidence.
