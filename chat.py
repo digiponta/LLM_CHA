@@ -6537,6 +6537,27 @@ def main() -> None:
                 reply = "回答をうまく生成できませんでした。もう一度質問してください。"
                 # Do not admit a failed generated reply into context/learning.
                 accepted = False
+                # Recover a bare synonym through the existing Wikipedia evidence
+                # route, without admitting rejected model text into learning.
+                if cha_quality_guard_status == "LOW_SIGNAL_REJECT":
+                    from synonym_recovery_v07448 import recover_bare_synonym
+                    def _synonym_truth_allowed(term):
+                        return truth_allows_direct_retrieval(
+                            effective_truth_record(truth_store_path, term).state)
+                    def _synonym_lookup(term):
+                        return cha_unknown_wiki_fallback(
+                            term, term + "とは", cha_wiki_conversation.persona,
+                            cha_wikipedia_lookup, cha_persona_wiki_respond,
+                            grounded=cha_wiki_grounded_reply,
+                            cache=cha_persona_wiki_cache)
+                    cha_recovered = recover_bare_synonym(
+                        raw_user_text, synonym_lexicon,
+                        _synonym_lookup, _synonym_truth_allowed)
+                    if cha_recovered is not None:
+                        reply = cha_recovered["answer"]
+                        cha_quality_guard_status = "SYNONYM_WIKIPEDIA_RECOVERY"
+                        print("[synonym_recovery=FOUND, term={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(
+                            cha_recovered["term"], cha_recovered["source"]))
         cha_wiki_last_generated = reply
         print(f"AI> {reply}")
         if cha_quality_guard_status is not None:
