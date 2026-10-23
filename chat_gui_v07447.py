@@ -111,19 +111,28 @@ def run(argv=None):
 
     tk.Button(entry_frame, text="送信", command=submit).pack(side="left", padx=6)
     tk.Button(entry_frame, text="/sleep", command=lambda:send("/sleep",False)).pack(side="left")
-    def request_status():
+    pending_status = {"command": None}
+    def request_status(command="/semstatus"):
         if child.poll() is not None:
             messagebox.showwarning("状態確認", "chat.pyが終了しています。")
             return
+        if pending_status["command"] is not None:
+            status.set("状態確認: 前のコマンドの完了待ち")
+            return
+        pending_status["command"] = command
         with capture_mutex:
             command_capture.start()
-        if not send("/semstatus", False):
+        if not send(command, False):
             with capture_mutex:
                 command_capture.active = False
+            pending_status["command"] = None
             messagebox.showerror("状態確認", "コマンドを送信できませんでした。")
         else:
-            status.set("状態確認: /semstatus の結果を取得中")
-    tk.Button(entry_frame, text="状態確認", command=request_status).pack(side="left", padx=(6,0))
+            status.set("状態確認: {} の結果を取得中".format(command))
+    tk.Button(entry_frame, text="Semantic状態",
+              command=lambda:request_status("/semstatus")).pack(side="left", padx=(6,0))
+    tk.Button(entry_frame, text="学習状態",
+              command=lambda:request_status("/sleep status")).pack(side="left", padx=(6,0))
     entry.bind("<Return>", submit)
     entry.focus_set()
 
@@ -154,7 +163,9 @@ def run(argv=None):
                 display(kind, value)
             elif kind == "command_output":
                 dialog = tk.Toplevel(root)
-                dialog.title("LLM_CHA /semstatus")
+                command = pending_status["command"] or "status"
+                pending_status["command"] = None
+                dialog.title("LLM_CHA " + command)
                 dialog.geometry("780x520")
                 output_view = scrolledtext.ScrolledText(dialog, wrap="word",
                     font=("Consolas", 10))
@@ -166,6 +177,10 @@ def run(argv=None):
                 if "route" in value and value["route"]:
                     status.set(f"Model: {model_label} | Quality Gate: {quality_status} | {value['route']}")
             elif kind == "exit":
+                if pending_status["command"] is not None:
+                    command = pending_status["command"]
+                    pending_status["command"] = None
+                    messagebox.showwarning("状態確認", "{} の実行中にchat.pyが終了しました。".format(command))
                 status.set(f"chat.py 終了 (exit={value})")
                 entry.configure(state="disabled")
         root.after(70, poll)
