@@ -3423,6 +3423,18 @@ def main() -> None:
     topic_evidence = TopicEvidenceContext(max_topics=4)
     from persistent_topic_context_v0640 import save_context, load_context
     topic_context_file = PROJECT_ROOT / "data" / "topic_context_v0640.json"
+    # v0.7.11: experimental adapter is opt-in and invoked only on the
+    # structured UNKNOWN_KNOWLEDGE path (not TRUTH_BLOCK/INTERNALIZED_STALE).
+    from experimental_quality_gate_v0711 import fallback_on_structured_unknown
+    experimental_backend = None
+    if os.environ.get("LLM_CHA_EXPERIMENTAL_FALLBACK", "0") == "1":
+        from experimental_backend_v0711 import ExperimentalBackend
+        experimental_backend = ExperimentalBackend(
+            PROJECT_ROOT / "model" / "model-gpu-v1.6.2-online.pt",
+            PROJECT_ROOT / "model" / "tokenizer-v0.7-bpe.json",
+            PROJECT_ROOT / "results" / "adapter_sweep_v077_full" /
+                "r16_e30_lr1e-03" / "experimental-adapter.pt",
+        )
     while True:
         try:
             user_text = input("You> ").strip()
@@ -5880,7 +5892,22 @@ def main() -> None:
                     else UNKNOWN_REPLY
                 )
             )
+            experimental_fallback = None
+            if resolution_name == "UNKNOWN_KNOWLEDGE" and experimental_backend is not None:
+                try:
+                    experimental_fallback = fallback_on_structured_unknown(
+                        raw_user_text, experimental_backend, allow=True)
+                    if experimental_fallback and experimental_fallback["answer"]:
+                        block_reply = experimental_fallback["answer"]
+                except (OSError, ValueError, RuntimeError, KeyError, ImportError) as exc:
+                    experimental_fallback = {"route": "EXPERIMENTAL_UNAVAILABLE",
+                                             "reason": type(exc).__name__,
+                                             "truth_state": "UNKNOWN", "auto_promote": False}
             print(f"AI> {block_reply}")
+            if experimental_fallback is not None:
+                print("[experimental_route={}, truth_state={}, quality_reason={}, auto_promote=False]".format(
+                    experimental_fallback["route"], experimental_fallback["truth_state"],
+                    experimental_fallback["reason"]))
             print(
                 f"[knowledge-state={dispatch.state}, "
                 f"concept={dispatch.focus}, generation=blocked]"
