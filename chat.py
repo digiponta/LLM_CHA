@@ -5035,6 +5035,18 @@ def main() -> None:
                 print("[Trusted sleep skipped to avoid partial dual sleep execution]")
                 print()
                 continue
+            if memory_first_enabled and memory_first_mode == "constrained":
+                from experimental_reload_v0723 import reload_after_sleep
+                memory_first_generator, reload_info = reload_after_sleep(
+                    experimental_sleep_result,
+                    PROJECT_ROOT / "data" / "approved_v071.jsonl",
+                    PROJECT_ROOT / "data" / "candidates_v071.jsonl",
+                    PROJECT_ROOT / "model" / "model-gpu-v1.6.2-online.pt",
+                    PROJECT_ROOT / "model" / "tokenizer-v0.7-bpe.json",
+                    memory_first_generator)
+                print("[experimental adapter reload: status={}, reason={}, checkpoint={}]".format(
+                    reload_info["status"],reload_info.get("reason","-"),
+                    reload_info.get("checkpoint","-")))
             queued, before_sleep = prepare_semantic_sleep_pairs(
                 nagato_semantic_memory_path,
                 learning_log,
