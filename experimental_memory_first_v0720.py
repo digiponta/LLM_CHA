@@ -30,7 +30,8 @@ def memory_first(question, memory, *, trusted_ask, experimental_generate=None,
     output={"route":"EXPERIMENTAL_MEMORY_FIRST",
             "answer":"【未承認・候補知識】"+record["answer"],
             "truth_state":"EXPERIMENTAL_UNVERIFIED","candidate_id":record["id"],
-            "source_id":record["source_id"],"experimental_called":False,
+            "source_id":record["source_id"],"reason":"candidate_evidence",
+            "experimental_called":False,
             "generation_consistent":None,"auto_promote":False}
     if mode=="evidence":
         return output
