@@ -165,7 +165,7 @@ def run():
     status_parser = StatusParser(lambda value: events.put(("status", value)))
     root = tk.Tk()
     root.title("LLM_CHA — Trusted / Experimental (v0.7.32)")
-    root.geometry("760x640")
+    root.geometry("960x700")
     root.minsize(460, 280)
 
     header = tk.Label(root, text="LLM_CHA  会話履歴 — " + model_label, anchor="w", font=("Yu Gothic UI", 14, "bold"), padx=14, pady=10)
@@ -177,11 +177,17 @@ def run():
         ("candidate", "Candidates: unknown"),
         ("route", "Last route: unknown"),
     )}
-    bar = tk.Frame(root, padx=10, pady=4)
+    bar = tk.Frame(root, padx=10, pady=5)
     bar.pack(fill="x")
-    for name in ("trusted", "trusted_pending", "experimental", "candidate", "route"):
-        tk.Label(bar, textvariable=status_vars[name], anchor="w",
+    first_row = tk.Frame(bar)
+    first_row.pack(fill="x")
+    second_row = tk.Frame(bar)
+    second_row.pack(fill="x")
+    for name in ("trusted", "trusted_pending", "experimental", "candidate"):
+        tk.Label(first_row, textvariable=status_vars[name], anchor="w",
                  font=("Yu Gothic UI", 9), padx=6).pack(side="left")
+    tk.Label(second_row, textvariable=status_vars["route"], anchor="w",
+             font=("Yu Gothic UI", 9), padx=6).pack(fill="x")
     display = scrolledtext.ScrolledText(root, wrap="word", state="disabled",
                                         font=("Yu Gothic UI", 11), padx=14, pady=12)
     display.pack(fill="both", expand=True, padx=10, pady=(0, 10))
@@ -202,6 +208,36 @@ def run():
         insert_gui_message(display, output, kind, gui_images) if kind != "user" else display.insert("end", output, kind)
         display.configure(state="disabled")
         display.see("end")
+
+    input_frame = tk.Frame(root, padx=10, pady=6)
+    input_frame.pack(fill="x", side="bottom")
+    prompt_entry = tk.Entry(input_frame, font=("Yu Gothic UI", 11))
+    prompt_entry.pack(side="left", fill="x", expand=True, padx=(0, 6))
+    input_lock = threading.Lock()
+    def send_to_chat(line, show_user=True):
+        if not line.strip() or child.poll() is not None:
+            return False
+        with input_lock:
+            try:
+                child.stdin.write(line.rstrip("\r\n") + "\n")
+                child.stdin.flush()
+            except (BrokenPipeError, OSError, ValueError):
+                return False
+        message = line.strip()
+        if show_user and not message.startswith("/"):
+            events.put(("user", message))
+        return True
+    def submit_entry(event=None):
+        value = prompt_entry.get().strip()
+        if value and send_to_chat(value):
+            prompt_entry.delete(0, "end")
+    tk.Button(input_frame, text="送信", command=submit_entry,
+              font=("Yu Gothic UI", 10)).pack(side="left")
+    def trigger_sleep():
+        send_to_chat("/sleep", show_user=False)
+    tk.Button(input_frame, text="/sleep", command=trigger_sleep,
+              font=("Yu Gothic UI", 10)).pack(side="left", padx=(6, 0))
+    prompt_entry.bind("<Return>", submit_entry)
 
     kwargs = dict(cwd=os.path.dirname(__file__), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                   stderr=subprocess.STDOUT, text=True, encoding="utf-8",
@@ -235,11 +271,7 @@ def run():
                 line = read_terminal_line()
                 if not line:
                     break
-                message = line.strip()
-                if message and not message.startswith("/"):
-                    events.put(("user", message))
-                child.stdin.write(line)
-                child.stdin.flush()
+                send_to_chat(line)
         except (OSError, ValueError, BrokenPipeError, UnicodeError) as exc:
             print("[GUI input relay error: {}]".format(exc), file=sys.stderr, flush=True)
 
@@ -275,7 +307,7 @@ def run():
 
     root.protocol("WM_DELETE_WINDOW", close_window)
     root.after(60, poll)
-    print("LLM_CHA GUI mirror: コマンドプロンプトに入力してください。", flush=True)
+    print("LLM_CHA GUI: GUI入力またはコマンドプロンプトに入力してください。", flush=True)
     root.mainloop()
     # A manually closed mirror should not block CLI input or force the child to stop.
     # The process remains until the CLI receives /exit, like the original launcher.
