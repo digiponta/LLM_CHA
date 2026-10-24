@@ -4060,6 +4060,10 @@ def main() -> None:
                 and wiki_followup.get("route")=="PERSONA_WIKIPEDIA_CONTEXT_FOLLOWUP"):
             from wiki_topic_memory_v074441 import observe_followup
             learned=observe_followup(cha_wiki_conversation.current)
+            from wiki_topic_memory_v074441 import record_used_evidence
+            evidence_saved=record_used_evidence(cha_wiki_conversation.current, wiki_followup.get("answer",""))
+            print("[wiki_evidence_memory={}, added={}, total={}, train_ready=False]".format(
+                evidence_saved.get("status"),evidence_saved.get("added",0),evidence_saved.get("total",0)))
             print("[wiki_interest_learning={}, count={}, state={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]".format(
                 learned.get("status"),learned.get("count",0),learned.get("state","-")))
         if wiki_followup is not None:
