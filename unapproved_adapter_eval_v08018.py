@@ -42,7 +42,7 @@ def evaluate(store,base_path,tokenizer_path,adapter_path):
         if not target:continue
         sequence=prefix+target
         x=torch.tensor([sequence[:-1]],dtype=torch.long)
-        y=torch.tensor(sequence[1:],dtype=torch.long)
+        y=torch.tensor([sequence[1:]],dtype=torch.long)
         first=max(0,len(prefix)-1)
         positions=torch.arange(first,len(sequence)-1)
         with torch.inference_mode():
