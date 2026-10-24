@@ -8,6 +8,6 @@ class EquationPriorityTests(unittest.TestCase):
         self.assertLess(equation_rank("alpha, beta"),0)
         self.assertLess(equation_rank("|0>"),0)
     def test_state_superposition(self):
-        self.assertGreater(equation_rank(r"\\alpha |0\\rangle + \\beta |1\\rangle"),0)
+        self.assertGreater(equation_rank(r"\alpha |0\rangle + \beta |1\rangle"),0)
 if __name__=="__main__":
     unittest.main()
