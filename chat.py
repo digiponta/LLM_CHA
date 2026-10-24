@@ -3562,6 +3562,28 @@ def main() -> None:
                 print()
                 continue
             pending_wiki_topic_offer = None
+        # v0.8.0.17: raw base vs independent unapproved adapter comparison.
+        if user_text.startswith("/wiki-model-compare "):
+            import glob
+            from unapproved_adapter_compare_v08017 import compare
+            query=user_text[len("/wiki-model-compare "):].strip()
+            checkpoints=sorted(
+                (PROJECT_ROOT / "results" / "unapproved_wiki_sleep_v08015").glob("unapproved-wiki-adapter-*.pt"),
+                key=lambda p:p.stat().st_mtime, reverse=True)
+            if not checkpoints:
+                print("AI> 未承認Adapterはありません。/sleepを実行してください。")
+            else:
+                try:
+                    report=compare(query,
+                        PROJECT_ROOT / "model" / "model-gpu-v1.6.2-online.pt",
+                        PROJECT_ROOT / "model" / "tokenizer-v0.7-bpe.json",
+                        checkpoints[0])
+                    print("AI> "+json.dumps(report,ensure_ascii=False))
+                    print("[route=WIKI_UNAPPROVED_MODEL_COMPARE, train_ready=False, auto_promote=False]")
+                except (OSError,ValueError,RuntimeError,KeyError) as exc:
+                    print("AI> 比較に失敗しました: {}: {}".format(type(exc).__name__,exc))
+            print()
+            continue
         # v0.8.0.2: explicit natural-language opt-in for unapproved knowledge.
         # This is not a global fallback: trusted and normal chat remain unchanged.
         from unapproved_conversation_v0802 import parse_unapproved_request, conversational_answer
