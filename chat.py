@@ -3484,6 +3484,29 @@ def main() -> None:
 
         if not user_text:
             continue
+        # v0.7.44.41: explicit Wikipedia topic memory workflow.
+        # This stores externally sourced candidate text; never updates weights.
+        if user_text in ("/wiki-learn", "Wikiを覚えて", "Wikipediaを覚えて"):
+            from wiki_topic_memory_v074441 import learn_candidate
+            result = learn_candidate(cha_wiki_conversation.current)
+            print("AI> Wikipediaの話題候補: " + str(result))
+            print("[route=WIKI_TOPIC_CANDIDATE, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]")
+            print()
+            continue
+        if user_text.startswith("/wiki-approve "):
+            from wiki_topic_memory_v074441 import approve_topic
+            result = approve_topic(user_text.split(" ", 1)[1].strip())
+            print("AI> " + str(result))
+            print("[route=WIKI_TOPIC_APPROVAL, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]")
+            print()
+            continue
+        if user_text in ("/topic", "話題を提供して", "何か話題はある？", "話題を教えて"):
+            from wiki_topic_memory_v074441 import suggest_topic
+            result = suggest_topic()
+            print("AI> " + result.get("answer", "承認済みのWikipedia話題候補はまだない。記事について会話した後、/wiki-learn を実行して。"))
+            print("[route=WIKI_TOPIC_SUGGESTION, status={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]".format(result["status"]))
+            print()
+            continue
         if user_text in ("/context-save", "/context-load", "/context-clear"):
             try:
                 if user_text == "/context-save":
