@@ -78,7 +78,7 @@ class EquationCursor:
             if block["latex"] in self.used:continue
             self.used.add(block["latex"])
             label=block["description"] or "Wikipedia記事中の数式"
-            return {**block,"answer":label+"： LATEX( "+block["latex"]+" )",
+            return {**block,"answer":label+"： LATEX( "+block["latex"]+" )" + " [数式原文: "+block["latex"]+"]",
                     "route":"WIKIPEDIA_EQUATION_EVIDENCE",
                     "quality_gate":"SOURCE_WIKITEXT_MATH_EXACT"}
         return None
