@@ -6,6 +6,15 @@ This is a retrieval adapter, not a trained secondary LLM.
 from unapproved_llm_intake_v074446 import _read,DEFAULT_STORE
 from unapproved_llm_compare_v074447 import requires_context
 
+# v0.8.0.6: conservative paraphrase matching; no inferred subjects.
+RELATION_CUES={
+    "is_basic_unit":("とは","何","基本単位","どういうもの","どんなもの","説明して","教えて"),
+    "is":("とは","何","定義","どういうもの","どんなもの"),
+    "can_have_superposition":("重ね合わせ","状態","できる","同時に"),
+    "can_take_state":("状態","重ね合わせ","とる"),
+    "represents":("表現","何","とは","どう表す"),
+}
+
 def search_semantic(question,path=DEFAULT_STORE):
     q=(question or "").strip()
     if not q:return {"status":"INVALID_QUESTION"}
@@ -20,14 +29,7 @@ def search_semantic(question,path=DEFAULT_STORE):
         if not subject or subject not in q:continue
         relation=semantic.get("relation","")
         # Do not guess a relation from arbitrary free-form wording.
-        relation_words={
-            "is_basic_unit":("とは","何","基本単位"),
-            "is":("とは","何","定義"),
-            "can_have_superposition":("重ね合わせ","状態","できる"),
-            "can_take_state":("状態","重ね合わせ","とる"),
-            "represents":("表現","何","とは"),
-        }
-        matches=relation_words.get(relation,())
+        matches=RELATION_CUES.get(relation,())
         if not any(word in q for word in matches):continue
         if requires_context(row.get("natural_language","")):continue
         score=(2 if relation=="is_basic_unit" and "とは" in q else 0)+len([word for word in matches if word in q])
