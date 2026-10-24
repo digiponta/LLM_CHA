@@ -4084,6 +4084,12 @@ def main() -> None:
             cha_wiki_last_generated=None
             print()
             continue
+        # v0.8.0.7: explicit new subject must not inherit prior article.
+        from wiki_topic_switch_guard_v0807 import should_reset_wiki_context
+        if should_reset_wiki_context(raw_user_text,cha_wiki_conversation.current):
+            previous_wiki_title=cha_wiki_conversation.current.get("title","-")
+            cha_wiki_conversation.clear()
+            print("[wiki_topic_switch=CLEARED, previous={}, reason=EXPLICIT_DIFFERENT_SUBJECT]".format(previous_wiki_title))
         topic_followup=cha_wiki_topic_followup(
             raw_user_text,cha_wiki_conversation.current,
             cha_wiki_conversation.persona,cha_wikipedia_lookup,
