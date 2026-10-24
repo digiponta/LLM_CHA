@@ -60,6 +60,9 @@ class EvidenceContinuation:
                 for sentence in scientific_sentences(extract):
                     if not 20 <= len(sentence) <= 1000 or title not in sentence:
                         continue
+                    # A dated product announcement is not a conceptual explanation.
+                    if re.search(r"\\d{4}年\\d{1,2}月|披露した|発売した|発表した|と主張する",sentence):
+                        continue
                     if not coherent_scientific_evidence(sentence) or not scientific_prose(sentence):
                         continue
                     key = (linked_title, sentence)
