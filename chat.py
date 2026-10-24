@@ -3562,6 +3562,19 @@ def main() -> None:
                 print()
                 continue
             pending_wiki_topic_offer = None
+        # v0.8.0.22: holdout provenance/overlap audit, without model loading.
+        if user_text == "/wiki-model-holdout-audit":
+            from unapproved_holdout_audit_v08022 import audit
+            try:
+                report=audit(
+                    PROJECT_ROOT / "data" / "unapproved_holdout_v08020.json",
+                    PROJECT_ROOT / "data" / "unapproved_llm_candidates_v074446.json")
+                print("AI> "+json.dumps(report,ensure_ascii=False))
+                print("[route=UNAPPROVED_HOLDOUT_AUDIT, semantic_independence_verified=False, train_ready=False]")
+            except Exception as exc:
+                print("AI> Holdout監査に失敗しました: {}: {}".format(type(exc).__name__,exc))
+            print()
+            continue
         # v0.8.0.20: external holdout evaluation; never create fake evidence.
         if user_text == "/wiki-model-holdout":
             from unapproved_holdout_v08020 import evaluate_holdout
