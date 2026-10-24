@@ -3382,6 +3382,7 @@ def main() -> None:
     cha_wiki_evidence_session = ChaWikiEvidenceSession()
     from wiki_equation_evidence_v074430 import EquationCursor
     cha_wiki_equation_cursor = EquationCursor()
+    pending_equation_explanation = None
     cha_wiki_evidence_continuation = ChaWikiEvidenceContinuation()
     cha_persona_context = PersonaContext(cha_wiki_conversation.persona)
     cha_persona_wiki_cache = {}
@@ -3768,6 +3769,24 @@ def main() -> None:
             continue
 
         raw_user_text = user_text
+        # v0.7.44.39: a follow-up after on-demand equation display continues
+        # the equation explanation before unrelated Wikipedia prose.
+        followup_text = raw_user_text.strip().rstrip("。！？!? ")
+        if pending_equation_explanation is not None:
+            wiki_now = cha_wiki_conversation.current
+            if (followup_text in ("もっと詳しく", "もう少し詳しく", "詳しく", "詳しく教えて")
+                    and isinstance(wiki_now, dict)
+                    and (wiki_now.get("title"), wiki_now.get("url")) == pending_equation_explanation):
+                meaning = cha_wiki_equation_cursor.explain_once(wiki_now)
+                pending_equation_explanation = None
+                if meaning is not None:
+                    print("AI> " + meaning["answer"])
+                    print("[route=EQUATION_SEMANTIC_FOLLOWUP, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(meaning["source"]))
+                    last_ai_reply = None
+                    print()
+                    continue
+            else:
+                pending_equation_explanation = None
         # v0.7.44.38: explicit equation request must not fall into free generation.
         if (os.environ.get("LLM_CHA_ASPECT_EVIDENCE", "0") == "1"
                 and raw_user_text.strip().rstrip("。！？!? ") in ("数式の意味", "数式を説明", "数式について教えて")
@@ -3787,6 +3806,7 @@ def main() -> None:
                 answer = explanation["answer"]
                 source = explanation["source"]
                 route = explanation.get("route", "EQUATION_SEMANTIC_EVIDENCE")
+            pending_equation_explanation = (wiki.get("title"), wiki.get("url")) if route == "EQUATION_EVIDENCE_ON_DEMAND" else None
             print("AI> " + answer)
             print("[route={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(route, source))
             last_ai_reply = None
