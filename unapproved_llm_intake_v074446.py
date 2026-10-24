@@ -62,11 +62,13 @@ def ingest_wikipedia(wiki,path=DEFAULT_STORE):
                 other=_parse_claim(row["natural_language"])
                 if other and claim[0]==other[0] and claim[1]==other[1] and claim[2]!=other[2]:
                     conflicts.append(row["id"])
+        from unapproved_semantic_structure_v074449 import extract_structure
+        structure=extract_structure(sentence,title)
         state="REVIEW_CONFLICT" if conflicts else "UNAPPROVED"
         data["candidates"].append({"id":digest,"subject":title,"natural_language":sentence,
             "canonical_text":canonical,"source":url,"source_type":"Wikipedia",
             "truth_state":"EXTERNAL_UNVERIFIED","state":state,
-            "suspected_conflicts":conflicts,"train_ready":False,
+            "suspected_conflicts":conflicts,"semantic_candidate":structure,"train_ready":False,
             "weight_training":False,"approved_memory_export":False})
         added+=1
         suspected+=bool(conflicts)
