@@ -16,7 +16,7 @@ class SemanticStructureTests(unittest.TestCase):
     def test_persist_source_and_structure(self):
         article={"status":"FOUND","title":"量子ビット",
                  "url":"https://ja.wikipedia.org/wiki/量子ビット",
-                 "extract":"量子ビットは重ね合わせ状態をとることができる。"}
+                 "extract":"量子ビットは量子力学に基づく重ね合わせ状態をとることができる。"}
         with tempfile.TemporaryDirectory() as folder:
             path=Path(folder)/"unapproved.json"
             result=ingest_wikipedia(article,path)
