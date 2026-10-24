@@ -82,3 +82,26 @@ def begin_topic(item_id,path=DEFAULT_STORE):
                     "answer":"では、"+item["title"]+"について。Wikipediaには「"+detail+"」とある。どの点が気になる？（外部資料・未検証）",
                     "truth_state":"EXTERNAL_UNVERIFIED","train_ready":False}
     return {"status":"NOT_APPROVED"}
+
+def observe_followup(wiki, path=DEFAULT_STORE, threshold=2):
+    """Learn a Wikipedia topic for suggestions after repeated grounded follow-ups.
+
+    This is retrieval-memory learning only; it does not verify truth or
+    authorize neural model training.
+    """
+    if not isinstance(wiki,dict) or wiki.get("status")!="FOUND":
+        return {"status":"NO_SOURCE"}
+    candidate=learn_candidate(wiki,path)
+    if candidate.get("status") not in ("CANDIDATE_STORED","EXISTS"):
+        return candidate
+    d=_load(path)
+    for item in d["items"]:
+        if item["id"]==candidate["id"]:
+            item["followup_count"]=item.get("followup_count",0)+1
+            if item["followup_count"]>=threshold:
+                item["state"]="APPROVED_FOR_TOPIC_ONLY"
+            _save(path,d)
+            return {"status":"TOPIC_LEARNED" if item["state"]=="APPROVED_FOR_TOPIC_ONLY" else "INTEREST_OBSERVED",
+                    "id":item["id"],"count":item["followup_count"],
+                    "state":item["state"],"truth_state":"EXTERNAL_UNVERIFIED","train_ready":False}
+    return {"status":"NOT_FOUND"}
