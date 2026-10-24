@@ -74,9 +74,13 @@ class EquationCursor:
     def __init__(self):
         self.identity=None
         self.used=set()
+        self.last_blocks=[]
+        self.meaning_shown=False
     def reset(self):
         self.identity=None
         self.used.clear()
+        self.last_blocks=[]
+        self.meaning_shown=False
     def next(self,wiki,fetch=None):
         if not isinstance(wiki,dict):
             return None
@@ -84,6 +88,8 @@ class EquationCursor:
         if identity!=self.identity:
             self.identity=identity
             self.used.clear()
+            self.last_blocks=[]
+            self.meaning_shown=False
         unseen=[b for b in math_blocks(wiki,fetch=fetch) if b["latex"] not in self.used]
         if not unseen:
             return None
@@ -91,6 +97,7 @@ class EquationCursor:
         # instead of treating each source equation as a separate chat turn.
         chosen=unseen[:2] if wiki.get("title")=="量子ビット" else unseen[:1]
         self.used.update(b["latex"] for b in chosen)
+        self.last_blocks.extend(chosen)
         answer="Wikipedia記事中の数式（外部資料・未検証）："
         for block in chosen:
             label=block["description"] or "数式"
@@ -101,3 +108,13 @@ class EquationCursor:
                 "truth_state":"EXTERNAL_UNVERIFIED","train_ready":False,
                 "auto_promote":False,"route":"WIKIPEDIA_EQUATION_EVIDENCE",
                 "quality_gate":"SOURCE_WIKITEXT_MATH_EXACT"}
+
+    def explain_once(self, wiki):
+        if self.meaning_shown or not isinstance(wiki,dict) or (wiki.get("title"),wiki.get("url")) != self.identity:
+            return None
+        from equation_semantic_evidence_v074437 import equation_meaning,render_meaning
+        result=equation_meaning(wiki,self.last_blocks)
+        if result is None:
+            return None
+        self.meaning_shown=True
+        return {"answer":render_meaning(result),"source":result["source"],"truth_state":"EXTERNAL_UNVERIFIED","train_ready":False,"auto_promote":False}
