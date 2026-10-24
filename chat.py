@@ -4090,6 +4090,27 @@ def main() -> None:
             previous_wiki_title=cha_wiki_conversation.current.get("title","-")
             cha_wiki_conversation.clear()
             print("[wiki_topic_switch=CLEARED, previous={}, reason=EXPLICIT_DIFFERENT_SUBJECT]".format(previous_wiki_title))
+        # v0.8.0.10: explicitly requested new topics get their own
+        # independent Wikipedia lookup, never a stale context article.
+        from wiki_topic_switch_guard_v0807 import explicit_topic
+        new_topic = explicit_topic(raw_user_text)
+        if new_topic and cha_wiki_conversation.current is None:
+            from unknown_wiki_fallback_v0557 import fallback as standalone_wiki_fallback
+            new_topic_wiki = standalone_wiki_fallback(
+                new_topic, raw_user_text, cha_wiki_conversation.persona,
+                cha_wikipedia_lookup, cha_persona_wiki_respond,
+                grounded=cha_wiki_grounded_reply, cache=cha_persona_wiki_cache)
+            if new_topic_wiki.get("status") == "FOUND":
+                cha_wiki_conversation.offer(new_topic_wiki["wiki_context"])
+                print("AI> " + new_topic_wiki["answer"])
+                print("[route=EXPLICIT_TOPIC_INDEPENDENT_WIKIPEDIA, requested={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]".format(
+                    new_topic, new_topic_wiki["source"]))
+                last_ai_reply = None
+                cha_wiki_last_generated = None
+                print()
+                continue
+            print("[explicit_topic_lookup={}, requested={}, prior_context_reused=False]".format(
+                new_topic_wiki.get("status","UNKNOWN"), new_topic))
         topic_followup=cha_wiki_topic_followup(
             raw_user_text,cha_wiki_conversation.current,
             cha_wiki_conversation.persona,cha_wikipedia_lookup,
