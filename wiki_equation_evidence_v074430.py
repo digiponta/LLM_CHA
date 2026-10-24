@@ -22,6 +22,15 @@ def complete_formula(latex):
         return False
     return bool(re.search(r"[=\\^_]",t) or len(t)>18)
 
+def equation_rank(latex):
+    """Prefer complete relations; suppress isolated symbols and state labels."""
+    t=latex.strip()
+    if "=" in t:
+        return 100 + min(len(t),100)
+    if r"\\rangle" in t and ("+" in t or "-" in t):
+        return 80 + min(len(t),100)
+    return -1
+
 def math_blocks(wiki, fetch=None, limit=12):
     if not isinstance(wiki, dict) or wiki.get("status") != "FOUND":
         return []
@@ -42,7 +51,7 @@ def math_blocks(wiki, fetch=None, limit=12):
         blocks=[]
         for match in MATH.finditer(raw):
             latex=match.group(1).strip()
-            if not complete_formula(latex):
+            if not complete_formula(latex) or equation_rank(latex) < 0:
                 continue
             # Only a source-identical TeX span is displayed; no interpolation.
             if not (re.search(r"[=\\^_]",latex) or len(latex)>18):
@@ -56,8 +65,8 @@ def math_blocks(wiki, fetch=None, limit=12):
             blocks.append({"title":title,"source":url,"latex":latex,
                            "description":description,"truth_state":"EXTERNAL_UNVERIFIED",
                            "train_ready":False,"auto_promote":False})
-            if len(blocks)>=limit:break
-        return blocks
+        blocks.sort(key=lambda b: -equation_rank(b["latex"]))
+        return blocks[:limit]
     except (OSError,ValueError,TypeError,KeyError,TimeoutError):
         return []
 
