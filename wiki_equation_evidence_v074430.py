@@ -96,6 +96,7 @@ class EquationCursor:
             label=block["description"] or "数式"
             answer+="\n"+label+"： LATEX( "+block["latex"]+" ) [数式原文: "+block["latex"]+"]"
         return {"title":wiki.get("title"),"source":wiki.get("url"),
+                "latex":chosen[0]["latex"],"description":chosen[0]["description"],
                 "answer":answer,"blocks":chosen,
                 "truth_state":"EXTERNAL_UNVERIFIED","train_ready":False,
                 "auto_promote":False,"route":"WIKIPEDIA_EQUATION_EVIDENCE",
