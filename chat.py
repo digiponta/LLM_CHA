@@ -6881,6 +6881,16 @@ def main() -> None:
                         cha_quality_guard_status = "SYNONYM_WIKIPEDIA_RECOVERY"
                         print("[synonym_recovery=FOUND, term={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(
                             cha_recovered["term"], cha_recovered["source"]))
+        # v0.8.0.3: use isolated Wikipedia Semantic evidence only when
+        # generation failed and no existing recovery provided a valid answer.
+        if reply == "回答をうまく生成できませんでした。もう一度質問してください。":
+            from unapproved_fallback_v0803 import fallback_on_failure
+            semantic_recovery = fallback_on_failure(raw_user_text, failed=True)
+            if semantic_recovery["status"] == "FOUND":
+                reply = semantic_recovery["answer"]
+                accepted = False
+                cha_quality_guard_status = "UNAPPROVED_SEMANTIC_FALLBACK"
+                print("[unapproved_semantic_fallback=FOUND, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(semantic_recovery["source"]))
         cha_wiki_last_generated = reply
         print(f"AI> {reply}")
         if cha_quality_guard_status is not None:
