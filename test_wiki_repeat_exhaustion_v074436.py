@@ -2,7 +2,7 @@ import unittest
 from wiki_persona_multiturn_v0520 import WikiConversation
 
 W={"status":"FOUND","title":"量子ビット","url":"https://ja.wikipedia.org/wiki/量子ビット",
-   "extract":"量子ビットは量子情報の基本的な単位であり、重ね合わせの状態をとることができる。"}
+   "extract":"概要。"}
 
 class FollowupExhaustionTests(unittest.TestCase):
     def test_repeated_evidence_insufficiency_changes_message(self):
