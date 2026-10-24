@@ -63,12 +63,20 @@ def approve_topic(item_id,path=DEFAULT_STORE):
 
 def suggest_topic(path=DEFAULT_STORE,exclude_title=None):
     d=_load(path)
-    for item in d["items"]:
-        if item.get("state")=="APPROVED_FOR_TOPIC_ONLY" and item.get("title")!=exclude_title:
-            return {"status":"FOUND","id":item["id"],"title":item["title"],"url":item["url"],
-                    "answer":"話題の提案。"+item["title"]+"について話してみる？ Wikipediaには「"+item["sentences"][0]+"」とある。（外部資料・未検証）",
-                    "truth_state":"EXTERNAL_UNVERIFIED","train_ready":False}
-    return {"status":"NO_APPROVED_TOPIC"}
+    eligible=[i for i in d["items"] if i.get("state")=="APPROVED_FOR_TOPIC_ONLY"
+              and i.get("title")!=exclude_title and i.get("sentences")]
+    if not eligible:
+        return {"status":"NO_APPROVED_TOPIC"}
+    # Least-recently suggested topic first; deterministic on ties.
+    eligible.sort(key=lambda i:(i.get("last_suggested_seq",0),i["id"]))
+    item=eligible[0]
+    d["suggestion_seq"]=d.get("suggestion_seq",0)+1
+    item["last_suggested_seq"]=d["suggestion_seq"]
+    item["suggestion_count"]=item.get("suggestion_count",0)+1
+    _save(path,d)
+    return {"status":"FOUND","id":item["id"],"title":item["title"],"url":item["url"],
+            "answer":"話題の提案。"+item["title"]+"について話してみる？ Wikipediaには「"+item["sentences"][0]+"」とある。（外部資料・未検証）",
+            "truth_state":"EXTERNAL_UNVERIFIED","train_ready":False}
 
 def begin_topic(item_id,path=DEFAULT_STORE):
     """Return evidence-backed opening for an approved topic only."""
@@ -104,4 +112,32 @@ def observe_followup(wiki, path=DEFAULT_STORE, threshold=2):
             return {"status":"TOPIC_LEARNED" if item["state"]=="APPROVED_FOR_TOPIC_ONLY" else "INTEREST_OBSERVED",
                     "id":item["id"],"count":item["followup_count"],
                     "state":item["state"],"truth_state":"EXTERNAL_UNVERIFIED","train_ready":False}
+    return {"status":"NOT_FOUND"}
+
+def record_used_evidence(wiki,answer,path=DEFAULT_STORE):
+    """Persist only verbatim extracted evidence actually used in an answer."""
+    if not isinstance(wiki,dict) or wiki.get("status")!="FOUND":
+        return {"status":"NO_SOURCE"}
+    candidate=learn_candidate(wiki,path)
+    if candidate.get("status") not in ("CANDIDATE_STORED","EXISTS"):
+        return candidate
+    text=(answer or "").strip()
+    # Extract full coherent source sentences, not hallucinated paraphrases.
+    evidence=[sentence for sentence in _sentences(wiki.get("extract",""))
+              if sentence.rstrip("。") in text]
+    if not evidence:
+        return {"status":"NO_SOURCE_MATCH"}
+    data=_load(path)
+    for item in data["items"]:
+        if item["id"]==candidate["id"]:
+            stored=item.setdefault("used_evidence",[])
+            added=0
+            for sentence in evidence:
+                if sentence not in stored and len(stored)<24:
+                    stored.append(sentence)
+                    added+=1
+            _save(path,data)
+            return {"status":"EVIDENCE_RECORDED","id":item["id"],
+                    "added":added,"total":len(stored),
+                    "truth_state":"EXTERNAL_UNVERIFIED","train_ready":False}
     return {"status":"NOT_FOUND"}
