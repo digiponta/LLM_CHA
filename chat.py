@@ -3776,8 +3776,17 @@ def main() -> None:
                 allowed = truth_allows_direct_retrieval(
                     effective_truth_record(truth_store_path, last_explicit_knowledge_topic).state)
                 wiki_for_aspect = cha_wiki_conversation.current
-                if (allowed and isinstance(wiki_for_aspect, dict)
-                        and wiki_for_aspect.get("title") == last_explicit_knowledge_topic):
+                if allowed:
+                    # Corpus/raw-Wikipedia parallel results may not populate
+                    # the active Wiki Conversation. Resolve the actual topic.
+                    if (not isinstance(wiki_for_aspect, dict)
+                            or wiki_for_aspect.get("title") != last_explicit_knowledge_topic):
+                        try:
+                            wiki_for_aspect = cha_wikipedia_lookup(
+                                last_explicit_knowledge_topic,
+                                context=last_explicit_knowledge_topic + "とは")
+                        except (OSError, ValueError, KeyError, TimeoutError, TypeError):
+                            wiki_for_aspect = None
                     from wiki_expanded_aspect_v074426 import expanded_aspect
                     selected = expanded_aspect(wiki_for_aspect, aspect)
                 else:
