@@ -6,6 +6,22 @@ MATH = re.compile(r"<math(?:\s+[^>]*)?>(.*?)</math>", re.S | re.I)
 PROSE = re.compile(r"[ぁ-んァ-ヶ一-龯]")
 BLOCKED = ("\\write", "\\input", "\\include", "\\href", "\\html", "\\require", "\\newcommand")
 
+def complete_formula(latex):
+    """Conservative display gate: reject leading operators and unmatched groups."""
+    if not isinstance(latex, str) or not latex.strip() or len(latex) > 300:
+        return False
+    t=latex.strip()
+    if t[0] in "=+*/^_)}]" or t[-1] in "=+*/^_({[":
+        return False
+    if any(token in t.lower() for token in BLOCKED):
+        return False
+    for left,right in (("{","}"),("(",")"),("[","]")):
+        if t.count(left) != t.count(right):
+            return False
+    if t.count(r"\left") != t.count(r"\right"):
+        return False
+    return bool(re.search(r"[=\\^_]",t) or len(t)>18)
+
 def math_blocks(wiki, fetch=None, limit=12):
     if not isinstance(wiki, dict) or wiki.get("status") != "FOUND":
         return []
@@ -26,7 +42,7 @@ def math_blocks(wiki, fetch=None, limit=12):
         blocks=[]
         for match in MATH.finditer(raw):
             latex=match.group(1).strip()
-            if not latex or len(latex)>300 or any(k in latex.lower() for k in BLOCKED):
+            if not complete_formula(latex):
                 continue
             # Only a source-identical TeX span is displayed; no interpolation.
             if not (re.search(r"[=\\^_]",latex) or len(latex)>18):
@@ -36,7 +52,7 @@ def math_blocks(wiki, fetch=None, limit=12):
             plain=re.sub(r"\[\[(?:[^|\]]*\|)?([^\]]+)\]\]",r"\1",prefix)
             plain=re.sub(r"<!--.*?-->|<[^>]*>|\{\{.*?\}\}", " ", plain, flags=re.S)
             plain=plain.split("。")[-1].split("\n")[-1].strip(" =:;*#")
-            description=plain if 8<=len(plain)<=120 and len(PROSE.findall(plain))>=8 and not any(c in plain for c in "{}[]|") else ""
+            description=plain if 8<=len(plain)<=120 and len(PROSE.findall(plain))>=8 and not any(c in plain for c in "{}[]|") and not re.search(r"\\s{2,}",plain) and not plain.startswith(("ここで", "は", "が")) else ""
             blocks.append({"title":title,"source":url,"latex":latex,
                            "description":description,"truth_state":"EXTERNAL_UNVERIFIED",
                            "train_ready":False,"auto_promote":False})
