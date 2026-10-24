@@ -3562,6 +3562,26 @@ def main() -> None:
                 print()
                 continue
             pending_wiki_topic_offer = None
+        # v0.8.0.18: numerical training-pair evaluation; read-only.
+        if user_text == "/wiki-model-eval":
+            from unapproved_adapter_eval_v08018 import evaluate
+            snapshots=sorted(
+                (PROJECT_ROOT / "results" / "unapproved_wiki_sleep_v08015").glob("unapproved-wiki-adapter-*.pt"),
+                key=lambda p:p.stat().st_mtime,reverse=True)
+            if not snapshots:
+                print("AI> 未承認Adapterはありません。")
+            else:
+                try:
+                    report=evaluate(
+                        PROJECT_ROOT / "data" / "unapproved_llm_candidates_v074446.json",
+                        PROJECT_ROOT / "model" / "model-gpu-v1.6.2-online.pt",
+                        PROJECT_ROOT / "model" / "tokenizer-v0.7-bpe.json",snapshots[0])
+                    print("AI> "+json.dumps(report,ensure_ascii=False))
+                    print("[route=UNAPPROVED_ADAPTER_NLL_EVAL, training_pairs_only=True, train_ready=False]")
+                except Exception as exc:
+                    print("AI> 評価に失敗しました: {}: {}".format(type(exc).__name__,exc))
+            print()
+            continue
         # v0.8.0.17: raw base vs independent unapproved adapter comparison.
         if user_text.startswith("/wiki-model-compare "):
             import glob
