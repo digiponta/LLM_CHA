@@ -6883,7 +6883,7 @@ def main() -> None:
                             cha_recovered["term"], cha_recovered["source"]))
         # v0.8.0.3: use isolated Wikipedia Semantic evidence only when
         # generation failed and no existing recovery provided a valid answer.
-        if reply == "回答をうまく生成できませんでした。もう一度質問してください。":
+        if reply in (UNKNOWN_REPLY, "回答をうまく生成できませんでした。もう一度質問してください。"):
             from unapproved_fallback_v0803 import fallback_on_failure
             semantic_recovery = fallback_on_failure(raw_user_text, failed=True)
             if semantic_recovery["status"] == "FOUND":
