@@ -26,12 +26,12 @@ def greedy(model,tokenizer,prompt,device,max_new_tokens=64,route=None):
             generated.append(nxt)
     return tokenizer.decode(generated).strip()
 
-def compare(question,base_path,tokenizer_path,adapter_path,max_new_tokens=64):
+def compare(question,base_path,tokenizer_path,adapter_path,max_new_tokens=32):
     if not question.strip():return {"status":"INVALID_QUESTION"}
     if not 1<=max_new_tokens<=256:raise ValueError("invalid token limit")
     base_path=Path(base_path)
     adapter_path=Path(adapter_path)
-    device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Default to CPU: keep diagnostic comparison isolated from the live CUDA chat model.\n    device=torch.device("cpu")
     base,_=LanguageModel.load_checkpoint(str(base_path),device=device)
     tokenizer=Tokenizer.load(str(tokenizer_path))
     ck=torch.load(adapter_path,map_location="cpu",weights_only=True)
