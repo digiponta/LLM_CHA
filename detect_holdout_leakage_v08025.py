@@ -15,7 +15,7 @@ from unapproved_llm_intake_v074446 import _read
 def normalize(value):
     if not isinstance(value, str):
         return ""
-    return re.sub(r"\\s+", "", unicodedata.normalize("NFKC", value).casefold())
+    return re.sub(r"\s+", "", unicodedata.normalize("NFKC", value).casefold())
 
 
 def grams(value, n=2):
