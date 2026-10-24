@@ -3778,7 +3778,8 @@ def main() -> None:
                 wiki_for_aspect = cha_wiki_conversation.current
                 if (allowed and isinstance(wiki_for_aspect, dict)
                         and wiki_for_aspect.get("title") == last_explicit_knowledge_topic):
-                    selected = extract_aspect(wiki_for_aspect, aspect)
+                    from wiki_expanded_aspect_v074426 import expanded_aspect
+                    selected = expanded_aspect(wiki_for_aspect, aspect)
                 else:
                     selected = None
                 if selected is not None:
