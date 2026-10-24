@@ -9,6 +9,12 @@ from unapproved_llm_intake_v074446 import _read, DEFAULT_STORE
 def _terms(text):
     return set(re.findall(r"[一-龯ぁ-んァ-ヶ]{2,}|[A-Za-z0-9]{2,}",text or ""))
 
+# Avoid free-standing evidence that requires an antecedent.
+_CONTEXT_PREFIXES=("それに対して","そのような","これに対して","一方で","上述の","前述の","このような","この場合","それらは","これは","それは")
+def requires_context(sentence):
+    text=(sentence or "").strip()
+    return any(text.startswith(prefix) for prefix in _CONTEXT_PREFIXES)
+
 def unapproved_answer(question,path=DEFAULT_STORE):
     query=(question or "").strip()
     if not query:return {"status":"INVALID_QUESTION"}
@@ -21,8 +27,8 @@ def unapproved_answer(question,path=DEFAULT_STORE):
         title=item.get("subject","")
         sentence=item.get("natural_language","")
         score=(5 if title and title in query else 0)+len(terms & _terms(title+" "+sentence))
-        if score>0:ranked.append((score,item))
-    if not ranked:return {"status":"NO_MATCH","train_ready":False}
+        if score>0 and not requires_context(sentence):ranked.append((score,item))
+    if not ranked:return {"status":"NO_STANDALONE_EVIDENCE","train_ready":False}
     ranked.sort(key=lambda pair:(-pair[0],pair[1]["id"]))
     top=ranked[0][1]
     return {"status":"FOUND","answer":"【未承認知識・外部資料・未検証】"+top["natural_language"],
