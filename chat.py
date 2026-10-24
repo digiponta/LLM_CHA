@@ -3503,6 +3503,21 @@ def main() -> None:
                 print()
                 continue
             pending_wiki_topic_offer = None
+        # v0.7.44.46: isolated, unapproved knowledge intake. No weight updates.
+        if user_text in ("/wiki-unapproved", "/wiki-intake"):
+            from unapproved_llm_intake_v074446 import ingest_wikipedia
+            result = ingest_wikipedia(cha_wiki_conversation.current)
+            print("AI> 未承認Semantic候補: " + str(result))
+            print("[route=WIKI_UNAPPROVED_INTAKE, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]")
+            print()
+            continue
+        if user_text == "/wiki-unapproved-status":
+            from unapproved_llm_intake_v074446 import inspect_candidates
+            result = inspect_candidates()
+            print("AI> " + json.dumps(result,ensure_ascii=False))
+            print("[route=WIKI_UNAPPROVED_INSPECT, train_ready=False]")
+            print()
+            continue
         # v0.7.44.41: explicit Wikipedia topic memory workflow.
         # This stores externally sourced candidate text; never updates weights.
         if user_text in ("/wiki-learn", "Wikiを覚えて", "Wikipediaを覚えて"):
