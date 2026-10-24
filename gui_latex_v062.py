@@ -11,16 +11,29 @@ MARKER = re.compile(r"LATEX\(\s*(.*?)\s*\)", re.DOTALL)
 MAX_FORMULA_LENGTH = 500
 
 def split_latex(text):
-    """Return ordered (is_formula, content) spans without altering source."""
+    """Split LATEX(...) with balanced parentheses, including TeX math arguments."""
     if not isinstance(text, str):
         return []
     result = []
     cursor = 0
-    for match in MARKER.finditer(text):
-        if match.start() > cursor:
-            result.append((False, text[cursor:match.start()]))
-        result.append((True, match.group(1).strip()))
-        cursor = match.end()
+    while True:
+        start = text.find("LATEX(", cursor)
+        if start < 0:
+            break
+        depth = 1
+        pos = start + len("LATEX(")
+        while pos < len(text) and depth:
+            if text[pos] == "(":
+                depth += 1
+            elif text[pos] == ")":
+                depth -= 1
+            pos += 1
+        if depth:
+            break  # malformed marker: preserve original source as text
+        if start > cursor:
+            result.append((False, text[cursor:start]))
+        result.append((True, text[start+len("LATEX("):pos-1].strip()))
+        cursor = pos
     if cursor < len(text):
         result.append((False, text[cursor:]))
     return result
