@@ -3381,6 +3381,8 @@ def main() -> None:
     cha_wiki_conversation = WikiConversation()
     from wiki_ambiguity_session_v08011 import PendingWikiTopic
     pending_wiki_ambiguity = PendingWikiTopic()
+    from wiki_dual_context_v08013 import DualWikiContext
+    wiki_dual_context = DualWikiContext()
     cha_wiki_evidence_session = ChaWikiEvidenceSession()
     from wiki_equation_evidence_v074430 import EquationCursor
     cha_wiki_equation_cursor = EquationCursor()
@@ -3503,6 +3505,7 @@ def main() -> None:
                 if selected_wiki.get("status")=="FOUND":
                     cha_wiki_conversation.offer(selected_wiki["wiki_context"])
                     pending_wiki_ambiguity.clear()
+                    wiki_dual_context.select(requested_topic,chosen)
                     print("AI> "+selection_notice(requested_topic,chosen)+selected_wiki["answer"])
                     print("[route=WIKIPEDIA_AMBIGUITY_USER_SELECTED, requested_topic={}, selected_article={}, relation={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]".format(
                         requested_topic,chosen,selection_relation(requested_topic,chosen)))
@@ -3514,7 +3517,26 @@ def main() -> None:
             print("[route=WIKIPEDIA_AMBIGUITY_{}]".format(status))
             print()
             continue
-        # v0.7.44.42: interpret consent to the most recent approved topic offer.
+        # v0.8.0.13: explicit dual-context navigation only, not general inference.
+        dual_intent = wiki_dual_context.intent(user_text)
+        if dual_intent is not None:
+            if dual_intent["target"]=="STATUS":
+                print("AI> "+json.dumps(wiki_dual_context.summary(),ensure_ascii=False))
+                print("[route=WIKIPEDIA_DUAL_CONTEXT_STATUS, train_ready=False]")
+                print()
+                continue
+            if dual_intent["target"]=="SELECTED" and cha_wiki_conversation.current is not None:
+                print("AI> 選択中の記事は「{}」です。「もう少し詳しく」と質問してください。".format(dual_intent["topic"]))
+                print("[route=WIKIPEDIA_DUAL_SELECTED, train_ready=False]")
+                print()
+                continue
+            # Returning to original subject is a fresh lookup, not reusing
+            # the selected article as if it were the requested concept.
+            if dual_intent["target"]=="REQUESTED":
+                wiki_dual_context.clear()
+                cha_wiki_conversation.clear()
+                user_text=dual_intent["topic"]+"について教えて"
+        # v0.7.44.42:
         if pending_wiki_topic_offer is not None:
             normalized_topic_reply = user_text.strip().rstrip("。！？!? ")
             if normalized_topic_reply in ("はい", "うん", "ええ", "お願いします", "聞きたい", "そうして", "続けて"):
