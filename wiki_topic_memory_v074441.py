@@ -69,3 +69,16 @@ def suggest_topic(path=DEFAULT_STORE,exclude_title=None):
                     "answer":"話題の提案。"+item["title"]+"について話してみる？ Wikipediaには「"+item["sentences"][0]+"」とある。（外部資料・未検証）",
                     "truth_state":"EXTERNAL_UNVERIFIED","train_ready":False}
     return {"status":"NO_APPROVED_TOPIC"}
+
+def begin_topic(item_id,path=DEFAULT_STORE):
+    """Return evidence-backed opening for an approved topic only."""
+    d=_load(path)
+    for item in d["items"]:
+        if item["id"]==item_id and item.get("state")=="APPROVED_FOR_TOPIC_ONLY":
+            sentences=item.get("sentences") or []
+            if not sentences:return {"status":"NO_EVIDENCE"}
+            detail=sentences[1] if len(sentences)>1 else sentences[0]
+            return {"status":"STARTED","title":item["title"],"url":item["url"],
+                    "answer":"では、"+item["title"]+"について。Wikipediaには「"+detail+"」とある。どの点が気になる？（外部資料・未検証）",
+                    "truth_state":"EXTERNAL_UNVERIFIED","train_ready":False}
+    return {"status":"NOT_APPROVED"}
