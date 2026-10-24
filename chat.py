@@ -3379,6 +3379,8 @@ def main() -> None:
     cha_bridge = ConversationBridge(resolve_runtime_path(args.cha_memory_root))
     cha_user_context = UserContext()
     cha_wiki_conversation = WikiConversation()
+    from wiki_ambiguity_session_v08011 import PendingWikiTopic
+    pending_wiki_ambiguity = PendingWikiTopic()
     cha_wiki_evidence_session = ChaWikiEvidenceSession()
     from wiki_equation_evidence_v074430 import EquationCursor
     cha_wiki_equation_cursor = EquationCursor()
@@ -3484,6 +3486,30 @@ def main() -> None:
             break
 
         if not user_text:
+            continue
+        # v0.8.0.11: user-controlled resolution of ambiguous Wikipedia hits.
+        ambiguous_choice = pending_wiki_ambiguity.selection(user_text)
+        if ambiguous_choice is not None:
+            status=ambiguous_choice["status"]
+            if status=="SELECTED":
+                chosen=ambiguous_choice["title"]
+                from unknown_wiki_fallback_v0557 import fallback as wiki_selected_fallback
+                selected_wiki=wiki_selected_fallback(
+                    chosen,chosen+"とは",cha_wiki_conversation.persona,
+                    cha_wikipedia_lookup,cha_persona_wiki_respond,
+                    grounded=cha_wiki_grounded_reply,cache=cha_persona_wiki_cache)
+                if selected_wiki.get("status")=="FOUND":
+                    cha_wiki_conversation.offer(selected_wiki["wiki_context"])
+                    pending_wiki_ambiguity.clear()
+                    print("AI> "+selected_wiki["answer"])
+                    print("[route=WIKIPEDIA_AMBIGUITY_USER_SELECTED, article={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]".format(chosen))
+                else:
+                    print("AI> 選択した記事の根拠を取得できませんでした。"+pending_wiki_ambiguity.message())
+                print()
+                continue
+            print("AI> "+(ambiguous_choice.get("message") or "選択を取り消しました。"))
+            print("[route=WIKIPEDIA_AMBIGUITY_{}]".format(status))
+            print()
             continue
         # v0.7.44.42: interpret consent to the most recent approved topic offer.
         if pending_wiki_topic_offer is not None:
@@ -4109,6 +4135,15 @@ def main() -> None:
                 cha_wiki_last_generated = None
                 print()
                 continue
+            if new_topic_wiki.get("status")=="AMBIGUOUS":
+                from wikipedia_acquisition_v0517 import lookup as wiki_raw_lookup
+                ambiguous_result=wiki_raw_lookup(new_topic,context=raw_user_text)
+                if pending_wiki_ambiguity.start(new_topic,ambiguous_result):
+                    print("AI> "+pending_wiki_ambiguity.message())
+                    print("[route=WIKIPEDIA_AMBIGUITY_PENDING, requested={}, candidate_count={}, train_ready=False]".format(
+                        new_topic,len(pending_wiki_ambiguity.candidates)))
+                    print()
+                    continue
             print("[explicit_topic_lookup={}, requested={}, prior_context_reused=False]".format(
                 new_topic_wiki.get("status","UNKNOWN"), new_topic))
         topic_followup=cha_wiki_topic_followup(
