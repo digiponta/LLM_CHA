@@ -15,15 +15,18 @@ class WikiConversation:
         self.current=None
         self.used=set()
         self.persona=persona if persona in ("nagato","neutral") else "neutral"
+        self.insufficient_count=0
     def clear(self):
         self.current=None
         self.used=set()
+        self.insufficient_count=0
     def offer(self,wiki):
         if not isinstance(wiki,dict) or wiki.get("status")!="FOUND":
             self.clear()
             return
         self.current=wiki.copy()
         self.used={0}
+        self.insufficient_count=0
     def _answer(self,sentence):
         sentence=sentence.rstrip("。")+"。"
         if self.persona=="nagato":
@@ -52,11 +55,14 @@ class WikiConversation:
                 continue
             if kind!="more" and not any(k in p for k in patterns[kind]):continue
             self.used.add(i)
+            self.insufficient_count=0
             return {"answer":self._answer(p),"route":"PERSONA_WIKIPEDIA_CONTEXT_FOLLOWUP",
                     "source":self.current["url"],"persona":self.persona,
                     "quality_gate":"SOURCE_SPAN_EXACT",
                     "verified":False,"train_ready":False}
-        msg=("取得した資料には、その質問に答える明確な根拠がない。"
+        self.insufficient_count += 1
+        msg=("追加の根拠は見つかっていない。知りたい観点を指定して。例えば、数式の意味、測定、応用のどれ？" if self.insufficient_count >= 2 else
+             "取得した資料には、その質問に答える明確な根拠がない。"
              if self.persona=="nagato" else
              "取得した資料には、その質問に答える明確な根拠がありません。")
         return {"answer":msg,"route":"WIKIPEDIA_EVIDENCE_INSUFFICIENT",
