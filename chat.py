@@ -3383,6 +3383,7 @@ def main() -> None:
     from wiki_equation_evidence_v074430 import EquationCursor
     cha_wiki_equation_cursor = EquationCursor()
     pending_equation_explanation = None
+    pending_wiki_topic_offer = None
     cha_wiki_evidence_continuation = ChaWikiEvidenceContinuation()
     cha_persona_context = PersonaContext(cha_wiki_conversation.persona)
     cha_persona_wiki_cache = {}
@@ -3484,6 +3485,24 @@ def main() -> None:
 
         if not user_text:
             continue
+        # v0.7.44.42: interpret consent to the most recent approved topic offer.
+        if pending_wiki_topic_offer is not None:
+            normalized_topic_reply = user_text.strip().rstrip("。！？!? ")
+            if normalized_topic_reply in ("はい", "うん", "ええ", "お願いします", "聞きたい", "そうして", "続けて"):
+                from wiki_topic_memory_v074441 import begin_topic
+                result = begin_topic(pending_wiki_topic_offer)
+                pending_wiki_topic_offer = None
+                print("AI> " + result.get("answer", "承認済みの話題を開始できなかった。もう一度、話題を提供して、と入力して。"))
+                print("[route=WIKI_TOPIC_ACCEPTED, status={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]".format(result["status"]))
+                print()
+                continue
+            if normalized_topic_reply in ("いいえ", "いや", "結構です", "やめる", "別の話題"):
+                pending_wiki_topic_offer = None
+                print("AI> 了解。別の話題にしよう。")
+                print("[route=WIKI_TOPIC_DECLINED, train_ready=False]")
+                print()
+                continue
+            pending_wiki_topic_offer = None
         # v0.7.44.41: explicit Wikipedia topic memory workflow.
         # This stores externally sourced candidate text; never updates weights.
         if user_text in ("/wiki-learn", "Wikiを覚えて", "Wikipediaを覚えて"):
@@ -3503,6 +3522,7 @@ def main() -> None:
         if user_text in ("/topic", "話題を提供して", "何か話題はある？", "話題を教えて"):
             from wiki_topic_memory_v074441 import suggest_topic
             result = suggest_topic()
+            pending_wiki_topic_offer = result.get("id") if result["status"] == "FOUND" else None
             print("AI> " + result.get("answer", "承認済みのWikipedia話題候補はまだない。記事について会話した後、/wiki-learn を実行して。"))
             print("[route=WIKI_TOPIC_SUGGESTION, status={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]".format(result["status"]))
             print()
