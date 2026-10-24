@@ -8,7 +8,7 @@ def coherent_scientific_evidence(text):
     s=text.strip()
     if len(s)<25: return False
     # A TeX/glyph-only orphan is not a scientific explanation.
-    if re.fullmatch(r"[{}\\$\s\w^_+*/=(),.\[\]−∞ħψΨ]+",s):
+    if re.fullmatch(r"[{}\\$\s\w^_+*/=(),.\[\]−∞ħψΨ]+",s,flags=re.ASCII):
         return False
     if s.startswith(("は", "が", "を", "に", "では", "ならびに")):
         return False
