@@ -20,6 +20,7 @@ from chat_window_v061 import ConversationParser, build_chat_command
 from gui_latex_v062 import insert_gui_message
 from gui_status_v0732 import StatusParser
 from gui_command_capture_v074411 import CommandOutputCapture
+from gui_sleep_summary_v08016 import summarize_sleep_output
 
 
 def create_process(command, quality_gate=True):
@@ -47,7 +48,7 @@ def run(argv=None):
     parser_stream = ConversationParser(lambda kind, value: events.put((kind, value)))
     status_parser = StatusParser(lambda value: events.put(("status", value)))
     root = tk.Tk()
-    root.title("LLM_CHA v0.7.44 — GUI Chat")
+    root.title("LLM_CHA v0.8.0.16 — GUI Chat")
     root.geometry("970x720")
     root.minsize(600, 400)
 
@@ -115,7 +116,7 @@ def run(argv=None):
             entry.delete(0, "end")
 
     tk.Button(entry_frame, text="送信", command=submit).pack(side="left", padx=6)
-    tk.Button(entry_frame, text="/sleep", command=lambda:send("/sleep",False)).pack(side="left")
+
     pending_status = {"command": None, "started": None}
     def request_status(command="/semstatus"):
         if child.poll() is not None:
@@ -138,6 +139,8 @@ def run(argv=None):
             status.set("状態確認: {} の結果を取得中".format(command))
     tk.Button(entry_frame, text="Semantic状態",
               command=lambda:request_status("/semstatus")).pack(side="left", padx=(6,0))
+    tk.Button(entry_frame, text="/sleep 実行",
+              command=lambda:request_status("/sleep")).pack(side="left", padx=(6,0))
     tk.Button(entry_frame, text="学習状態",
               command=lambda:request_status("/sleep status")).pack(side="left", padx=(6,0))
     entry.bind("<Return>", submit)
@@ -180,7 +183,12 @@ def run(argv=None):
                 output_view.pack(fill="both", expand=True, padx=8, pady=8)
                 output_view.insert("1.0", value or "状態情報がありません。")
                 output_view.configure(state="disabled")
-                status.set("状態確認: 完了")
+                if command == "/sleep":
+                    sleep_result = summarize_sleep_output(value)
+                    status.set(sleep_result["label"])
+                    dialog.title("LLM_CHA /sleep — "+sleep_result["state"])
+                else:
+                    status.set("状態確認: 完了")
             elif kind == "status":
                 if "route" in value and value["route"]:
                     status.set(f"Model: {model_label} | Quality Gate: {quality_status} | {value['route']}")
@@ -193,6 +201,7 @@ def run(argv=None):
                 status.set(f"chat.py 終了 (exit={value})")
                 entry.configure(state="disabled")
         if (pending_status["command"] is not None and pending_status["started"] is not None
+                and pending_status["command"] != "/sleep"
                 and time.monotonic() - pending_status["started"] > 20):
             command = pending_status["command"]
             pending_status["command"] = None
