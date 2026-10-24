@@ -46,13 +46,24 @@ def evaluate(store,base_path,tokenizer_path,adapter_path):
         first=max(0,len(prefix)-1)
         positions=torch.arange(first,len(sequence)-1)
         with torch.inference_mode():
-            base_logits=base(x)[0,positions]
-            adapter_logits=adapted(x,route="experimental")[0,positions]
-            gold=y[0,positions]
+            base_full=base(x)
+            adapter_full=adapted(x,route="experimental")
+            if base_full.ndim!=3 or adapter_full.ndim!=3:
+                raise ValueError("expected [batch, time, vocab] logits")
+            # Contiguous target span: avoid mixed advanced tensor indexing.
+            begin=len(prefix)-1
+            finish=begin+len(target)
+            base_logits=base_full[0,begin:finish,:]
+            adapter_logits=adapter_full[0,begin:finish,:]
+            gold=y[0,begin:finish]
+            if (gold.ndim!=1 or base_logits.ndim!=2
+                    or base_logits.shape[0]!=gold.numel()
+                    or adapter_logits.shape!=base_logits.shape):
+                raise ValueError("target/logit shape mismatch")
             base_nll=F.cross_entropy(base_logits,gold).item()
             adapted_nll=F.cross_entropy(adapter_logits,gold).item()
-            base_prob=torch.softmax(base_logits,dim=-1).gather(1,gold.unsqueeze(1)).mean().item()
-            adapt_prob=torch.softmax(adapter_logits,dim=-1).gather(1,gold.unsqueeze(1)).mean().item()
+            base_prob=torch.softmax(base_logits,dim=-1).gather(1,gold[:,None]).mean().item()
+            adapt_prob=torch.softmax(adapter_logits,dim=-1).gather(1,gold[:,None]).mean().item()
             delta=(adapter_logits-base_logits).abs().mean().item()
         results.append({"candidate_id":cid,"target_tokens":len(gold),
             "base_nll":base_nll,"adapter_nll":adapted_nll,
