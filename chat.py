@@ -3503,6 +3503,15 @@ def main() -> None:
                 print()
                 continue
             pending_wiki_topic_offer = None
+        # v0.8.0.1: read-only structured Semantic candidate lookup.
+        if user_text.startswith("/semantic-search "):
+            from unapproved_semantic_search_v0801 import search_semantic
+            query=user_text[len("/semantic-search "):].strip()
+            result=search_semantic(query)
+            print("AI> " + json.dumps(result,ensure_ascii=False))
+            print("[route=UNAPPROVED_SEMANTIC_SEARCH, model_generated=False, train_ready=False, weights_changed=False]")
+            print()
+            continue
         # v0.7.44.47: explicit, read-only unapproved evidence comparison.
         if user_text.startswith("/wiki-compare "):
             from unapproved_llm_compare_v074447 import compare_answers
