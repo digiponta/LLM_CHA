@@ -3995,6 +3995,14 @@ def main() -> None:
                     print()
                     continue
                 if more_detail["status"]=="EVIDENCE_EXHAUSTED":
+                    meaning = cha_wiki_equation_cursor.explain_once(cha_wiki_conversation.current)
+                    if meaning is not None:
+                        print("AI> " + meaning["answer"])
+                        print("[route=EQUATION_SEMANTIC_EVIDENCE, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(meaning["source"]))
+                        last_ai_reply=None
+                        cha_wiki_last_generated=None
+                        print()
+                        continue
                     equation = cha_wiki_equation_cursor.next(cha_wiki_conversation.current)
                     if equation is not None:
                         print("AI> " + equation["answer"])
