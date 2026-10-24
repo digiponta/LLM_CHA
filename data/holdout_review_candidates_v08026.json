@@ -1,0 +1,45 @@
+{
+  "independent_source_attested": false,
+  "records": [
+    {
+      "id": "review-mars-moons-001",
+      "evaluation_kind": "UNSEEN_FACT",
+      "question": "火星の衛星は何個あり、それぞれ何という名前ですか。",
+      "reference_answer": "火星にはフォボスとダイモスという2つの衛星がある。",
+      "source_url": "https://science.nasa.gov/mars/moons/",
+      "source_excerpt": "Mars has two moons, Phobos and Deimos."
+    },
+    {
+      "id": "review-venus-rotation-002",
+      "evaluation_kind": "UNSEEN_FACT",
+      "question": "金星の自転周期と公転周期は地球日でそれぞれ何日ですか。",
+      "reference_answer": "金星の自転周期は約243地球日、公転周期は約225地球日である。",
+      "source_url": "https://science.nasa.gov/venus/venus-facts/",
+      "source_excerpt": "your “day” would be 243 Earth days long — longer even than a Venus year"
+    },
+    {
+      "id": "review-ocean-depth-003",
+      "evaluation_kind": "UNSEEN_FACT",
+      "question": "NOAAが示すチャレンジャー海淵の最深部の推定水深は何メートルですか。",
+      "reference_answer": "NOAAによると、チャレンジャー海淵の最深部の水深は約10,935メートルである。",
+      "source_url": "https://oceanexplorer.noaa.gov/explainers/mapping/",
+      "source_excerpt": "updated the deepest known point to approximately 10,935 meters"
+    },
+    {
+      "id": "review-si-base-004",
+      "evaluation_kind": "UNSEEN_FACT",
+      "question": "国際単位系SIの基本単位はいくつありますか。",
+      "reference_answer": "国際単位系SIの基本単位は7つである。",
+      "source_url": "https://www.bipm.org/en/measurement-units/",
+      "source_excerpt": "The seven base units were chosen for historical reasons"
+    },
+    {
+      "id": "review-everest-height-005",
+      "evaluation_kind": "UNSEEN_FACT",
+      "question": "2020年に中国とネパールが共同発表したエベレストの雪面標高は何メートルですか。",
+      "reference_answer": "2020年に中国とネパールが共同発表したエベレストの雪面標高は8,848.86メートルである。",
+      "source_url": "https://www.mfa.gov.cn/zyxw/202012/t20201208_348872.shtml",
+      "source_excerpt": "珠穆朗玛峰的最新高程为8848.86米"
+    }
+  ]
+}
