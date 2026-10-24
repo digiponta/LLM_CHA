@@ -3580,7 +3580,7 @@ def main() -> None:
                         checkpoints[0])
                     print("AI> "+json.dumps(report,ensure_ascii=False))
                     print("[route=WIKI_UNAPPROVED_MODEL_COMPARE, train_ready=False, auto_promote=False]")
-                except (OSError,ValueError,RuntimeError,KeyError) as exc:
+                except Exception as exc:
                     print("AI> 比較に失敗しました: {}: {}".format(type(exc).__name__,exc))
             print()
             continue
