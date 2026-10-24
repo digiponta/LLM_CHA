@@ -5,6 +5,7 @@ explanatory terms beat generic keyword mentions. No inferred claims.
 """
 import re
 from wiki_math_integrity_v074421 import safe_evidence_sentence
+from wiki_fragment_gate_v074428 import coherent_scientific_evidence
 
 FEATURES = {
     "基本原理": (("原理", 3), ("基本", 1), ("状態", 1), ("量子", 1), ("記述", 1), ("理論", 1)),
@@ -24,7 +25,7 @@ def ranked_evidence(wiki, aspect):
     candidates=[]
     for index, raw in enumerate(re.split(r"[。\n]", extract)):
         sentence=raw.strip()
-        if not 30<=len(sentence)<=240 or not safe_evidence_sentence(sentence):
+        if not 30<=len(sentence)<=240 or not coherent_scientific_evidence(sentence):
             continue
         if any(token in sentence for token in ("==","{","}","\\")):
             continue
