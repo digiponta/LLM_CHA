@@ -3493,6 +3493,8 @@ def main() -> None:
             status=ambiguous_choice["status"]
             if status=="SELECTED":
                 chosen=ambiguous_choice["title"]
+                requested_topic=ambiguous_choice["topic"]
+                from wiki_selection_relation_v08012 import selection_notice, selection_relation
                 from unknown_wiki_fallback_v0557 import fallback as wiki_selected_fallback
                 selected_wiki=wiki_selected_fallback(
                     chosen,chosen+"とは",cha_wiki_conversation.persona,
@@ -3501,8 +3503,9 @@ def main() -> None:
                 if selected_wiki.get("status")=="FOUND":
                     cha_wiki_conversation.offer(selected_wiki["wiki_context"])
                     pending_wiki_ambiguity.clear()
-                    print("AI> "+selected_wiki["answer"])
-                    print("[route=WIKIPEDIA_AMBIGUITY_USER_SELECTED, article={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]".format(chosen))
+                    print("AI> "+selection_notice(requested_topic,chosen)+selected_wiki["answer"])
+                    print("[route=WIKIPEDIA_AMBIGUITY_USER_SELECTED, requested_topic={}, selected_article={}, relation={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]".format(
+                        requested_topic,chosen,selection_relation(requested_topic,chosen)))
                 else:
                     print("AI> 選択した記事の根拠を取得できませんでした。"+pending_wiki_ambiguity.message())
                 print()
