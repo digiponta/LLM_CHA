@@ -65,7 +65,7 @@ def suggest_topic(path=DEFAULT_STORE,exclude_title=None):
     d=_load(path)
     for item in d["items"]:
         if item.get("state")=="APPROVED_FOR_TOPIC_ONLY" and item.get("title")!=exclude_title:
-            return {"status":"FOUND","title":item["title"],"url":item["url"],
+            return {"status":"FOUND","id":item["id"],"title":item["title"],"url":item["url"],
                     "answer":"話題の提案。"+item["title"]+"について話してみる？ Wikipediaには「"+item["sentences"][0]+"」とある。（外部資料・未検証）",
                     "truth_state":"EXTERNAL_UNVERIFIED","train_ready":False}
     return {"status":"NO_APPROVED_TOPIC"}
