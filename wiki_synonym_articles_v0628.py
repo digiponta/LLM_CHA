@@ -40,3 +40,13 @@ def render_pages(pages):
     return "\n".join("【Wikipedia・{}／未検証】{}\n出典: {}".format(
         p["title"],p["summary"].split("。")[0].strip()+"。",
         p["source"]) for p in distinct_pages(pages))
+
+# v0.8.0.9: do not present another article as the answer to an explicit
+# Japanese topic request. Redirects that change the subject require review.
+def filter_explicit_topic_pages(pages, question):
+    from wiki_topic_switch_guard_v0807 import explicit_topic
+    requested=explicit_topic(question)
+    if not requested:
+        return distinct_pages(pages)
+    return [page for page in distinct_pages(pages)
+            if page.get("title","").replace("_"," ").strip()==requested]
