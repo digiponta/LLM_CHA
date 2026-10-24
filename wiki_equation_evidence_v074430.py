@@ -78,16 +78,25 @@ class EquationCursor:
         self.identity=None
         self.used.clear()
     def next(self,wiki,fetch=None):
-        if not isinstance(wiki,dict):return None
+        if not isinstance(wiki,dict):
+            return None
         identity=(wiki.get("title"),wiki.get("url"))
         if identity!=self.identity:
             self.identity=identity
             self.used.clear()
-        for block in math_blocks(wiki,fetch=fetch):
-            if block["latex"] in self.used:continue
-            self.used.add(block["latex"])
-            label=block["description"] or "Wikipedia記事中の数式"
-            return {**block,"answer":label+"： LATEX( "+block["latex"]+" )" + " [数式原文: "+block["latex"]+"]",
-                    "route":"WIKIPEDIA_EQUATION_EVIDENCE",
-                    "quality_gate":"SOURCE_WIKITEXT_MATH_EXACT"}
-        return None
+        unseen=[b for b in math_blocks(wiki,fetch=fetch) if b["latex"] not in self.used]
+        if not unseen:
+            return None
+        # v0.7.44.35: connected equation evidence is shown together,
+        # instead of treating each source equation as a separate chat turn.
+        chosen=unseen[:2] if wiki.get("title")=="量子ビット" else unseen[:1]
+        self.used.update(b["latex"] for b in chosen)
+        answer="Wikipedia記事中の数式（外部資料・未検証）："
+        for block in chosen:
+            label=block["description"] or "数式"
+            answer+="\n"+label+"： LATEX( "+block["latex"]+" ) [数式原文: "+block["latex"]+"]"
+        return {"title":wiki.get("title"),"source":wiki.get("url"),
+                "answer":answer,"blocks":chosen,
+                "truth_state":"EXTERNAL_UNVERIFIED","train_ready":False,
+                "auto_promote":False,"route":"WIKIPEDIA_EQUATION_EVIDENCE",
+                "quality_gate":"SOURCE_WIKITEXT_MATH_EXACT"}
