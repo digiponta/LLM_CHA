@@ -27,7 +27,7 @@ def equation_rank(latex):
     t=latex.strip()
     if "=" in t:
         return 100 + min(len(t),100)
-    if r"\\rangle" in t and ("+" in t or "-" in t):
+    if r"\rangle" in t and ("+" in t or "-" in t):
         return 80 + min(len(t),100)
     return -1
 
