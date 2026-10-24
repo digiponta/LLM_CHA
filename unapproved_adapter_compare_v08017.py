@@ -31,7 +31,8 @@ def compare(question,base_path,tokenizer_path,adapter_path,max_new_tokens=32):
     if not 1<=max_new_tokens<=256:raise ValueError("invalid token limit")
     base_path=Path(base_path)
     adapter_path=Path(adapter_path)
-    # Default to CPU: keep diagnostic comparison isolated from the live CUDA chat model.\n    device=torch.device("cpu")
+    # Default to CPU: keep diagnostic comparison isolated from the live CUDA chat model.
+    device=torch.device("cpu")
     base,_=LanguageModel.load_checkpoint(str(base_path),device=device)
     tokenizer=Tokenizer.load(str(tokenizer_path))
     ck=torch.load(adapter_path,map_location="cpu",weights_only=True)
@@ -43,7 +44,8 @@ def compare(question,base_path,tokenizer_path,adapter_path,max_new_tokens=32):
     model.experimental.load_state_dict(ck["adapter"],strict=True)
     model.eval()
     prefix=question.strip()
-    # Match the prompt format used by ConversationDataset during /sleep.\n    prompt="人: "+prefix+"\nAI: "
+    # Match the prompt format used by ConversationDataset during /sleep.
+    prompt="人: "+prefix+"\nAI: "
     plain=greedy(base,tokenizer,prompt,device,max_new_tokens)
     adapted=greedy(model,tokenizer,prompt,device,max_new_tokens,route="experimental")
     return {"status":"COMPARED","question":prefix,
