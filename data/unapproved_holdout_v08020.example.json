@@ -1,0 +1,11 @@
+{
+  "format": "llm-cha-holdout-v0.8.0.20",
+  "independent_source_attested": false,
+  "records": [
+    {
+      "id": "replace-with-independent-id",
+      "question": "ここに未学習の検証質問",
+      "reference_answer": "ここに独立資料で確認した参照回答"
+    }
+  ]
+}
