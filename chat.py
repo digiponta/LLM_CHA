@@ -6278,7 +6278,7 @@ def main() -> None:
             # source-grounded Wikipedia response before queuing teaching.
             # Explicit truth blocks and stale checkpoints must not be bypassed.
             if not truth_block and not stale_internalized:
-                from wiki_synonym_articles_v0628 import exact_title, distinct_pages, render_pages
+                from wiki_synonym_articles_v0628 import exact_title, distinct_pages, render_pages, filter_explicit_topic_pages
                 direct_article = exact_title(dispatch.focus)
                 wiki_fallback=cha_unknown_wiki_fallback(
                     dispatch.focus,raw_user_text,cha_wiki_conversation.persona,
@@ -6311,8 +6311,8 @@ def main() -> None:
                     synonym_article = None
                     if wiki_fallback["status"] == "FOUND":
                         synonym_article = exact_title(wiki_fallback.get("term", dispatch.focus))
-                    distinct = distinct_pages([direct_article, synonym_article])
-                    if len(distinct) > 1 or wiki_fallback["status"] != "FOUND":
+                    distinct = filter_explicit_topic_pages([direct_article, synonym_article], raw_user_text)
+                    if distinct and (len(distinct) > 1 or wiki_fallback["status"] != "FOUND"):
                         print("AI> " + render_pages(distinct))
                         print("[route=WIKIPEDIA_SYNONYM_ARTICLES, count={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(len(distinct)))
                         print()
