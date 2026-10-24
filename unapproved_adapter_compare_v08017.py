@@ -43,7 +43,7 @@ def compare(question,base_path,tokenizer_path,adapter_path,max_new_tokens=64):
     model.experimental.load_state_dict(ck["adapter"],strict=True)
     model.eval()
     prefix=question.strip()
-    prompt="人: "+prefix+"\nAI: "
+    # Match the prompt format used by ConversationDataset during /sleep.\n    prompt=prefix
     plain=greedy(base,tokenizer,prompt,device,max_new_tokens)
     adapted=greedy(model,tokenizer,prompt,device,max_new_tokens,route="experimental")
     return {"status":"COMPARED","question":prefix,
