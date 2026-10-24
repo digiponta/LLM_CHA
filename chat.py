@@ -3503,6 +3503,16 @@ def main() -> None:
                 print()
                 continue
             pending_wiki_topic_offer = None
+        # v0.8.0.2: explicit natural-language opt-in for unapproved knowledge.
+        # This is not a global fallback: trusted and normal chat remain unchanged.
+        from unapproved_conversation_v0802 import parse_unapproved_request, conversational_answer
+        unapproved_question = parse_unapproved_request(user_text)
+        if unapproved_question is not None:
+            result=conversational_answer(unapproved_question)
+            print("AI> " + result["answer"])
+            print("[route=UNAPPROVED_CONVERSATIONAL_EVIDENCE, status={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, model_generated=False]".format(result["status"]))
+            print()
+            continue
         # v0.8.0.1: read-only structured Semantic candidate lookup.
         if user_text.startswith("/semantic-search "):
             from unapproved_semantic_search_v0801 import search_semantic
