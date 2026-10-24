@@ -48,7 +48,7 @@ def run(argv=None):
     parser_stream = ConversationParser(lambda kind, value: events.put((kind, value)))
     status_parser = StatusParser(lambda value: events.put(("status", value)))
     root = tk.Tk()
-    root.title("LLM_CHA v0.8.0.17 — GUI Chat")
+    root.title("LLM_CHA v0.8.0.18 — GUI Chat")
     root.geometry("970x720")
     root.minsize(600, 400)
 
@@ -148,6 +148,7 @@ def run(argv=None):
             return
         request_status("/wiki-model-compare "+question)
     tk.Button(entry_frame, text="未承認LLM比較",command=compare_unapproved).pack(side="left",padx=(6,0))
+    tk.Button(entry_frame, text="学習効果評価",command=lambda:request_status("/wiki-model-eval")).pack(side="left",padx=(6,0))
     tk.Button(entry_frame, text="学習状態",
               command=lambda:request_status("/sleep status")).pack(side="left", padx=(6,0))
     entry.bind("<Return>", submit)
@@ -221,6 +222,7 @@ def run(argv=None):
         if (pending_status["command"] is not None and pending_status["started"] is not None
                 and pending_status["command"] != "/sleep"
                 and not pending_status["command"].startswith("/wiki-model-compare ")
+                and pending_status["command"] != "/wiki-model-eval"
                 and time.monotonic() - pending_status["started"] > 20):
             command = pending_status["command"]
             pending_status["command"] = None
