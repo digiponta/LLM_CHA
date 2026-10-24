@@ -5435,6 +5435,20 @@ def main() -> None:
                 print("[Trusted sleep skipped to avoid partial dual sleep execution]")
                 print()
                 continue
+            # v0.8.0.15: independent Wikipedia-derived UNAPPROVED adapter.
+            # This never modifies Trusted checkpoints or memory.
+            try:
+                from unapproved_wiki_sleep_v08015 import sleep_unapproved_wikipedia
+                wiki_sleep = sleep_unapproved_wikipedia(
+                    store=PROJECT_ROOT / "data" / "unapproved_llm_candidates_v074446.json",
+                    base=PROJECT_ROOT / "model" / "model-gpu-v1.6.2-online.pt",
+                    tokenizer_path=PROJECT_ROOT / "model" / "tokenizer-v0.7-bpe.json",
+                    output_dir=PROJECT_ROOT / "results" / "unapproved_wiki_sleep_v08015")
+                print("[unapproved wiki sleep: status={}, eligible={}, trained={}, checkpoint={}, trusted_changed=False, approved=False]".format(
+                    wiki_sleep["status"],wiki_sleep["eligible"],wiki_sleep["trained"],
+                    wiki_sleep.get("checkpoint","-")))
+            except (OSError, ValueError, RuntimeError, KeyError, ImportError) as exc:
+                print("[unapproved wiki sleep FAILED: {}: {}]".format(type(exc).__name__,exc))
             if memory_first_enabled and memory_first_mode == "constrained":
                 from experimental_reload_v0723 import reload_after_sleep
                 memory_first_generator, reload_info = reload_after_sleep(
