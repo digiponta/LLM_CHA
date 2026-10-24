@@ -6398,6 +6398,15 @@ def main() -> None:
                 audit=experimental_fallback["reference_audit"]
                 print("[candidate_reference: status={}, count={}, threshold={}, promoted={}]".format(
                     audit["status"],audit["reference_count"],audit["threshold"],audit["promoted"]))
+            # v0.8.0.5: UNKNOWN_KNOWLEDGE exits before model generation.
+            # Apply isolated Semantic evidence fallback here, never on truth
+            # blocks or stale trusted checkpoints.
+            if resolution_name == "UNKNOWN_KNOWLEDGE" and block_reply == UNKNOWN_REPLY:
+                from unapproved_fallback_v0803 import fallback_on_failure
+                unknown_semantic = fallback_on_failure(raw_user_text, failed=True)
+                if unknown_semantic.get("status") == "FOUND":
+                    block_reply = unknown_semantic["answer"]
+                    print("[route=UNAPPROVED_SEMANTIC_UNKNOWN_RECOVERY, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(unknown_semantic["source"]))
             print(f"AI> {block_reply}")
             if experimental_fallback is not None:
                 print("[experimental_route={}, truth_state={}, quality_reason={}, auto_promote=False]".format(
