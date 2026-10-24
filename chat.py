@@ -3503,6 +3503,15 @@ def main() -> None:
                 print()
                 continue
             pending_wiki_topic_offer = None
+        # v0.7.44.47: explicit, read-only unapproved evidence comparison.
+        if user_text.startswith("/wiki-compare "):
+            from unapproved_llm_compare_v074447 import compare_answers
+            query=user_text[len("/wiki-compare "):].strip()
+            result=compare_answers(query)
+            print("AI> " + json.dumps(result,ensure_ascii=False))
+            print("[route=WIKI_UNAPPROVED_COMPARE, model_generated=False, train_ready=False, weights_changed=False]")
+            print()
+            continue
         # v0.7.44.46: isolated, unapproved knowledge intake. No weight updates.
         if user_text in ("/wiki-unapproved", "/wiki-intake"):
             from unapproved_llm_intake_v074446 import ingest_wikipedia
