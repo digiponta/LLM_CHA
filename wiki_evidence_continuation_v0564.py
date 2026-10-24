@@ -9,6 +9,7 @@ from wikipedia_acquisition_v0517 import _request
 from wiki_persona_multiturn_v0520 import FOLLOWUPS
 from scientific_evidence_v0563 import scientific_sentences, scientific_prose, display_latex
 from wiki_math_integrity_v074421 import safe_evidence_sentence
+from wiki_fragment_gate_v074428 import coherent_scientific_evidence
 
 class EvidenceContinuation:
     def __init__(self):
@@ -59,7 +60,7 @@ class EvidenceContinuation:
                 for sentence in scientific_sentences(extract):
                     if not 20 <= len(sentence) <= 1000 or title not in sentence:
                         continue
-                    if not safe_evidence_sentence(sentence) or not scientific_prose(sentence):
+                    if not coherent_scientific_evidence(sentence) or not scientific_prose(sentence):
                         continue
                     key = (linked_title, sentence)
                     if key in self.seen:
