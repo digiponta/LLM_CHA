@@ -5,6 +5,7 @@ Intent-based follow-ups never invent explanations not present in evidence.
 """
 import re
 from wiki_fragment_gate_v074428 import coherent_scientific_evidence
+from wiki_math_integrity_v074421 import safe_evidence_sentence
 
 FOLLOWUPS={"もう少し詳しく","詳しく教えて","もっと詳しく","その続き","続きを教えて","それについて詳しく"}
 WHY=("なぜ","どうして","理由","原理")
@@ -45,7 +46,8 @@ class WikiConversation:
             order.sort(key=lambda item: -sum(1 for keyword in ("医療","応用","用途","利用され","使われ") if keyword in item[1]))
         for i,p in order:
             if i in self.used:continue
-            if not coherent_scientific_evidence(p):
+            if (not coherent_scientific_evidence(p) or not safe_evidence_sentence(p)
+                    or p.rstrip().endswith(("、", "：", ":", "は", "を", "が", "では"))):
                 self.used.add(i)
                 continue
             if kind!="more" and not any(k in p for k in patterns[kind]):continue
