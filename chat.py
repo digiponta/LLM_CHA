@@ -4055,6 +4055,12 @@ def main() -> None:
             print()
             continue
         wiki_followup=cha_wiki_conversation.respond(raw_user_text)
+        if (wiki_followup is not None
+                and wiki_followup.get("route")=="PERSONA_WIKIPEDIA_CONTEXT_FOLLOWUP"):
+            from wiki_topic_memory_v074441 import observe_followup
+            learned=observe_followup(cha_wiki_conversation.current)
+            print("[wiki_interest_learning={}, count={}, state={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]".format(
+                learned.get("status"),learned.get("count",0),learned.get("state","-")))
         if wiki_followup is not None:
             if wiki_followup["route"]=="WIKIPEDIA_EVIDENCE_INSUFFICIENT" and cha_wiki_conversation.current is not None:
                 more_detail=cha_wiki_evidence_session.next(
