@@ -18,6 +18,11 @@ def fallback(concept, utterance, persona, lookup, render, grounded=None, cache=N
         return {"status":"LOOKUP_FAILED","reason":type(exc).__name__}
     if not isinstance(wiki,dict) or wiki.get("status")!="FOUND":
         return {"status":wiki.get("status","LOOKUP_FAILED") if isinstance(wiki,dict) else "LOOKUP_FAILED"}
+    # v0.8.0.8: refuse an unrelated Wikipedia hit (or cached hit).
+    # An alias may need a dedicated, reviewed equivalence mechanism.
+    title=(wiki.get("title") or "").strip()
+    if not title or not (concept==title or concept in title or title in concept):
+        return {"status":"TOPIC_MISMATCH","requested":concept,"returned_title":title}
     answer=render(wiki,utterance,persona=persona)
     if answer is None and grounded is not None:
         answer=grounded(wiki,utterance)
