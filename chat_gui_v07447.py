@@ -53,7 +53,7 @@ def run(argv=None):
 
     heading = tk.Frame(root, padx=12, pady=8)
     heading.pack(fill="x")
-    tk.Label(heading, text="LLM_CHA — 長門有希 / Semantic Memory",
+    tk.Label(heading, text="LLM_CHA — Semantic Memory",
              font=("Yu Gothic UI", 14, "bold")).pack(anchor="w")
     quality_status = "ON" if not args.no_quality_gate else "OFF"
     status = tk.StringVar(value=f"Model: {model_label} | Quality Gate: {quality_status} | 起動中")
