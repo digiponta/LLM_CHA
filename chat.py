@@ -3533,9 +3533,17 @@ def main() -> None:
             # Returning to original subject is a fresh lookup, not reusing
             # the selected article as if it were the requested concept.
             if dual_intent["target"]=="REQUESTED":
-                wiki_dual_context.clear()
-                cha_wiki_conversation.clear()
-                user_text=dual_intent["topic"]+"について教えて"
+                from wiki_requested_evidence_v08014 import requested_topic_evidence
+                partial = requested_topic_evidence(dual_intent["topic"], cha_wiki_conversation.current)
+                if partial["status"]=="FOUND":
+                    print("AI> "+partial["answer"]+"\n出典："+partial["source"])
+                    print("[route=WIKIPEDIA_REQUESTED_TOPIC_PARTIAL_EVIDENCE, requested={}, selected={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]".format(
+                        partial["requested_topic"],partial["selected_article"]))
+                else:
+                    print("AI> 元の話題「{}」について、選択した記事から明示的な根拠を確認できませんでした。".format(dual_intent["topic"]))
+                    print("[route=WIKIPEDIA_REQUESTED_TOPIC_NO_EVIDENCE, train_ready=False]")
+                print()
+                continue
         # v0.7.44.42:
         if pending_wiki_topic_offer is not None:
             normalized_topic_reply = user_text.strip().rstrip("。！？!? ")
