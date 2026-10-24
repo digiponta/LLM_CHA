@@ -52,7 +52,7 @@ def math_blocks(wiki, fetch=None, limit=12):
             plain=re.sub(r"\[\[(?:[^|\]]*\|)?([^\]]+)\]\]",r"\1",prefix)
             plain=re.sub(r"<!--.*?-->|<[^>]*>|\{\{.*?\}\}", " ", plain, flags=re.S)
             plain=plain.split("。")[-1].split("\n")[-1].strip(" =:;*#")
-            description=plain if 8<=len(plain)<=120 and len(PROSE.findall(plain))>=8 and not any(c in plain for c in "{}[]|") and not re.search(r"\\s{2,}",plain) and not plain.startswith(("ここで", "は", "が")) else ""
+            description=plain if 8<=len(plain)<=120 and len(PROSE.findall(plain))>=8 and not any(c in plain for c in "{}[]|") and not re.search(r"\\s{2,}",plain) and not plain.startswith(("ここで", "は", "が", "これを")) and not plain.endswith(("、", "：", ":", "は", "を", "が", "では")) else ""
             blocks.append({"title":title,"source":url,"latex":latex,
                            "description":description,"truth_state":"EXTERNAL_UNVERIFIED",
                            "train_ready":False,"auto_promote":False})
