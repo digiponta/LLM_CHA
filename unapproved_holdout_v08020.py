@@ -47,6 +47,14 @@ def evaluate_holdout(path,store,base_path,tokenizer_path,adapter_path):
         raise ValueError("invalid unapproved checkpoint")
     rows=_read(store)["candidates"]
     data=json.loads(Path(path).read_text(encoding="utf-8"))
+    from unapproved_holdout_gate_v08021 import formal_holdout_gate
+    gate=formal_holdout_gate(data,rows,ck.get("candidate_ids",[]))
+    if gate["status"]!="READY":
+        return {"status":"NOT_READY","reasons":gate["reasons"],
+                "validated_count":gate["validated_count"],
+                "min_records":gate.get("min_records",5),
+                "mean_nll_improvement":None,
+                "independent_holdout_evaluated":False}
     records=validate_holdout(data,rows,ck.get("candidate_ids",[]))
     base,_=LanguageModel.load_checkpoint(str(base_path),device=torch.device("cpu"))
     if frozen_digest(base)!=ck.get("base_hash"):raise ValueError("base mismatch")
