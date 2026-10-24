@@ -1,6 +1,8 @@
 """Conservative structure extraction for unapproved Wikipedia sentences."""
 import re
 
+EXTRACTOR_VERSION = "v0.7.44.52"
+
 def extract_structure(sentence, article_title):
     text=(sentence or "").strip().rstrip("。")
     # Prefer explicit article subject, not an inferred pronoun.
