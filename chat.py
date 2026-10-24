@@ -3562,6 +3562,26 @@ def main() -> None:
                 print()
                 continue
             pending_wiki_topic_offer = None
+        # v0.8.0.19: paraphrase/unknown diagnostics; no weights changed.
+        if user_text == "/wiki-model-probe":
+            from unapproved_adapter_probe_v08019 import probe
+            snapshots=sorted(
+                (PROJECT_ROOT / "results" / "unapproved_wiki_sleep_v08015").glob("unapproved-wiki-adapter-*.pt"),
+                key=lambda p:p.stat().st_mtime,reverse=True)
+            if not snapshots:
+                print("AI> 未承認Adapterはありません。")
+            else:
+                try:
+                    report=probe(
+                        PROJECT_ROOT / "data" / "unapproved_llm_candidates_v074446.json",
+                        PROJECT_ROOT / "model" / "model-gpu-v1.6.2-online.pt",
+                        PROJECT_ROOT / "model" / "tokenizer-v0.7-bpe.json",snapshots[0])
+                    print("AI> "+json.dumps(report,ensure_ascii=False))
+                    print("[route=UNAPPROVED_ADAPTER_PARAPHRASE_PROBE, independent_holdout=False, train_ready=False]")
+                except Exception as exc:
+                    print("AI> プローブに失敗しました: {}: {}".format(type(exc).__name__,exc))
+            print()
+            continue
         # v0.8.0.18: numerical training-pair evaluation; read-only.
         if user_text == "/wiki-model-eval":
             from unapproved_adapter_eval_v08018 import evaluate
