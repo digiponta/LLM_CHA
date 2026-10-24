@@ -3380,6 +3380,8 @@ def main() -> None:
     cha_user_context = UserContext()
     cha_wiki_conversation = WikiConversation()
     cha_wiki_evidence_session = ChaWikiEvidenceSession()
+    from wiki_equation_evidence_v074430 import EquationCursor
+    cha_wiki_equation_cursor = EquationCursor()
     cha_wiki_evidence_continuation = ChaWikiEvidenceContinuation()
     cha_persona_context = PersonaContext(cha_wiki_conversation.persona)
     cha_persona_wiki_cache = {}
@@ -3993,6 +3995,14 @@ def main() -> None:
                     print()
                     continue
                 if more_detail["status"]=="EVIDENCE_EXHAUSTED":
+                    equation = cha_wiki_equation_cursor.next(cha_wiki_conversation.current)
+                    if equation is not None:
+                        print("AI> " + equation["answer"])
+                        print("[route=WIKIPEDIA_EQUATION_EVIDENCE, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False, quality_gate=SOURCE_WIKITEXT_MATH_EXACT]".format(equation["source"]))
+                        last_ai_reply=None
+                        cha_wiki_last_generated=None
+                        print()
+                        continue
                     continuation=cha_wiki_evidence_continuation.next(
                         cha_wiki_conversation.current,raw_user_text,
                         persona=cha_wiki_conversation.persona)
