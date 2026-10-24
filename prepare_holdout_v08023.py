@@ -16,6 +16,10 @@ def prepare(source,train_store,output,min_records=5,write=False):
     output=Path(output)
     if source.resolve()==output.resolve():
         raise ValueError("INPUT_OUTPUT_OVERLAP")
+    if not source.is_file():
+        return {"status":"INPUT_NOT_FOUND","path":str(source),
+                "hint":"Create a human-curated holdout JSON with at least five UNSEEN_FACT records.",
+                "written":False}
     dataset=json.loads(source.read_text(encoding="utf-8"))
     rows=_read(train_store)["candidates"]
     training_ids=[r.get("id") for r in rows]
