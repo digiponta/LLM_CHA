@@ -3562,6 +3562,29 @@ def main() -> None:
                 print()
                 continue
             pending_wiki_topic_offer = None
+        # v0.8.0.20: external holdout evaluation; never create fake evidence.
+        if user_text == "/wiki-model-holdout":
+            from unapproved_holdout_v08020 import evaluate_holdout
+            source_file=PROJECT_ROOT / "data" / "unapproved_holdout_v08020.json"
+            checkpoints=sorted(
+                (PROJECT_ROOT / "results" / "unapproved_wiki_sleep_v08015").glob("unapproved-wiki-adapter-*.pt"),
+                key=lambda p:p.stat().st_mtime,reverse=True)
+            if not source_file.exists():
+                print("AI> 外部Holdoutデータがありません: data/unapproved_holdout_v08020.json")
+            elif not checkpoints:
+                print("AI> 未承認Adapterはありません。")
+            else:
+                try:
+                    report=evaluate_holdout(source_file,
+                        PROJECT_ROOT / "data" / "unapproved_llm_candidates_v074446.json",
+                        PROJECT_ROOT / "model" / "model-gpu-v1.6.2-online.pt",
+                        PROJECT_ROOT / "model" / "tokenizer-v0.7-bpe.json",checkpoints[0])
+                    print("AI> "+json.dumps(report,ensure_ascii=False))
+                    print("[route=UNAPPROVED_HOLDOUT_EVAL, semantic_independence_verified=False, train_ready=False]")
+                except Exception as exc:
+                    print("AI> Holdout評価に失敗しました: {}: {}".format(type(exc).__name__,exc))
+            print()
+            continue
         # v0.8.0.19: paraphrase/unknown diagnostics; no weights changed.
         if user_text == "/wiki-model-probe":
             from unapproved_adapter_probe_v08019 import probe
