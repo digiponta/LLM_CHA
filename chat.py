@@ -3519,7 +3519,8 @@ def main() -> None:
             print("[route=WIKI_TOPIC_APPROVAL, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]")
             print()
             continue
-        if user_text in ("/topic", "話題を提供して", "何か話題はある？", "話題を教えて"):
+        from wiki_topic_intent_v074444 import is_topic_request
+        if is_topic_request(user_text):
             from wiki_topic_memory_v074441 import suggest_topic
             result = suggest_topic()
             pending_wiki_topic_offer = result.get("id") if result["status"] == "FOUND" else None
