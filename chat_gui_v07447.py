@@ -201,6 +201,17 @@ def run(argv=None):
                     status.set(f"Model: {model_label} | Quality Gate: {quality_status} | {value['route']}")
             elif kind == "exit":
                 if pending_status["command"] is not None:
+                    with capture_mutex:
+                        partial_output = command_capture.buffer.strip()
+                        command_capture.active = False
+                    if partial_output:
+                        dialog=tk.Toplevel(root)
+                        dialog.title("LLM_CHA — 比較処理の終了ログ")
+                        dialog.geometry("800x480")
+                        logview=scrolledtext.ScrolledText(dialog,wrap="word",font=("Consolas",10))
+                        logview.pack(fill="both",expand=True,padx=8,pady=8)
+                        logview.insert("1.0",partial_output)
+                        logview.configure(state="disabled")
                     command = pending_status["command"]
                     pending_status["command"] = None
                     pending_status["started"] = None
