@@ -3768,6 +3768,30 @@ def main() -> None:
             continue
 
         raw_user_text = user_text
+        # v0.7.44.38: explicit equation request must not fall into free generation.
+        if (os.environ.get("LLM_CHA_ASPECT_EVIDENCE", "0") == "1"
+                and raw_user_text.strip().rstrip("。！？!? ") in ("数式の意味", "数式を説明", "数式について教えて")
+                and isinstance(cha_wiki_conversation.current, dict)):
+            wiki = cha_wiki_conversation.current
+            explanation = cha_wiki_equation_cursor.explain_once(wiki)
+            if explanation is None:
+                equations = cha_wiki_equation_cursor.next(wiki)
+                if equations is not None:
+                    explanation = {"answer": equations["answer"], "source": equations["source"],
+                                   "route": "EQUATION_EVIDENCE_ON_DEMAND"}
+            if explanation is None:
+                answer = "現在のWikipedia記事から、説明可能な数式の根拠を取得できない。"
+                source = wiki.get("url", "-")
+                route = "EQUATION_EVIDENCE_INSUFFICIENT"
+            else:
+                answer = explanation["answer"]
+                source = explanation["source"]
+                route = explanation.get("route", "EQUATION_SEMANTIC_EVIDENCE")
+            print("AI> " + answer)
+            print("[route={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(route, source))
+            last_ai_reply = None
+            print()
+            continue
         # v0.7.44.25: resolve explicitly selected aspect from current source.
         # No sentence is generated when the article lacks aspect evidence.
         if (os.environ.get("LLM_CHA_ASPECT_EVIDENCE","0") == "1"
