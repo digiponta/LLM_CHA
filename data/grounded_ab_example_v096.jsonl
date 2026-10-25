@@ -1,0 +1,2 @@
+{"question":"貴方はどう思う？","topic":"数学","evidence":["数学は、文学の分類。"],"baseline":"数学について。長門コーパスには「数学は、文学の分類。」という記述がある。これは未検証。","candidate":"数学は文学の分類という原文の考察がある。ただし未検証。","candidate_origin":"ILLUSTRATIVE_MANUAL_NOT_LLM"}
+{"question":"貴方はどう思う？","topic":"数学","evidence":["数学は、文学の分類。"],"baseline":"数学について。原文の記述は未検証。","candidate":"有希広","candidate_origin":"OBSERVED_BAD_OUTPUT_EXAMPLE"}
