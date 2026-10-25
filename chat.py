@@ -3666,6 +3666,15 @@ def main() -> None:
             print("[route=CLIPBOARD_CONTEXT_ANSWER, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]")
             print()
             continue
+        # v0.9.7.34: read-only comparison, no change to standard answer routing.
+        if user_text.startswith("/emotion-compare "):
+            utterance=user_text[len("/emotion-compare "):].strip()
+            from emotion_conditioned_generation_v09734 import compare
+            result=compare(utterance,model,tokenizer,generate_reply)
+            print("AI> " + json.dumps(result,ensure_ascii=False,indent=2))
+            print("[route=EMOTION_CONDITIONED_DIAGNOSTIC, train_ready=False]")
+            print()
+            continue
         # v0.9.7.33: opt-in deterministic emotion-aware fallback only.
         # Clipboard-grounded answers retain higher priority. Slash commands
         # are excluded; uncertain emotions fall through to normal runtime.
