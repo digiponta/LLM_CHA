@@ -3514,6 +3514,29 @@ def main() -> None:
                       "result":result},ensure_ascii=False,indent=2))
             print()
             continue
+        # v0.9.7.4: opt-in CDP tab listing and explicit ID-based reading.
+        if user_text in ("/browser-tabs",) or user_text.startswith("/read-browser "):
+            from chrome_tab_reader_v0974 import list_tabs, allowed_tab, read_tab
+            try:
+                chrome_tabs = list_tabs()
+                if user_text == "/browser-tabs":
+                    print(json.dumps([{"id":t["id"],"title":t["title"],
+                        "url":t["url"],"readable":allowed_tab(t)}
+                        for t in chrome_tabs],ensure_ascii=False,indent=2))
+                else:
+                    chosen_id = user_text[len("/read-browser "):].strip()
+                    matched = [t for t in chrome_tabs if t["id"] == chosen_id]
+                    if len(matched) != 1:
+                        print("AI> タブが見つかりません。/browser-tabs で確認してください。")
+                    else:
+                        page = read_tab(matched[0])
+                        print("AI> Chromeからページ本文を読み取りました。")
+                        print(json.dumps(page,ensure_ascii=False,indent=2))
+                print("[route=CHROME_BROWSER_READ_ONLY, train_ready=False]")
+            except Exception as exc:
+                print("AI> Chrome接続または読み取りに失敗: {}".format(exc))
+            print()
+            continue
         # v0.9.7.3: user-requested Google search opens the local browser.
         # No automated result scraping, Semantic Memory changes, or training.
         from google_browser_search_v0973 import search_intent, launch
