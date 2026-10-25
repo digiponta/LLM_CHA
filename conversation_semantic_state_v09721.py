@@ -49,7 +49,14 @@ class ConversationalSemanticState:
                     self.attributes[key]={"reported":True,"provenance":"USER_REPORTED"}
         # Conclusion may be accepted even after the product alias is cleared
         # from ClipboardDialogue; the semantic state is not externally promoted.
-        if before["awaiting_conclusion"] and q in CONCLUSIONS:
+        from daily_evaluation_intent_v09729 import classify_evaluation
+        explicit=classify_evaluation(q)
+        in_experience=bool(before["taste_turns"] or before["awaiting_conclusion"])
+        if explicit and in_experience and self.entity:
+            self.evaluation={"value":q,"emotion":explicit["label"],
+                             "provenance":"USER_REPORTED"}
+            self.status="CLOSED"
+        elif before["awaiting_conclusion"] and q in CONCLUSIONS:
             self.evaluation={"value":q,"provenance":"USER_REPORTED"}
             self.status="CLOSED"
         elif self.status=="ACTIVE" and not (dialogue.taste_turns or dialogue.awaiting_conclusion):
