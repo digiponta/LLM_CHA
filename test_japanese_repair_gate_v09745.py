@@ -16,6 +16,10 @@ class JapaneseRepairTests(unittest.TestCase):
     def test_ambiguous_abstains(self):
         r=repair_and_recheck("量子力学について教えて","あの")
         self.assertEqual(r.decision,"ABSTAIN")
+    def test_unknown_fluent_also_abstains(self):
+        r=repair_and_recheck("量子力学について教えて","量子力学では波動関数を使います。")
+        self.assertEqual(r.decision,"ABSTAIN")
+        self.assertEqual(r.first_gate,"ABSTAIN")
     def test_no_automatic_promotion(self):
         r=repair_and_recheck("楽しかったけど疲れた","疲れたんだね。良かったんでしたね。")
         self.assertFalse(r.train_ready or r.auto_promote or r.persisted)
