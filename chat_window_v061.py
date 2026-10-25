@@ -166,7 +166,7 @@ def run():
     parser = ConversationParser(clipboard_display.feed)
     status_parser = StatusParser(lambda value: events.put(("status", value)))
     root = tk.Tk()
-    root.title("LLM_CHA — Trusted / Experimental (v0.9.7.11)")
+    root.title("LLM_CHA — GUI / Semantic Diagnostics (v0.9.7.45)")
     root.geometry("960x700")
     root.minsize(460, 280)
 
@@ -193,6 +193,13 @@ def run():
              font=("Yu Gothic UI", 9), padx=6).pack(side="left")
     tk.Label(second_row, textvariable=status_vars["approval"], anchor="w",
              font=("Yu Gothic UI", 9), padx=6).pack(side="left")
+    from gui_semantic_preview_v09745 import semantic_preview, format_preview
+    semantic_enabled = tk.BooleanVar(value=True)
+    semantic_bar = tk.Frame(root, padx=12, pady=2)
+    semantic_bar.pack(fill="x")
+    tk.Checkbutton(semantic_bar, text="Semantic診断と修正候補を表示（chat.py応答は変更しない）",
+                   variable=semantic_enabled, anchor="w").pack(side="left")
+    last_user_input = None
     display = scrolledtext.ScrolledText(root, wrap="word", state="disabled",
                                         font=("Yu Gothic UI", 11), padx=14, pady=12)
     display.pack(fill="both", expand=True, padx=10, pady=(0, 10))
@@ -202,11 +209,14 @@ def run():
     display.tag_configure("source_raw", foreground="#845422", spacing1=5)
     display.tag_configure("source_wiki", foreground="#245ea8", spacing1=7)
     display.tag_configure("source_link", foreground="#245ea8", underline=True)
+    display.tag_configure("semantic_diagnostic", foreground="#855223", spacing1=4, spacing3=8)
 
     gui_images = []  # Keep Tk PhotoImage references alive.
 
     def insert(kind, message):
+        nonlocal last_user_input
         if kind == "user":
+            last_user_input = message if not message.startswith("/") else None
             output = "あなた: " + message + "\n"
         elif kind == "ai":
             output = "AI: " + message + "\n"
@@ -224,6 +234,17 @@ def run():
         insert_gui_message(display, output, selected, gui_images) if kind != "user" else display.insert("end", output, kind)
         display.configure(state="disabled")
         display.see("end")
+        if kind == "ai" and semantic_enabled.get() and last_user_input:
+            try:
+                preview = semantic_preview(last_user_input, message)
+                annotation = format_preview(preview)
+            except (ValueError, TypeError, KeyError) as exc:
+                annotation = "Semantic診断を適用できません: " + str(exc)
+            if annotation:
+                display.configure(state="normal")
+                display.insert("end", annotation + "\n", "semantic_diagnostic")
+                display.configure(state="disabled")
+                display.see("end")
 
     input_frame = tk.Frame(root, padx=10, pady=6)
     input_frame.pack(fill="x", side="bottom")
