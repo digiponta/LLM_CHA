@@ -3553,6 +3553,18 @@ def main() -> None:
                 print("AI> 検索に失敗: {}".format(exc))
             print()
             continue
+        if user_text.startswith("/semantic-adapter-audit"):
+            question=user_text[len("/semantic-adapter-audit"):].strip() or "その体験についてどう思う？"
+            try:
+                from semantic_context_adapter_v09727 import audit
+                report=audit(clipboard_context.semantic.snapshot(),model,tokenizer,
+                             generate_reply,question)
+                print("AI> " + json.dumps(report,ensure_ascii=False,indent=2))
+                print("[route=SEMANTIC_ADAPTER_ABLATION, train_ready=False, auto_selected=False]")
+            except Exception as exc:
+                print("AI> Semantic Adapter 診断に失敗: {}".format(exc))
+            print()
+            continue
         if user_text == "/semantic-context-isolation-audit":
             try:
                 from semantic_context_isolation_v09726 import audit
