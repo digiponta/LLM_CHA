@@ -3553,6 +3553,16 @@ def main() -> None:
                 print("AI> 検索に失敗: {}".format(exc))
             print()
             continue
+        if user_text == "/generation-capability-audit":
+            try:
+                from generation_capability_diagnostics_v09724 import run
+                report=run(model,tokenizer,generate_reply)
+                print("AI> " + json.dumps(report,ensure_ascii=False,indent=2))
+                print("[route=GENERATION_CAPABILITY_AUDIT, train_ready=False]")
+            except Exception as exc:
+                print("AI> 生成能力診断に失敗: {}".format(exc))
+            print()
+            continue
         if user_text.startswith("/conversation-prompt-compare "):
             question=user_text[len("/conversation-prompt-compare "):].strip()
             try:
