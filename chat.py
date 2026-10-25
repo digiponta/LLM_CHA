@@ -3514,6 +3514,19 @@ def main() -> None:
                       "result":result},ensure_ascii=False,indent=2))
             print()
             continue
+        # v0.9.7.3: user-requested Google search opens the local browser.
+        # No automated result scraping, Semantic Memory changes, or training.
+        from google_browser_search_v0973 import search_intent, launch
+        google_term = search_intent(user_text)
+        if google_term is not None:
+            google_result = launch(google_term)
+            print("AI> Googleで「{}」を検索します。{}".format(
+                google_term, "" if google_result["opened"] else
+                "ブラウザーを開けませんでした。URLから検索してください。"))
+            print("[route=WEB_SEARCH_BROWSER, query={}, url={}, browser_opened={}, train_ready=False]".format(
+                repr(google_term), google_result["url"], google_result["opened"]))
+            print()
+            continue
         # v0.8.0.11: user-controlled resolution of ambiguous Wikipedia hits.
         ambiguous_choice = pending_wiki_ambiguity.selection(user_text)
         if ambiguous_choice is not None:
