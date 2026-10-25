@@ -3995,6 +3995,21 @@ def main() -> None:
             print()
             continue
 
+        # v0.9.2: explicit topic suggestions are dialogue intents, not unknown facts.
+        # Corpus references are unverified prompts, never trusted QA evidence.
+        from topic_suggestion_v092 import suggest_from_file
+        topic_suggestion = suggest_from_file(
+            user_text, Path(__file__).resolve().parent / "data" / "data-nagato.txt"
+        )
+        if topic_suggestion is not None:
+            print("AI> " + topic_suggestion["answer"])
+            print("[route={}, source={}, verified=False]".format(
+                topic_suggestion["route"], topic_suggestion["source"]))
+            history.append((user_text, topic_suggestion["answer"]))
+            last_ai_reply = topic_suggestion["answer"]
+            print()
+            continue
+
         taught_reply = cha_teaching_review(cha_unknown_teacher, user_text)
         if taught_reply is not None:
             print(f"AI> {taught_reply['answer']}")
