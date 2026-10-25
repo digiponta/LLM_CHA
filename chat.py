@@ -3547,6 +3547,24 @@ def main() -> None:
                 print("AI> 検索に失敗: {}".format(exc))
             print()
             continue
+        # v0.9.7.14: opt-in real-checkpoint generation experiment.
+        if user_text.startswith("/clipboard-generate "):
+            question = user_text[len("/clipboard-generate "):].strip()
+            if not clipboard_context.text:
+                print("AI> 先に /read-clipboard を実行してください。")
+            elif not question:
+                print("AI> /clipboard-generate の後に質問を入力してください。")
+            else:
+                try:
+                    from clipboard_grounded_generation_v09714 import experiment
+                    outcome = experiment(question,clipboard_context.text,model,tokenizer,generate_reply)
+                    print("AI> " + (outcome.get("baseline") or "根拠が見つかりませんでした。"))
+                    print("[route=CLIPBOARD_LLM_GENERATION_DIAGNOSTIC, real_model=True, auto_selected=False, train_ready=False]")
+                    print(json.dumps(outcome,ensure_ascii=False,indent=2))
+                except Exception as exc:
+                    print("AI> 生成実験に失敗: {}".format(exc))
+            print()
+            continue
         # v0.9.7.6: answer supported follow-ups from user-copied page first.
         clipboard_answer = clipboard_context.answer(user_text)
         if clipboard_answer is not None:
