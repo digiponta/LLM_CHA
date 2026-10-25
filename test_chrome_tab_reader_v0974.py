@@ -24,6 +24,17 @@ class ChromeTabTests(unittest.TestCase):
         self.assertFalse(out["train_ready"])
         self.assertEqual(ws.sent["method"],"Runtime.evaluate")
         self.assertTrue(ws.closed)
+    def test_origin_suppressed(self):
+        tab={"url":"https://example.org/a",
+             "webSocketDebuggerUrl":"ws://127.0.0.1:9222/devtools/page/tab1"}
+        ws=FakeSocket({"url":tab["url"],"title":"Example","text":"Body"})
+        args={}
+        def make_socket(url,**kwargs):
+            args.update(kwargs)
+            return ws
+        read_tab(tab,websocket_factory=make_socket)
+        self.assertTrue(args["suppress_origin"])
+        self.assertNotIn("origin",args)
     def test_navigation_race_rejected(self):
         tab={"url":"https://example.org/a",
              "webSocketDebuggerUrl":"ws://127.0.0.1:9222/devtools/page/tab2"}
