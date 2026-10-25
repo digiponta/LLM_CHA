@@ -40,10 +40,10 @@ def generate(model,tok,prompt,seed):
     return {"text":r.text,"mean_confidence":r.mean_confidence,
             "min_confidence":r.min_confidence,"tokens":r.token_count}
 def build_cases():
-    cases=[{"id":r["id"],"source":"holdout","input":r["input"],
+    cases=[{"id":f"holdout-{i:03d}-{r['id']}", "source_id":r["id"],"source":"holdout","input":r["input"],
             "emotion":r["semantic"]["emotion"],
             "strategy":r["semantic"]["response_strategy"],
-            "reference":r["target"]} for r in build()["holdout"]]
+            "reference":r["target"]} for i,r in enumerate(build()["holdout"],start=1)]
     cases.extend({"id":ident,"source":"challenge","input":q,
                   "emotion":e,"strategy":strategy,"reference":None}
                  for ident,q,e,strategy in CHALLENGE)
