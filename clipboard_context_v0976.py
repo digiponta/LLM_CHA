@@ -12,6 +12,10 @@ class ClipboardContext:
         q=str(utterance or "").strip().rstrip("。？！? ")
         if not self.text:
             return None
+        from clipboard_generic_evidence_v09711 import answer as generic_evidence
+        generic = generic_evidence(q,self.text)
+        if generic is not None:
+            return generic["answer"]
         from clipboard_grounded_qa_v0977 import answer_from_clipboard
         grounded = answer_from_clipboard(self.text,q)
         if grounded is not None:
