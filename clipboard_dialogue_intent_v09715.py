@@ -33,6 +33,24 @@ class ClipboardDialogue:
         if not text:
             self.reset()
             return None
+        from clipboard_product_resolution_v09720 import classify
+        resolved=classify(text,q)
+        if resolved and resolved["status"]=="AMBIGUOUS":
+            self.awaiting_category=False
+            self.experience_product=None
+            self.taste_turns=0
+            self.awaiting_conclusion=False
+            return "どちらの商品について？ " + "、".join(resolved["products"][:3])
+        if resolved and resolved["status"]=="EXACT":
+            product=resolved["product"]
+            self.awaiting_category=False
+            self.awaiting_conclusion=False
+            self.experience_product=product
+            self.taste_turns=2
+            if resolved["intent"]=="EXPERIENCE":
+                return "そう、{}を飲んだのね。どんな味だった？".format(product)
+            if resolved["intent"]=="TASTE":
+                return "そう、{}についての味の感想なのね。ほかに印象に残ったところはある？".format(product)
         experiential=product_experience(q,text)
         if experiential is not None:
             self.awaiting_category=False
