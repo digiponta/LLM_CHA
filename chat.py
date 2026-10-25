@@ -4290,9 +4290,15 @@ def main() -> None:
                 grounded=cha_wiki_grounded_reply, cache=cha_persona_wiki_cache)
             if new_topic_wiki.get("status") == "FOUND":
                 cha_wiki_conversation.offer(new_topic_wiki["wiki_context"])
-                print("AI> " + new_topic_wiki["answer"])
-                print("[route=EXPLICIT_TOPIC_INDEPENDENT_WIKIPEDIA, requested={}, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]".format(
-                    new_topic, new_topic_wiki["source"]))
+                # v0.9.4.1: preserve matching Nagato corpus statements as
+                # unverified source text alongside independent Wikipedia facts.
+                from explicit_topic_corpus_v0941 import augment_from_file
+                corpus_combined = augment_from_file(
+                    new_topic, new_topic_wiki["answer"],
+                    Path(__file__).resolve().parent / "data" / "data-nagato.txt")
+                print("AI> " + corpus_combined["answer"])
+                print("[route={}, requested={}, source={}, truth_state=EXTERNAL_UNVERIFIED, corpus_truth=UNVERIFIED, train_ready=False, auto_promote=False]".format(
+                    corpus_combined["route"], new_topic, new_topic_wiki["source"]))
                 last_ai_reply = None
                 cha_wiki_last_generated = None
                 print()
