@@ -3502,8 +3502,10 @@ def main() -> None:
                 print(json.dumps({"route":"MEMORY_SUBTOPIC_DIAGNOSTIC",
                       "evidence":evidence,"train_ready":False}, ensure_ascii=False,indent=2))
             else:
-                baseline = contextual_response.respond("貴方はどう思う？")
-                baseline_text = baseline["answer"] if baseline else "どの記憶の話題について検討したい？"
+                baseline = (contextual_response.respond("貴方はどう思う？")
+                            if contextual_response.topic == "メモリ" else None)
+                baseline_text = (baseline["answer"] if baseline else
+                                 "メモリについて、どの点を検討したい？")
                 result = evaluate_memory_opinion("メモリ",evidence,baseline_text)
                 print(json.dumps({"route":"MEMORY_OPINION_AB_EXPERIMENT",
                       "result":result},ensure_ascii=False,indent=2))
