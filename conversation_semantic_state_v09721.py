@@ -50,7 +50,7 @@ class ConversationalSemanticState:
         # Conclusion may be accepted even after the product alias is cleared
         # from ClipboardDialogue; the semantic state is not externally promoted.
         from daily_evaluation_intent_v09729 import classify_evaluation
-        explicit=classify_evaluation(q)
+        explicit=classify_evaluation(utterance)
         in_experience=bool(before["taste_turns"] or before["awaiting_conclusion"])
         if explicit and in_experience and self.entity:
             self.evaluation={"value":q,"emotion":explicit["label"],
