@@ -20,8 +20,12 @@ def product_experience(question, text):
 class ClipboardDialogue:
     def __init__(self):
         self.awaiting_category=False
+        self.experience_product=None
+        self.taste_turns=0
     def reset(self):
         self.awaiting_category=False
+        self.experience_product=None
+        self.taste_turns=0
     def respond(self, question, text):
         q=str(question or "").strip().rstrip("。？！? ")
         if not text:
@@ -30,7 +34,25 @@ class ClipboardDialogue:
         experiential=product_experience(q,text)
         if experiential is not None:
             self.awaiting_category=False
+            products=sum(section_items(text).values(),[])
+            named=sorted((x for x in products if x in q),key=len,reverse=True)
+            self.experience_product=named[0] if named else None
+            self.taste_turns=2
             return experiential
+        # A short-lived, explicit taste dialogue. Never capture unrelated queries.
+        if self.taste_turns and self.experience_product:
+            taste_terms=("酸味","甘さ","甘かった","酸っぱ","苦味","苦かっ",
+                         "美味し","おいし","チョコレート","味","飲みやす")
+            question_terms=("ですか","ますか","教えて","何","種類","一覧","検索","ググって","ぐぐって")
+            if any(x in q for x in taste_terms) and not any(x in q for x in question_terms):
+                self.taste_turns-=1
+                if "酸味" in q and "甘さ" in q:
+                    return "酸味と甘さのバランスが良かったのね。飲みやすかった？"
+                if "チョコレート" in q and "甘" in q:
+                    return "黒耳の部分はチョコレートで甘かったのね。印象に残ったんだ。"
+                return "そう、味についての感想を聞けてよかった。ほかに印象に残ったところはある？"
+            self.experience_product=None
+            self.taste_turns=0
         categories={"ドリンク":"ドリンクの種類は","飲み物":"ドリンクの種類は",
                     "ビバレッジ":"ドリンクの種類は","フード":"フードには何がある？",
                     "食べ物":"フードには何がある？","フラペチーノ":"フラペチーノの種類は"}
