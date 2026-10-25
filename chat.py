@@ -3553,6 +3553,16 @@ def main() -> None:
                 print("AI> 検索に失敗: {}".format(exc))
             print()
             continue
+        if user_text == "/context-robustness-audit":
+            try:
+                from context_robustness_diagnostics_v09725 import run
+                report=run(model,tokenizer,generate_reply)
+                print("AI> " + json.dumps(report,ensure_ascii=False,indent=2))
+                print("[route=CONTEXT_ROBUSTNESS_AUDIT, train_ready=False, auto_selected=False]")
+            except Exception as exc:
+                print("AI> 文脈耐性診断に失敗: {}".format(exc))
+            print()
+            continue
         if user_text == "/generation-capability-audit":
             try:
                 from generation_capability_diagnostics_v09724 import run
