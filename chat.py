@@ -3529,6 +3529,24 @@ def main() -> None:
                 print("AI> クリップボードを読み取れません: {}".format(exc))
             print()
             continue
+        # v0.9.7.8: explicit lexical evidence retrieval diagnostics.
+        if user_text.startswith("/clipboard-retrieve ") or user_text.startswith("/clipboard-compare "):
+            from clipboard_evidence_retrieval_v0978 import retrieve, compare
+            try:
+                question = user_text.split(" ",1)[1].strip()
+                if not clipboard_context.text:
+                    print("AI> 先に /read-clipboard を実行してください。")
+                else:
+                    data = (compare(question,clipboard_context.text)
+                            if user_text.startswith("/clipboard-compare ")
+                            else {"query":question,"evidence":retrieve(question,clipboard_context.text),
+                                  "train_ready":False})
+                    print(json.dumps(data,ensure_ascii=False,indent=2))
+                    print("[route=CLIPBOARD_EVIDENCE_RETRIEVAL, train_ready=False]")
+            except Exception as exc:
+                print("AI> 検索に失敗: {}".format(exc))
+            print()
+            continue
         # v0.9.7.6: answer supported follow-ups from user-copied page first.
         clipboard_answer = clipboard_context.answer(user_text)
         if clipboard_answer is not None:
