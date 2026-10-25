@@ -3553,6 +3553,16 @@ def main() -> None:
                 print("AI> 検索に失敗: {}".format(exc))
             print()
             continue
+        if user_text == "/semantic-context-isolation-audit":
+            try:
+                from semantic_context_isolation_v09726 import audit
+                report=audit(model,tokenizer,generate_reply)
+                print("AI> " + json.dumps(report,ensure_ascii=False,indent=2))
+                print("[route=SEMANTIC_CONTEXT_ISOLATION_AUDIT, train_ready=False, auto_selected=False]")
+            except Exception as exc:
+                print("AI> Semantic Context 分離診断に失敗: {}".format(exc))
+            print()
+            continue
         if user_text == "/context-robustness-audit":
             try:
                 from context_robustness_diagnostics_v09725 import run
