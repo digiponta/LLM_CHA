@@ -3559,6 +3559,7 @@ def main() -> None:
                 "route":"CLIPBOARD_DIALOGUE_STATUS",
                 "awaiting_category":state.awaiting_category,
                 "awaiting_taste":bool(state.taste_turns and state.experience_product),
+                "awaiting_conclusion":state.awaiting_conclusion,
                 "remaining_taste_turns":state.taste_turns,
                 "product_context_present":bool(state.experience_product),
                 "clipboard_loaded":bool(clipboard_context.text),
