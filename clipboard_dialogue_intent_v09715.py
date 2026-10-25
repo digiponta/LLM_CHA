@@ -63,7 +63,7 @@ class ClipboardDialogue:
         # v0.9.7.29: accept an explicit evaluation at any point during
         # a current product experience, without requiring two taste turns.
         from daily_evaluation_intent_v09729 import classify_evaluation
-        evaluation=classify_evaluation(q)
+        evaluation=classify_evaluation(question)
         if evaluation and (self.experience_product or self.awaiting_conclusion):
             self.experience_product=None
             self.taste_turns=0
