@@ -3491,6 +3491,9 @@ def main() -> None:
     contextual_response = ContextualResponse()
     from clipboard_context_v0976 import ClipboardContext
     clipboard_context = ClipboardContext()
+    from emotion_aware_dialogue_v09733 import EmotionDialogue
+    emotion_dialogue = EmotionDialogue()
+    emotion_enabled = False
     while True:
         try:
             user_text = input("You> ").strip()
@@ -3663,6 +3666,33 @@ def main() -> None:
             print("[route=CLIPBOARD_CONTEXT_ANSWER, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]")
             print()
             continue
+        # v0.9.7.33: opt-in deterministic emotion-aware fallback only.
+        # Clipboard-grounded answers retain higher priority. Slash commands
+        # are excluded; uncertain emotions fall through to normal runtime.
+        if user_text in ("/emotion-on", "/emotion-off", "/emotion-status"):
+            if user_text == "/emotion-on":
+                emotion_enabled = True
+                emotion_dialogue.reset()
+                print("AI> Emotion-aware dialogue: ON (experimental).")
+            elif user_text == "/emotion-off":
+                emotion_enabled = False
+                emotion_dialogue.reset()
+                print("AI> Emotion-aware dialogue: OFF.")
+            else:
+                print("AI> " + json.dumps({
+                    "enabled": emotion_enabled,
+                    "state": emotion_dialogue.snapshot()
+                }, ensure_ascii=False))
+            print("[route=EMOTION_CONTROL, train_ready=False]")
+            print()
+            continue
+        if emotion_enabled and not user_text.startswith("/"):
+            emotion_answer = emotion_dialogue.respond(user_text)
+            if emotion_answer is not None:
+                print("AI> " + emotion_answer)
+                print("[route=EMOTION_AWARE_STRATEGY, train_ready=False, auto_promote=False]")
+                print()
+                continue
         # v0.9.7.4: opt-in CDP tab listing and explicit ID-based reading.
         if user_text in ("/browser-tabs",) or user_text.startswith("/read-browser "):
             from chrome_tab_reader_v0974 import list_tabs, allowed_tab, read_tab
