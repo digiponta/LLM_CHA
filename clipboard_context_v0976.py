@@ -12,6 +12,10 @@ class ClipboardContext:
         q=str(utterance or "").strip().rstrip("。？！? ")
         if not self.text:
             return None
+        from clipboard_grounded_qa_v0977 import answer_from_clipboard
+        grounded = answer_from_clipboard(self.text,q)
+        if grounded is not None:
+            return grounded["answer"]
         if q in ("メニューは","メニューを教えて","メニューについて教えて"):
             lines=[line.strip() for line in self.text.splitlines()]
             categories=("ビバレッジ","フード","コーヒー豆","ティー・紅茶","タンブラー＆マグカップ")
