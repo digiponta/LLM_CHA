@@ -3480,6 +3480,7 @@ def main() -> None:
             restore_info["status"],restore_info["checked"],
             restore_info.get("candidate_count",0),
             restore_info.get("checkpoint","-")))
+    topic_suggestion_options = []  # v0.9.3 transient dialogue state
     while True:
         try:
             user_text = input("You> ").strip()
@@ -3995,6 +3996,20 @@ def main() -> None:
             print()
             continue
 
+        # v0.9.3: resolve proposed-topic references before Wikipedia subject routing.
+        from topic_suggestion_followup_v093 import explain_from_file, options_for_suggestion
+        topic_followup = explain_from_file(
+            user_text, topic_suggestion_options,
+            Path(__file__).resolve().parent / "data" / "data-nagato.txt"
+        )
+        if topic_followup is not None:
+            print("AI> " + topic_followup["answer"])
+            print("[route={}, verified=False]".format(topic_followup["route"]))
+            history.append((user_text, topic_followup["answer"]))
+            last_ai_reply = topic_followup["answer"]
+            print()
+            continue
+
         # v0.9.2: explicit topic suggestions are dialogue intents, not unknown facts.
         # Corpus references are unverified prompts, never trusted QA evidence.
         from topic_suggestion_v092 import suggest_from_file
@@ -4002,6 +4017,7 @@ def main() -> None:
             user_text, Path(__file__).resolve().parent / "data" / "data-nagato.txt"
         )
         if topic_suggestion is not None:
+            topic_suggestion_options = options_for_suggestion(topic_suggestion)
             print("AI> " + topic_suggestion["answer"])
             print("[route={}, source={}, verified=False]".format(
                 topic_suggestion["route"], topic_suggestion["source"]))
