@@ -4,6 +4,7 @@ This adds *context*, not an approved factual definition. No auto-promote.
 """
 import re
 from pathlib import Path
+from corpus_role_classifier_v0942 import rank_mentions
 
 def corpus_mentions(topic, corpus, max_items=2):
     topic=str(topic or "").strip()
@@ -16,13 +17,14 @@ def corpus_mentions(topic, corpus, max_items=2):
     return hits[:max_items]
 
 def augment_explicit_answer(topic, existing_answer, corpus):
-    hits=corpus_mentions(topic,corpus)
+    classified=rank_mentions(topic,corpus)
+    hits=[item["text"] for item in classified]
     if not hits:
         return {"route":"EXPLICIT_TOPIC_WIKIPEDIA_ONLY","answer":existing_answer,"evidence":[]}
-    notes=" / ".join(hits)
+    notes=" / ".join("["+item["role"]+"] "+item["text"] for item in classified)
     return {"route":"EXPLICIT_TOPIC_CORPUS_WIKIPEDIA",
             "answer":f"【長門コーパスの関連記述・未検証】{notes}\n【Wikipediaによる説明・外部情報・未検証】{existing_answer}",
-            "evidence":hits, "truth_state":"UNVERIFIED",
+            "evidence":hits, "evidence_roles":classified, "truth_state":"UNVERIFIED",
             "auto_promote":False,"train_ready":False}
 
 def augment_from_file(topic,existing_answer,path="data/data-nagato.txt"):
