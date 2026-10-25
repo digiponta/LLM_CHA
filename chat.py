@@ -2856,6 +2856,12 @@ def evaluate_unknown_gate(
 
     # v1.6.7 semantic rescue is deliberately conservative: it is enabled only
     # after the primary answer has passed semantic/slot validation.
+    # v0.9.7.17: catastrophic probe disagreement must never be rescued by
+    # semantic similarity alone (observed lexical=0.017, semantic=0.854).
+    if allow_semantic_rescue and lexical_agreement < 0.05:
+        return (False, primary.mean_confidence, lexical_agreement,
+                semantic_agreement, "extreme lexical probe disagreement")
+
     if allow_semantic_rescue and semantic_agreement >= min_semantic_agreement:
         return (
             True,
@@ -3545,6 +3551,18 @@ def main() -> None:
                     print("[route=CLIPBOARD_EVIDENCE_RETRIEVAL, train_ready=False]")
             except Exception as exc:
                 print("AI> 検索に失敗: {}".format(exc))
+            print()
+            continue
+        if user_text == "/clipboard-dialogue-status":
+            state=clipboard_context.dialogue
+            print("AI> " + json.dumps({
+                "route":"CLIPBOARD_DIALOGUE_STATUS",
+                "awaiting_category":state.awaiting_category,
+                "awaiting_taste":bool(state.taste_turns and state.experience_product),
+                "remaining_taste_turns":state.taste_turns,
+                "product_context_present":bool(state.experience_product),
+                "clipboard_loaded":bool(clipboard_context.text),
+                "train_ready":False},ensure_ascii=False))
             print()
             continue
         # v0.9.7.14: opt-in real-checkpoint generation experiment.
