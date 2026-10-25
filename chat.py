@@ -3481,6 +3481,8 @@ def main() -> None:
             restore_info.get("candidate_count",0),
             restore_info.get("checkpoint","-")))
     topic_suggestion_options = []  # v0.9.3 transient dialogue state
+    from context_aware_response_v095 import ContextualResponse
+    contextual_response = ContextualResponse()
     while True:
         try:
             user_text = input("You> ").strip()
@@ -3996,6 +3998,18 @@ def main() -> None:
             print()
             continue
 
+        # v0.9.5: explicit opinion follow-ups use the last topical evidence,
+        # not an isolated model token probe.
+        opinion_reply = contextual_response.respond(user_text)
+        if opinion_reply is not None:
+            print("AI> " + opinion_reply["answer"])
+            print("[route={}, topic={}, verified=False, train_ready=False]".format(
+                opinion_reply["route"], opinion_reply.get("topic", "-")))
+            history.append((user_text, opinion_reply["answer"]))
+            last_ai_reply = opinion_reply["answer"]
+            print()
+            continue
+
         # v0.9.3: resolve proposed-topic references before Wikipedia subject routing.
         from topic_suggestion_followup_v093 import explain_from_file, options_for_suggestion
         topic_followup = explain_from_file(
@@ -4003,6 +4017,8 @@ def main() -> None:
             Path(__file__).resolve().parent / "data" / "data-nagato.txt"
         )
         if topic_followup is not None:
+            if topic_followup.get("topic"):
+                contextual_response.set_topic(topic_followup["topic"], "NAGATO_CORPUS", [])
             print("AI> " + topic_followup["answer"])
             print("[route={}, verified=False]".format(topic_followup["route"]))
             history.append((user_text, topic_followup["answer"]))
@@ -4017,6 +4033,8 @@ def main() -> None:
             user_text, Path(__file__).resolve().parent / "data" / "data-nagato.txt"
         )
         if topic_suggestion is not None:
+            if topic_suggestion.get("topic"):
+                contextual_response.set_topic(topic_suggestion["topic"], "NAGATO_CORPUS", [])
             topic_suggestion_options = options_for_suggestion(topic_suggestion)
             print("AI> " + topic_suggestion["answer"])
             print("[route={}, source={}, verified=False]".format(
@@ -4297,6 +4315,9 @@ def main() -> None:
                     new_topic, new_topic_wiki["answer"],
                     Path(__file__).resolve().parent / "data" / "data-nagato.txt",
                     question=raw_user_text)
+                contextual_response.set_topic(new_topic,
+                    "NAGATO_CORPUS" if corpus_combined.get("evidence") else "WIKIPEDIA",
+                    corpus_combined.get("evidence", []))
                 print("AI> " + corpus_combined["answer"])
                 print("[route={}, requested={}, source={}, truth_state=EXTERNAL_UNVERIFIED, corpus_truth=UNVERIFIED, train_ready=False, auto_promote=False]".format(
                     corpus_combined["route"], new_topic, new_topic_wiki["source"]))
