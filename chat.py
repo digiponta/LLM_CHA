@@ -3514,6 +3514,18 @@ def main() -> None:
                       "result":result},ensure_ascii=False,indent=2))
             print()
             continue
+        # v0.9.7.5: explicitly imported, manually copied clipboard text.
+        if user_text == "/read-clipboard":
+            from clipboard_browser_reader_v0975 import read_clipboard
+            try:
+                copied = read_clipboard()
+                print("AI> クリップボードのテキストを読み取りました。")
+                print(json.dumps(copied,ensure_ascii=False,indent=2))
+                print("[route=CLIPBOARD_CONTEXT_READ, train_ready=False]")
+            except Exception as exc:
+                print("AI> クリップボードを読み取れません: {}".format(exc))
+            print()
+            continue
         # v0.9.7.4: opt-in CDP tab listing and explicit ID-based reading.
         if user_text in ("/browser-tabs",) or user_text.startswith("/read-browser "):
             from chrome_tab_reader_v0974 import list_tabs, allowed_tab, read_tab
