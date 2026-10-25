@@ -4,14 +4,21 @@ import re
 class ClipboardContext:
     def __init__(self):
         self.text=""
+        from clipboard_dialogue_intent_v09715 import ClipboardDialogue
+        self.dialogue=ClipboardDialogue()
     def set(self,text):
         self.text=str(text or "")[:12000]
+        self.dialogue.reset()
     def clear(self):
         self.text=""
+        self.dialogue.reset()
     def answer(self,utterance):
         q=str(utterance or "").strip().rstrip("。？！? ")
         if not self.text:
             return None
+        dialogue_answer=self.dialogue.respond(q,self.text)
+        if dialogue_answer is not None:
+            return dialogue_answer
         from clipboard_generic_evidence_v09711 import answer as generic_evidence
         generic = generic_evidence(q,self.text)
         if generic is not None:
