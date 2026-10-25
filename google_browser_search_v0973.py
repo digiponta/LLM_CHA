@@ -11,7 +11,7 @@ SEARCH_BASE="https://www.google.co.jp/search"
 
 def search_intent(text):
     text=str(text or "").strip().rstrip("。！？!? ")
-    patterns=(r"(.+?)をググって",r"(.+?)でググって",r"(.+?)をGoogleで検索して",
+    patterns=(r"(.+?)を[グぐ][グぐ]って",r"(.+?)で[グぐ][グぐ]って",r"(.+?)をGoogleで検索して",
               r"(.+?)を検索して")
     for pattern in patterns:
         m=re.fullmatch(pattern,text,re.IGNORECASE)
