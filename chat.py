@@ -3553,6 +3553,12 @@ def main() -> None:
                 print("AI> 検索に失敗: {}".format(exc))
             print()
             continue
+        if user_text == "/conversation-semantic-status":
+            print("AI> " + json.dumps(clipboard_context.semantic.snapshot(),
+                                     ensure_ascii=False))
+            print("[route=CONVERSATIONAL_SEMANTIC_STATUS, train_ready=False, persisted=False]")
+            print()
+            continue
         if user_text == "/clipboard-dialogue-status":
             state=clipboard_context.dialogue
             print("AI> " + json.dumps({
