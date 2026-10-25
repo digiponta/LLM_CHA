@@ -7138,6 +7138,14 @@ def main() -> None:
                 accepted = False
                 cha_quality_guard_status = "UNAPPROVED_SEMANTIC_FALLBACK"
                 print("[unapproved_semantic_fallback=FOUND, source={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]".format(semantic_recovery["source"]))
+        # v0.9.4: reject an obviously malformed opinion response even if
+        # the confidence gate previously considered its tokens known.
+        from response_quality_v094 import generation_quality
+        generation_check = generation_quality(raw_user_text, reply)
+        if not generation_check["accepted"]:
+            reply = generation_check["fallback"]
+            accepted = False
+            cha_quality_guard_status = generation_check["reason"]
         cha_wiki_last_generated = reply
         print(f"AI> {reply}")
         if cha_quality_guard_status is not None:
