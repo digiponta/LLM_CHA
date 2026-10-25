@@ -11,7 +11,7 @@ class QualityGateTests(unittest.TestCase):
     def test_followup_selects_complete_evidence(self):
         result=explain_followup("2番目の話題を教えて",
                 ["粒子と波動","エネルギー準位"],
-                "エネルギーが、そう。\n外力により１つのエネルギ順位が分裂する。")
+                "エネルギーが、そう。\n量子力学で表現可能な系では外力により１つのエネルギ順位が分裂する。")
         self.assertEqual(result["route"],"TOPIC_FOLLOWUP_CORPUS")
         self.assertNotIn("エネルギーが、そう。",result["answer"])
     def test_malformed_opinion_rejected(self):
