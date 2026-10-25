@@ -64,7 +64,7 @@ class ClipboardDialogue:
         # a current product experience, without requiring two taste turns.
         from daily_evaluation_intent_v09729 import classify_evaluation
         evaluation=classify_evaluation(question)
-        if evaluation and (self.experience_product or self.awaiting_conclusion):
+        if evaluation and self.experience_product:
             self.experience_product=None
             self.taste_turns=0
             self.awaiting_conclusion=False
