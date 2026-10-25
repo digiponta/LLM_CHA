@@ -21,8 +21,8 @@ class ClipboardContext:
             return None
         before={"taste_turns":self.dialogue.taste_turns,
                 "awaiting_conclusion":self.dialogue.awaiting_conclusion}
-        dialogue_answer=self.dialogue.respond(q,self.text)
-        self.semantic.observe(q,self.text,self.dialogue,before)
+        dialogue_answer=self.dialogue.respond(utterance,self.text)
+        self.semantic.observe(utterance,self.text,self.dialogue,before)
         if dialogue_answer is not None:
             return dialogue_answer
         from clipboard_generic_evidence_v09711 import answer as generic_evidence
