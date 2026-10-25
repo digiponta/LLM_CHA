@@ -3536,7 +3536,15 @@ def main() -> None:
                     from explicit_topic_corpus_v0941 import corpus_mentions
                     corpus_path = Path(__file__).resolve().parent / "data" / "data-nagato.txt"
                     corpus_text = corpus_path.read_text(encoding="utf-8-sig") if corpus_path.is_file() else ""
-                    selected_topic_evidence = corpus_mentions(requested_topic, corpus_text, max_items=2)
+                    if requested_topic == "メモリ":
+                        from context_memory_ranking_v0964 import ranked_from_corpus
+                        selected_topic_evidence = [
+                            item["text"] for item in ranked_from_corpus(
+                                requested_topic, corpus_text, selected_article=chosen,
+                                max_items=2)]
+                    else:
+                        selected_topic_evidence = corpus_mentions(
+                            requested_topic, corpus_text, max_items=2)
                     contextual_response.set_topic(
                         requested_topic,
                         "NAGATO_CORPUS" if selected_topic_evidence else "WIKIPEDIA_SELECTED",
