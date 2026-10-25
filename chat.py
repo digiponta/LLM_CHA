@@ -4295,7 +4295,8 @@ def main() -> None:
                 from explicit_topic_corpus_v0941 import augment_from_file
                 corpus_combined = augment_from_file(
                     new_topic, new_topic_wiki["answer"],
-                    Path(__file__).resolve().parent / "data" / "data-nagato.txt")
+                    Path(__file__).resolve().parent / "data" / "data-nagato.txt",
+                    question=raw_user_text)
                 print("AI> " + corpus_combined["answer"])
                 print("[route={}, requested={}, source={}, truth_state=EXTERNAL_UNVERIFIED, corpus_truth=UNVERIFIED, train_ready=False, auto_promote=False]".format(
                     corpus_combined["route"], new_topic, new_topic_wiki["source"]))
