@@ -59,9 +59,9 @@ def explain_followup(utterance,options,corpus_text):
     keywords=dict(THEMES).get(label,(label,))
     # Only show statements that actually exist in the local corpus.
     chunks=[x.strip() for x in re.split(r"(?<=[。！？!?])|\n",str(corpus_text or "")) if x.strip()]
-    evidence=[s for s in chunks if any(k in s for k in keywords)]
-    if evidence:
-        excerpt=evidence[0]
+    from response_quality_v094 import best_evidence
+    excerpt=best_evidence(chunks,label)
+    if excerpt:
         return {"route":"TOPIC_FOLLOWUP_CORPUS","topic":label,
                 "answer":f"{label}について。長門コーパスには「{excerpt}」という記述がある。これは原文中の考察であり、検証済みの説明ではない。",
                 "source":"data/data-nagato.txt","verified":False}
