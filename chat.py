@@ -3494,10 +3494,13 @@ def main() -> None:
             continue
         # v0.9.6.3: opt-in, read-only subtopic diagnostics for memory.
         if user_text in ("/cha-memory-subtopics", "/cha-memory-eval"):
-            from memory_subtopic_v0963 import retrieve_from_file
+            from context_memory_ranking_v0964 import ranked_from_file
             from memory_opinion_experiment_v0963 import evaluate_memory_opinion
-            evidence = retrieve_from_file(
-                "メモリ", Path(__file__).resolve().parent / "data" / "data-nagato.txt")
+            selected_article = (wiki_dual_context.summary().get("selected_article")
+                                if contextual_response.topic == "メモリ" else None)
+            evidence = ranked_from_file(
+                "メモリ", Path(__file__).resolve().parent / "data" / "data-nagato.txt",
+                selected_article=selected_article)
             if user_text == "/cha-memory-subtopics":
                 print(json.dumps({"route":"MEMORY_SUBTOPIC_DIAGNOSTIC",
                       "evidence":evidence,"train_ready":False}, ensure_ascii=False,indent=2))
