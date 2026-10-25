@@ -15,7 +15,9 @@ class ClipboardContext:
         from clipboard_generic_evidence_v09711 import answer as generic_evidence
         generic = generic_evidence(q,self.text)
         if generic is not None:
-            return generic["answer"]
+            from clipboard_context_expansion_v09712 import answer as expanded_answer
+            expanded = expanded_answer(q,self.text)
+            return expanded if expanded is not None else generic["answer"]
         from clipboard_grounded_qa_v0977 import answer_from_clipboard
         grounded = answer_from_clipboard(self.text,q)
         if grounded is not None:
