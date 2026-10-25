@@ -44,6 +44,9 @@ def repair_and_recheck(utterance,generated):
             return RepairResult("REPAIRED","reviewed-exact-repair",original,candidate,
                                 candidate,first.decision,second.decision)
         candidate=None
+    if first.decision=="ABSTAIN":
+        return RepairResult("ABSTAIN","semantic-gate-abstained",original,"",original,
+                            first.decision,"NOT_RUN")
     if fluency=="FAIL" or first.decision=="FALLBACK":
         if first.decision=="ABSTAIN" or not first.fallback_response:
             return RepairResult("ABSTAIN","no-validated-fallback",original,"",original,
