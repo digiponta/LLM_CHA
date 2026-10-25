@@ -33,7 +33,7 @@ def route(question, corpus):
     definition=re.compile(r"^"+re.escape(topic)+r"(?:とは|は|というのは)[、\s]*(?:[^。]{2,})(?:である|です|を指す|のこと)(?:。|$)")
     direct=[h for h in hits if definition.search(h["text"])]
     is_definition=q.endswith(("とは","って何"))
-    if is_definition and not direct:
+    if is_definition and hits and not direct:
         return {"route":"CORPUS_THEN_EXTERNAL_DEFINITION",
                 "reason":"TOPIC_MENTIONED_BUT_NO_DIRECT_DEFINITION",
                 "topic":topic,"corpus_evidence":hits,
