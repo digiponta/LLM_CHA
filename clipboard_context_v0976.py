@@ -6,9 +6,12 @@ class ClipboardContext:
         self.text=""
         from clipboard_dialogue_intent_v09715 import ClipboardDialogue
         self.dialogue=ClipboardDialogue()
+        from conversation_semantic_state_v09721 import ConversationalSemanticState
+        self.semantic=ConversationalSemanticState()
     def set(self,text):
         self.text=str(text or "")[:12000]
         self.dialogue.reset()
+        self.semantic.reset()
     def clear(self):
         self.text=""
         self.dialogue.reset()
@@ -16,7 +19,10 @@ class ClipboardContext:
         q=str(utterance or "").strip().rstrip("。？！? ")
         if not self.text:
             return None
+        before={"taste_turns":self.dialogue.taste_turns,
+                "awaiting_conclusion":self.dialogue.awaiting_conclusion}
         dialogue_answer=self.dialogue.respond(q,self.text)
+        self.semantic.observe(q,self.text,self.dialogue,before)
         if dialogue_answer is not None:
             return dialogue_answer
         from clipboard_generic_evidence_v09711 import answer as generic_evidence
