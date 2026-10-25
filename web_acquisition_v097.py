@@ -56,14 +56,25 @@ def acquire(url,queue_file,fetcher=None):
         # robots.txt checked under same origin, using the same conservative rules
         parsed=urllib.parse.urlsplit(url)
         robots_url=f"{parsed.scheme}://{parsed.netloc}/robots.txt"
-        with opener.open(urllib.request.Request(robots_url,headers={"User-Agent":UA}),timeout=10) as response:
-            if response.status!=200:
-                raise ValueError("robots.txt could not be verified")
-            robots_body=response.read(100000).decode("utf-8","replace")
-        rules=urllib.robotparser.RobotFileParser()
-        rules.parse(robots_body.splitlines())
-        if not rules.can_fetch(UA,url):
-            raise ValueError("Robots policy disallows this request")
+        try:
+            with opener.open(urllib.request.Request(robots_url,headers={"User-Agent":UA}),timeout=10) as response:
+                if response.status != 200:
+                    raise ValueError("robots.txt returned an unexpected status")
+                robots_body=response.read(100000).decode("utf-8","replace")
+        except urllib.error.HTTPError as exc:
+            # RFC 9309 §2.3.1.3: 4xx robots.txt responses are unavailable,
+            # not evidence of disallow. Only handle 404 here deliberately.
+            if exc.code == 404:
+                robots_body = None
+            else:
+                raise ValueError(f"robots.txt HTTP {exc.code}; refusing acquisition") from exc
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            raise ValueError("robots.txt unavailable due to network error; refusing acquisition") from exc
+        if robots_body is not None:
+            rules=urllib.robotparser.RobotFileParser()
+            rules.parse(robots_body.splitlines())
+            if not rules.can_fetch(UA,url):
+                raise ValueError("Robots policy disallows this request")
         with opener.open(urllib.request.Request(url,headers={"User-Agent":UA,"Accept":"text/html"}),timeout=15) as response:
             if response.status!=200 or "text/html" not in response.headers.get("Content-Type","").lower():
                 raise ValueError("Only successful HTML responses are supported")
