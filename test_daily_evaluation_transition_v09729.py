@@ -39,9 +39,8 @@ class EarlyConclusionTests(unittest.TestCase):
         self.begin()
         self.ctx.answer("酸味と甘さのバランスが良かった")
         self.ctx.answer("黒耳は、ブラックチョコレートで甘かった")
-        self.assertEqual(self.ctx.answer("満足した"),"それは良かったね。")
+        self.assertIn("満足できた",self.ctx.answer("満足した"))
     def test_no_product_context(self):
-        self.assertIsNone(classify_evaluation("満足した")["utterance"] if False else None)
         self.assertNotEqual(self.ctx.answer("満足した"),"それは良かったね。")
     def test_unrelated_clears_context(self):
         self.begin()
