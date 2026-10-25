@@ -9,7 +9,9 @@ RESPONSES={
  "SADNESS":("それは悲しかったね。",("悲しかった","寂しかった","つらかった")),
 }
 def classify_evaluation(utterance):
-    q=str(utterance or "").strip().rstrip("。！？!? ")
+    raw=str(utterance or "").strip()
+    if raw.endswith(("？","?")):return None
+    q=raw.rstrip("。！! ")
     for label,(reply,phrases) in RESPONSES.items():
         if q in phrases:return {"label":label,"response":reply,"utterance":q}
     return None
