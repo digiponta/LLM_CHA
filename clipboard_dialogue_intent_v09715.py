@@ -60,6 +60,16 @@ class ClipboardDialogue:
             self.taste_turns=2
             self.awaiting_conclusion=False
             return experiential
+        # v0.9.7.29: accept an explicit evaluation at any point during
+        # a current product experience, without requiring two taste turns.
+        from daily_evaluation_intent_v09729 import classify_evaluation
+        evaluation=classify_evaluation(q)
+        if evaluation and (self.experience_product or self.awaiting_conclusion):
+            self.experience_product=None
+            self.taste_turns=0
+            self.awaiting_conclusion=False
+            self.awaiting_category=False
+            return evaluation["response"]
         # A short-lived, explicit taste dialogue. Never capture unrelated queries.
         if self.taste_turns and self.experience_product:
             taste_terms=("酸味","甘さ","甘かった","酸っぱ","苦味","苦かっ",
