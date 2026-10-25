@@ -3483,6 +3483,8 @@ def main() -> None:
     topic_suggestion_options = []  # v0.9.3 transient dialogue state
     from context_aware_response_v095 import ContextualResponse
     contextual_response = ContextualResponse()
+    from clipboard_context_v0976 import ClipboardContext
+    clipboard_context = ClipboardContext()
     while True:
         try:
             user_text = input("You> ").strip()
@@ -3519,11 +3521,19 @@ def main() -> None:
             from clipboard_browser_reader_v0975 import read_clipboard
             try:
                 copied = read_clipboard()
+                clipboard_context.set(copied["text"])
                 print("AI> クリップボードのテキストを読み取りました。")
                 print(json.dumps(copied,ensure_ascii=False,indent=2))
                 print("[route=CLIPBOARD_CONTEXT_READ, train_ready=False]")
             except Exception as exc:
                 print("AI> クリップボードを読み取れません: {}".format(exc))
+            print()
+            continue
+        # v0.9.7.6: answer supported follow-ups from user-copied page first.
+        clipboard_answer = clipboard_context.answer(user_text)
+        if clipboard_answer is not None:
+            print("AI> " + clipboard_answer)
+            print("[route=CLIPBOARD_CONTEXT_ANSWER, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]")
             print()
             continue
         # v0.9.7.4: opt-in CDP tab listing and explicit ID-based reading.
