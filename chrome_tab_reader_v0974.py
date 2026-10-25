@@ -47,7 +47,9 @@ def read_tab(tab, websocket_factory=None):
         except ImportError as exc:
             raise RuntimeError("Install websocket-client: python -m pip install websocket-client") from exc
         websocket_factory=websocket.create_connection
-    ws=websocket_factory(ws_url,timeout=5,origin=f"http://{HOST}:{PORT}")
+    # Do not synthesize an Origin matching the debugging endpoint.
+    # Current Chrome rejects such origins with HTTP 403.
+    ws=websocket_factory(ws_url,timeout=5,suppress_origin=True)
     try:
         request_id=1
         expr="""(() => ({
