@@ -161,7 +161,9 @@ def build_chat_command(argv=None, base_dir=None):
 def run():
     command, model_label = build_chat_command()
     events = queue.Queue()
-    parser = ConversationParser(lambda kind, value: events.put((kind, value)))
+    from gui_clipboard_display_v09710 import ClipboardDisplayFilter
+    clipboard_display = ClipboardDisplayFilter(lambda kind, value: events.put((kind, value)))
+    parser = ConversationParser(clipboard_display.feed)
     status_parser = StatusParser(lambda value: events.put(("status", value)))
     root = tk.Tk()
     root.title("LLM_CHA — Trusted / Experimental (v0.7.39)")
