@@ -3509,7 +3509,17 @@ def main() -> None:
                     cha_wiki_conversation.offer(selected_wiki["wiki_context"])
                     pending_wiki_ambiguity.clear()
                     wiki_dual_context.select(requested_topic,chosen)
-                    contextual_response.set_topic(requested_topic, "WIKIPEDIA_SELECTED", [])
+                    # Preserve the user's requested concept and retrieve unverified
+                    # corpus evidence independently of the selected article title.
+                    from explicit_topic_corpus_v0941 import corpus_mentions
+                    corpus_path = Path(__file__).resolve().parent / "data" / "data-nagato.txt"
+                    corpus_text = corpus_path.read_text(encoding="utf-8-sig") if corpus_path.is_file() else ""
+                    selected_topic_evidence = corpus_mentions(requested_topic, corpus_text, max_items=2)
+                    contextual_response.set_topic(
+                        requested_topic,
+                        "NAGATO_CORPUS" if selected_topic_evidence else "WIKIPEDIA_SELECTED",
+                        selected_topic_evidence)
+
                     print("AI> "+selection_notice(requested_topic,chosen)+selected_wiki["answer"])
                     print("[route=WIKIPEDIA_AMBIGUITY_USER_SELECTED, requested_topic={}, selected_article={}, relation={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]".format(
                         requested_topic,chosen,selection_relation(requested_topic,chosen)))
