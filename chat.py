@@ -3509,6 +3509,7 @@ def main() -> None:
                     cha_wiki_conversation.offer(selected_wiki["wiki_context"])
                     pending_wiki_ambiguity.clear()
                     wiki_dual_context.select(requested_topic,chosen)
+                    contextual_response.set_topic(requested_topic, "WIKIPEDIA_SELECTED", [])
                     print("AI> "+selection_notice(requested_topic,chosen)+selected_wiki["answer"])
                     print("[route=WIKIPEDIA_AMBIGUITY_USER_SELECTED, requested_topic={}, selected_article={}, relation={}, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]".format(
                         requested_topic,chosen,selection_relation(requested_topic,chosen)))
@@ -3995,6 +3996,16 @@ def main() -> None:
                 print(json.dumps(cha_unknown_teacher.lookup(concept), ensure_ascii=False, indent=2))
             except (OSError, ValueError, KeyError) as exc:
                 print(f"[unknown lookup error: {exc}]")
+            print()
+            continue
+
+        # v0.9.6.1: conversational state / boredom is not a knowledge question.
+        if user_text.strip().rstrip("。！？!? ") in ("暇だ", "暇です", "退屈だ", "退屈"):
+            casual_reply = "そう。何か話そう。量子力学、数学、それとも別の話題がいい？"
+            print("AI> " + casual_reply)
+            print("[route=CASUAL_BOREDOM, train_ready=False]")
+            history.append((user_text, casual_reply))
+            last_ai_reply = casual_reply
             print()
             continue
 
