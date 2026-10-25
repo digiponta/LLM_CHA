@@ -41,7 +41,7 @@ class ClipboardDialogue:
             self.taste_turns=0
             self.awaiting_conclusion=False
             return "どちらの商品について？ " + "、".join(resolved["products"][:3])
-        if resolved and resolved["status"]=="EXACT":
+        if resolved and resolved["status"]=="EXACT" and not (resolved["intent"]=="TASTE" and self.taste_turns and self.experience_product):
             product=resolved["product"]
             self.awaiting_category=False
             self.awaiting_conclusion=False
