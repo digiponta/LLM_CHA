@@ -3492,6 +3492,23 @@ def main() -> None:
 
         if not user_text:
             continue
+        # v0.9.6.3: opt-in, read-only subtopic diagnostics for memory.
+        if user_text in ("/cha-memory-subtopics", "/cha-memory-eval"):
+            from memory_subtopic_v0963 import retrieve_from_file
+            from memory_opinion_experiment_v0963 import evaluate_memory_opinion
+            evidence = retrieve_from_file(
+                "メモリ", Path(__file__).resolve().parent / "data" / "data-nagato.txt")
+            if user_text == "/cha-memory-subtopics":
+                print(json.dumps({"route":"MEMORY_SUBTOPIC_DIAGNOSTIC",
+                      "evidence":evidence,"train_ready":False}, ensure_ascii=False,indent=2))
+            else:
+                baseline = contextual_response.respond("貴方はどう思う？")
+                baseline_text = baseline["answer"] if baseline else "どの記憶の話題について検討したい？"
+                result = evaluate_memory_opinion("メモリ",evidence,baseline_text)
+                print(json.dumps({"route":"MEMORY_OPINION_AB_EXPERIMENT",
+                      "result":result},ensure_ascii=False,indent=2))
+            print()
+            continue
         # v0.8.0.11: user-controlled resolution of ambiguous Wikipedia hits.
         ambiguous_choice = pending_wiki_ambiguity.selection(user_text)
         if ambiguous_choice is not None:
