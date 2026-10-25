@@ -18,6 +18,14 @@ class CorpusAnswerPlanTests(unittest.TestCase):
         self.assertEqual(route("宇宙について",self.corpus)["route"],"CORPUS_CONTEXT_CANDIDATE")
     def test_empty_input(self):
         self.assertEqual(route("",self.corpus)["route"],"INVALID_INPUT")
+    def test_known_topic_without_definition_uses_corpus_then_external(self):
+        r=route("量子力学とは",self.corpus)
+        self.assertEqual(r["route"],"CORPUS_THEN_EXTERNAL_DEFINITION")
+        self.assertGreater(len(r["corpus_evidence"]),0)
+    def test_unknown_topic_has_no_corpus_evidence(self):
+        r=route("古生物学とは",self.corpus)
+        self.assertEqual(r["route"],"EXTERNAL_FALLBACK_CANDIDATE")
+        self.assertEqual(r["corpus_evidence"],[])
     def test_unverified_not_promoted(self):
         self.assertFalse(route("数学とは",self.corpus)["corpus_is_verified_fact"])
 if __name__=="__main__":
