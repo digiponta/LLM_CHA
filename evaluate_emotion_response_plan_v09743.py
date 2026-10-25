@@ -3,7 +3,8 @@ import argparse,json
 from pathlib import Path
 from emotion_response_plan_v09743 import plan
 from train_emotion_factorial_v09738 import prompt
-from evaluate_emotion_generation_v09736 import load,generate
+from evaluate_emotion_generation_v09736 import load
+from chat import generate_reply
 from contrast_priority_emotion_v09742 import detect_priority
 
 CASES=[
@@ -13,7 +14,7 @@ CASES=[
 "悲しくないし、不安ではない","悲しくない",
 "悲しいけれど、どうすればいい？","今日は楽しかった",
 ]
-def evaluate(cases,model,tok,runner=generate):
+def evaluate(cases,model,tok,runner=generate_reply):
     rows=[]
     for utterance in cases:
         s=detect_priority(utterance)
