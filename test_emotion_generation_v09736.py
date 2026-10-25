@@ -9,6 +9,7 @@ class GenerationEvaluationTests(unittest.TestCase):
         self.assertEqual(sum(r["source"]=="holdout" for r in cases),30)
         self.assertEqual(sum(r["source"]=="challenge" for r in cases),7)
         self.assertEqual(len({r["id"] for r in cases}),37)
+        self.assertTrue(all("source_id" in r for r in cases if r["source"]=="holdout"))
     def test_swaps(self):
         self.assertEqual(SWAP["POSITIVE"],"DISAPPOINTMENT")
         self.assertEqual(SWAP["NEGATED_SADNESS"],"SADNESS")
