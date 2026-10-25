@@ -44,7 +44,8 @@ def compare(utterance,model,tokenizer,generator,seed=42):
           "temperature":0.0,"top_k":3,"repetition_penalty":1.08,"seed":seed}
     baseline=generator(prompt="人: "+utterance+"\nAI: ",**args)
     conditioned=generator(prompt=make_prompt(utterance,decision),**args)
-    passed,reason=check_response(conditioned.text,decision)
+    from emotion_quality_gate_v09735 import assess
+    passed,reason=assess(conditioned.text,decision)
     # Conservative baseline: the experimental conditional result is NOT
     # automatically published even when heuristic checks pass.
     return {"status":"DIAGNOSTIC_ONLY","input":utterance,
