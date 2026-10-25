@@ -251,6 +251,12 @@ def run():
         send_to_chat("/sleep", show_user=False)
     tk.Button(input_frame, text="/sleep", command=trigger_sleep,
               font=("Yu Gothic UI", 10)).pack(side="left", padx=(6, 0))
+    def trigger_read_clipboard():
+        # Send exactly the same command as typing /read-clipboard in chat.py.
+        send_to_chat("/read-clipboard", show_user=False)
+    tk.Button(input_frame, text="クリップボード読込",
+              command=trigger_read_clipboard,
+              font=("Yu Gothic UI", 10)).pack(side="left", padx=(6, 0))
     prompt_entry.bind("<Return>", submit_entry)
 
     kwargs = dict(cwd=os.path.dirname(__file__), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
