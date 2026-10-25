@@ -3553,6 +3553,18 @@ def main() -> None:
                 print("AI> 検索に失敗: {}".format(exc))
             print()
             continue
+        if user_text.startswith("/conversation-semantic-compare "):
+            question=user_text[len("/conversation-semantic-compare "):].strip()
+            try:
+                from conversation_semantic_generation_v09722 import compare_prompts
+                report=compare_prompts(question,clipboard_context.semantic.snapshot(),
+                    clipboard_context.text,model,tokenizer,generate_reply)
+                print("AI> " + json.dumps(report,ensure_ascii=False,indent=2))
+                print("[route=CONVERSATIONAL_SEMANTIC_GENERATION_ABLATION, train_ready=False, auto_selected=False]")
+            except Exception as exc:
+                print("AI> 比較実験に失敗: {}".format(exc))
+            print()
+            continue
         if user_text == "/conversation-semantic-status":
             print("AI> " + json.dumps(clipboard_context.semantic.snapshot(),
                                      ensure_ascii=False))
