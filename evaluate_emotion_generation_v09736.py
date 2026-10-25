@@ -52,7 +52,7 @@ def evaluate(models,tok,cases,seed=42,runner=generate):
     results=[]
     for row in cases:
         q=row["input"]
-        plain="人: "+q+"\\nAI: "
+        plain="人: "+q+"\nAI: "
         emotion=row["emotion"]
         correct=semantic_prompt(q,emotion,row["strategy"])
         wrong=semantic_prompt(q,SWAP.get(emotion,"DISAPPOINTMENT"),row["strategy"])
