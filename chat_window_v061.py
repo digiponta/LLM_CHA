@@ -166,7 +166,7 @@ def run():
     parser = ConversationParser(clipboard_display.feed)
     status_parser = StatusParser(lambda value: events.put(("status", value)))
     root = tk.Tk()
-    root.title("LLM_CHA — Trusted / Experimental (v0.7.39)")
+    root.title("LLM_CHA — Trusted / Experimental (v0.9.7.11)")
     root.geometry("960x700")
     root.minsize(460, 280)
 
