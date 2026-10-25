@@ -46,6 +46,8 @@ class ClipboardDialogue:
             question_terms=("ですか","ますか","教えて","何","種類","一覧","検索","ググって","ぐぐって")
             if any(x in q for x in taste_terms) and not any(x in q for x in question_terms):
                 self.taste_turns-=1
+                if self.taste_turns==0:
+                    self.experience_product=None
                 if "酸味" in q and "甘さ" in q:
                     return "酸味と甘さのバランスが良かったのね。飲みやすかった？"
                 if "チョコレート" in q and "甘" in q:
