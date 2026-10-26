@@ -213,10 +213,10 @@ class ChatGUI:
         self.entry=ttk.Entry(bottom)
         self.entry.pack(side="left",fill="x",expand=True)
         self.entry.bind("<Return>",lambda _: self.send())
-        self.clipboard_btn=ttk.Button(bottom,text="クリップボード読込",command=self.read_clipboard)
-        self.clipboard_btn.pack(side="left",padx=5)
         self.send_btn=ttk.Button(bottom,text="送信",command=self.send)
         self.send_btn.pack(side="left",padx=5)
+        self.clipboard_btn=ttk.Button(bottom,text="クリップボード読込",command=self.read_clipboard)
+        self.clipboard_btn.pack(side="left",padx=5)
         self.decisions=ttk.Frame(root)
         self.decisions.pack(fill="x",padx=10,pady=(0,10))
         for choice in CHOICES:
