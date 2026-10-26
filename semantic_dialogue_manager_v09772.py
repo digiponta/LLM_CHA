@@ -3,6 +3,7 @@
 Keeps reported feelings separate from unverified external evidence. No persistence.
 """
 from dataclasses import dataclass
+from semantic_event_journal_v09774 import SemanticEventJournal
 from semantic_dialogue_transition_v09773 import parse_transition
 from preference_dialogue_v09768 import PreferenceDialogue
 from dialogue_agreement_v09771 import AgreementContext
@@ -20,6 +21,7 @@ class SemanticDialogueManager:
         self.preference = PreferenceDialogue()
         self.agreement = AgreementContext()
         self.last_frame = None
+        self.journal = SemanticEventJournal()
 
     def handle(self, utterance, topic=None):
         text = str(utterance or "").strip()
@@ -27,6 +29,10 @@ class SemanticDialogueManager:
             return None
         transition = parse_transition(text, topic, self.last_frame)
         if transition is not None:
+            previous_quality = (self.last_frame.quality if self.last_frame is not None else None)
+            self.journal.record(transition.intent, transition.topic,
+                                previous_quality=previous_quality,
+                                updated_quality=transition.quality)
             self.preference.awaiting_reason_for = None
             self.agreement.record(None)
             self.last_frame = None
@@ -42,6 +48,7 @@ class SemanticDialogueManager:
                 "SEMANTIC_DIALOGUE_CORRECTION")
         agreement_reply = self.agreement.reply(text)
         if agreement_reply is not None:
+            self.journal.record("agreement", topic)
             self.last_frame = None
             return DialogueResult(agreement_reply, "SEMANTIC_DIALOGUE_AGREEMENT")
         pending_topic = self.preference.awaiting_reason_for
@@ -49,6 +56,9 @@ class SemanticDialogueManager:
         if reply is not None:
             frame = extract_preference(text) or extract_reason(text, pending_topic)
             self.last_frame = frame
+            if frame is not None:
+                self.journal.record(frame.intent, frame.topic,
+                                    updated_quality=frame.quality)
             self.agreement.record(frame)
             return DialogueResult(reply, "TOPIC_PREFERENCE_ACK", frame)
         self.last_frame = None
