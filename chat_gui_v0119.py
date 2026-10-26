@@ -8,12 +8,19 @@ import os
 import queue
 import subprocess
 import sys
+import re
+import webbrowser
+from urllib.parse import quote_plus
 import threading
 import tkinter as tk
 from tkinter import messagebox, scrolledtext, ttk
 from pathlib import Path
 
 CHOICES=("prefer_a","prefer_b","both_contextual","neither","skip")
+
+def google_query(text):
+    match=re.fullmatch(r"\s*(.+?)\s*(?:を)?(?:ググって|ぐぐって|googleで検索して|Googleで検索して)\s*[。！!]*",text)
+    return match.group(1).strip() if match else None
 
 def launch_command():
     return [sys.executable, "-u", str(Path(__file__).resolve().parent / "chat.py")]
@@ -28,6 +35,7 @@ class ChatGUI:
         self.awaiting_decision=False
         self.awaiting_context=False
         self.output_tail=""
+        self.clipboard_context=""
         self.transcript=scrolledtext.ScrolledText(root, wrap="word",state="disabled",font=("Yu Gothic UI",11))
         self.transcript.pack(fill="both",expand=True,padx=10,pady=10)
         bottom=ttk.Frame(root)
@@ -63,6 +71,8 @@ class ChatGUI:
         env=os.environ.copy()
         env["LLM_CHA_RECONCILIATION"]="1"
         env["PYTHONUNBUFFERED"]="1"
+        env["PYTHONIOENCODING"]="utf-8"
+        env["PYTHONUTF8"]="1"
         creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0)
         try:
             self.process=subprocess.Popen(
@@ -132,7 +142,7 @@ class ChatGUI:
             messagebox.showerror("送信失敗","chat.pyとの接続が切断されました。")
 
     def read_clipboard(self):
-        """Load text from OS clipboard into the editable chat input, not memory."""
+        """Retain clipboard text as temporary, unverified context (not training)."""
         try:
             content=self.root.clipboard_get()
         except tk.TclError:
@@ -141,18 +151,29 @@ class ChatGUI:
         if not isinstance(content,str) or not content.strip():
             messagebox.showwarning("クリップボード読込", "クリップボードのテキストが空です。")
             return
-        # chat.py reads one line per turn; folding line breaks prevents accidental
-        # multiple submissions when the user sends this pasted text.
-        flattened=" ".join(content.splitlines()).strip()
-        self.entry.delete(0,"end")
-        self.entry.insert(0,flattened)
-        self.entry.focus_set()
-        self._append(f"[クリップボードを入力欄へ読み込みました（{len(content)}文字）。未送信・未検証。送信前に編集できます。]\n")
+        self.clipboard_context=content[:20000]
+        self._append(f"[クリップボードを読み込みました（{len(content)}文字・一時文脈・未検証）。次の質問1回にのみ利用します。]\n")
 
     def send(self):
         value=self.entry.get().strip()
         if not value:return
         self.entry.delete(0,"end")
+        query=google_query(value)
+        if query:
+            self._append(f"You> {value}\nAI> Googleで「{query}」を検索します。ブラウザのページをコピーし、「クリップボード読込」を押してください。\n")
+            webbrowser.open("https://www.google.com/search?q="+quote_plus(query))
+            return
+        if self.clipboard_context and not value.startswith("/"):
+            source=self.clipboard_context
+            self.clipboard_context=""
+            # Evidence stays unverified and only travels with this one turn.
+            # CLI chat.py consumes one line per input; avoid newline-driven turns.
+            flattened=" ".join(source.splitlines())
+            request=("次の資料はクリップボードからの未検証の一時情報です。"
+                     "資料の内容を事実として承認・学習せず、根拠がある範囲で回答してください。 "
+                     "資料: "+flattened+" 質問: "+value)
+            self.submit(request)
+            return
         self.submit(value)
 
     def close(self):
