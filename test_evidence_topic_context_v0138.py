@@ -23,9 +23,10 @@ class EvidenceTopicV0138Tests(unittest.TestCase):
 
     def test_missing_evidence_does_not_claim_value(self):
         ctx=EvidenceTopicContext()
-        self.assertIn("硫化亜鉛",ctx.answer(SOURCE,"スファレライトの化学組成は？"))
-        self.assertIn("確認できません",ctx.answer("スファレライトの化学組成はZnSです。","屈折率は？"))
-        self.assertIsNone(ctx.answer("スファレライトの化学組成はZnSです。","それは高いの？"))
+        short_source="スファレライトの化学組成はZnSです。"
+        self.assertIn("ZnS",ctx.answer(short_source,"スファレライトの化学組成は？"))
+        self.assertIn("確認できません",ctx.answer(short_source,"屈折率は？"))
+        self.assertIsNone(ctx.answer(short_source,"それは高いの？"))
 
     def test_new_source_resets_previous_reference(self):
         ctx=EvidenceTopicContext()
