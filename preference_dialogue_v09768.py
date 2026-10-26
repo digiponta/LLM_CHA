@@ -23,7 +23,7 @@ class PreferenceDialogue:
             subject = self.awaiting_reason_for
             self.awaiting_reason_for = None
             reason = m.group("reason")
-            return f"{subject}の{reason}が気に入っているんだね。" if reason in ("輝きが好き","虹色の輝きが好き","ファイアが好き") else f"{subject}が{reason}なんだね。"
+            return f"{subject}の{reason[:-2]}が好きなんだね。" if reason.endswith("が好き") else f"{subject}が{reason}なんだね。"
         # Do not carry preference follow-up across unrelated turns.
         self.awaiting_reason_for = None
         return None
