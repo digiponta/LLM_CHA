@@ -17,6 +17,7 @@ import tkinter as tk
 from tkinter import messagebox, scrolledtext, ttk
 from pathlib import Path
 from dialogue_topic_context_v0135 import TopicContext
+from temporary_evidence_retriever_v0137 import answer_from_evidence
 
 CHOICES=("prefer_a","prefer_b","both_contextual","neither","skip")
 
@@ -454,6 +455,10 @@ class ChatGUI:
             answer=clipboard_answer(source,value)
             if answer and not answer.startswith("資料は一時文脈として"):
                 self._append("You> "+value+"\nAI> "+answer+"\n")
+                return
+            evidence_answer=answer_from_evidence(source,value)
+            if evidence_answer is not None:
+                self._append("You> "+value+"\nAI> "+evidence_answer+"\n")
                 return
             # Do not send the user's source-dependent question to the
             # ungrounded model as if no clipboard context existed.
