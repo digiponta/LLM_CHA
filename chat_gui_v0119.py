@@ -194,7 +194,7 @@ def preference_dialogue_reply(message, topic):
         suffix in text for suffix in ("が好き","が好み","が好きです","が好みです")):
         return "その色合いが好みなんですね。"+topic+"の輝きとよく合いそうですね。"
     # Accept elliptical answers to the preceding "what appeals to you?" question.
-    if re.fullmatch(r"(?:きらきら|キラキラ|キラきら|輝き).{0,24}(?:ところ)?(?:が|は)?",text):
+    if re.fullmatch(r"(?:きらきら|キラキラ|キラきら|輝き).{0,24}(?:ところ)?(?:が|は)?",text) and not any(word in text for word in ("心地よい","好き","気に入","きれい","綺麗","美しい")):
         return "輝くところが好きなんですね。"+topic+"のどんな色合いが好みですか？"
     if text in ("そうだよ","そうです","うん","はい","そうそう"):
         return "そうなんですね。"+topic+"の魅力が伝わってきます。"
