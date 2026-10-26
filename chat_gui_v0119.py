@@ -255,7 +255,7 @@ class ChatGUI:
             return
         # Persist clipboard evidence across follow-up turns; do not silently
         # consume it after an unsupported generic question.
-        source=self.last_clipboard_source or self.clipboard_context
+        source=getattr(self,'last_clipboard_source','') or self.clipboard_context
         if source and not value.startswith("/"):
             followup=contextual_followup(source,value)
             if followup is not None:
