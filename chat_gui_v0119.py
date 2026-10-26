@@ -18,6 +18,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from pathlib import Path
 from dialogue_topic_context_v0135 import TopicContext
 from temporary_evidence_retriever_v0137 import answer_from_evidence
+from evidence_topic_context_v0138 import EvidenceTopicContext
 
 CHOICES=("prefer_a","prefer_b","both_contextual","neither","skip")
 
@@ -225,6 +226,7 @@ class ChatGUI:
         self.active_food_item=""
         self.active_preference_topic=""
         self.topic_context=TopicContext()
+        self.evidence_topic_context=EvidenceTopicContext()
         self.line_buffer=""
         self.status_line_buffer=""
         self.chat_ready=False
@@ -408,6 +410,12 @@ class ChatGUI:
         # consume it after an unsupported generic question.
         source=getattr(self,'last_clipboard_source','') or self.clipboard_context
         if source and not value.startswith("/"):
+            evidence_context=getattr(self,"evidence_topic_context",None)
+            if evidence_context is not None:
+                related=evidence_context.answer(source,value)
+                if related is not None:
+                    self._append("You> "+value+"\nAI> "+related+"\n")
+                    return
             # Centralized dialogue state takes precedence over source search.
             topic_context=getattr(self,"topic_context",None)
             if topic_context is not None:
