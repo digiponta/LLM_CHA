@@ -59,9 +59,12 @@ def process_turn(question, *, generate, retrieve, bridge, subject=None, context=
         return {"action":"MEMORY_MISS","answer":generated_text,"subject":resolved_subject,
                 "warning":"Model output is unverified"}
     # No automatic proof of semantic equivalence or verified factuality.
+    comparison_options={"context":context}
+    if isinstance(bridge,SubjectPreferenceBridge):
+        comparison_options["subject"]=resolved_subject
     outcome=bridge.compare(question,generated_text,evidence.answer,
                            EquivalenceAssertion("UNKNOWN",provenance_id=evidence.provenance),
-                           context=context,subject=resolved_subject)
+                           **comparison_options)
     outcome["subject"]=resolved_subject
     outcome["memory_provenance"]=evidence.provenance
     outcome["memory_approval"]="NOT_ATTESTED"
