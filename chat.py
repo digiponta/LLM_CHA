@@ -3681,6 +3681,15 @@ def main() -> None:
                 print()
                 continue
             topic_reply=topic_context.observe(user_text)
+            if topic_reply is not None and clipboard_context.text:
+                from topic_clipboard_bridge_v09758 import answer_from_topic_clipboard
+                evidence_reply = answer_from_topic_clipboard(
+                    user_text, topic_context.active_topic, clipboard_context.text)
+                if evidence_reply is not None:
+                    print("AI> " + evidence_reply)
+                    print("[route=TOPIC_CLIPBOARD_EVIDENCE, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]")
+                    print()
+                    continue
             if topic_reply is not None:
                 print("AI> " + topic_reply)
                 print("[route=TOPIC_KEYED_CONTEXT, topic={}, evidence=SOURCE_NEEDED, train_ready=False, auto_promote=False]".format(topic_context.active_topic))
