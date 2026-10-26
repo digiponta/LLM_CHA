@@ -26,7 +26,7 @@ class SemanticEventJournal:
         self.events.append(item)
         if len(self.events)>self.max_events:
             self.events.pop(0)
-        if event=="correct_preference" and topic and updated_quality:
+        if event in ("correct_preference", "clarification_provided") and topic and updated_quality:
             self.focus[topic]=updated_quality
         elif event=="explain_preference" and topic and updated_quality:
             self.focus[topic]=updated_quality
