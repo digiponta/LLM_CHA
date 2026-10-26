@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from semantic_dialogue_bridge_v0112 import DialogueBridge
+from semantic_subject_preferences_v0117 import SubjectPreferenceBridge
 from semantic_equivalence_router_v0111 import EquivalenceAssertion
 from semantic_reconciliation_v0110 import canonical_form
 from generation_quality_gate_v0114 import assess_generation
@@ -61,7 +61,7 @@ def process_turn(question, *, generate, retrieve, bridge, subject=None, context=
     # No automatic proof of semantic equivalence or verified factuality.
     outcome=bridge.compare(question,generated_text,evidence.answer,
                            EquivalenceAssertion("UNKNOWN",provenance_id=evidence.provenance),
-                           context=context)
+                           context=context,subject=resolved_subject)
     outcome["subject"]=resolved_subject
     outcome["memory_provenance"]=evidence.provenance
     outcome["memory_approval"]="NOT_ATTESTED"
@@ -86,7 +86,7 @@ def build_services(checkpoint_loader, memory_path, root, max_tokens):
         limit=max_tokens*(2 if attempt==1 else 3)
         width=3 if attempt==1 else 1
         return decode(model,tokenizer,prompt,beam_width=width,max_new_tokens=limit)
-    return generate,retrieve,DialogueBridge(root),regenerate
+    return generate,retrieve,SubjectPreferenceBridge(root),regenerate
 
 def main():
     p=argparse.ArgumentParser(description="v0.11.3 isolated live model ↔ Semantic Memory experiment")
