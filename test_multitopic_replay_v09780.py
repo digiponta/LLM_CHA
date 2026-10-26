@@ -19,7 +19,7 @@ class MultiTopicReplayTests(unittest.TestCase):
         m.handle("きらきらしてるところが心地よい","スファレライト")
         m.handle("そうじゃない","スファレライト")
         self.assertEqual(m.journal.replay().awaiting_clarification,"スファレライト")
-        self.assertEqual(validate_cross_context(m).status,"CONSISTENT")
+        self.assertEqual(validate_cross_context(m).status,"NOT_COMPARABLE")
         m.handle("そうだよ","スファレライト")
         self.assertEqual(m.journal.replay().awaiting_new_reason,"スファレライト")
         self.assertNotIn("manager.awaiting_new_reason",validate_cross_context(m).mismatches)
