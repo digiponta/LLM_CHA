@@ -3503,6 +3503,8 @@ def main() -> None:
     topic_context = TopicContext()
     from preference_dialogue_v09768 import PreferenceDialogue
     preference_dialogue = PreferenceDialogue()
+    from semantic_dialogue_state_v09770 import extract_preference, extract_reason
+    semantic_dialogue_frame = None
     while True:
         try:
             user_text = input("You> ").strip()
@@ -3677,8 +3679,13 @@ def main() -> None:
         # v0.9.7.67: acknowledge explicit likes in ordinary conversation.
         # Ephemeral response; never approve evidence or train on preferences.
         if not user_text.startswith("/"):
+            pending_preference_topic = preference_dialogue.awaiting_reason_for
             preference_reply = preference_dialogue.reply(user_text, topic_context.active_topic)
             if preference_reply is not None:
+                semantic_dialogue_frame = (
+                    extract_preference(user_text)
+                    or extract_reason(user_text, pending_preference_topic)
+                )
                 print("AI> " + preference_reply)
                 print("[route=TOPIC_PREFERENCE_ACK, train_ready=False, auto_promote=False, persisted=False]")
                 print()
