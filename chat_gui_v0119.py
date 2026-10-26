@@ -261,7 +261,7 @@ class ChatGUI:
             while True:
                 char=self.process.stdout.read(1)
                 if not char:break
-                self.events.put(("output",char))
+                # Tee raw chat.py output to the launching terminal, including\n                # diagnostics that the GUI intentionally filters.\n                try:\n                    sys.stdout.write(char)\n                    sys.stdout.flush()\n                except (OSError, UnicodeError):\n                    pass\n                self.events.put(("output",char))
         finally:
             self.events.put(("exit",self.process.poll()))
 
