@@ -38,8 +38,10 @@ class EvidenceTopicContext:
         prior=self.state
         # Comparison references only the immediately retained evidence.
         if text in ("それは高いの","それは高いのですか","それは高いですか","それは低いの","それは普通なの"):
-            if not (prior.subject and prior.attribute and prior.excerpt):
+            if not (prior.subject and prior.attribute):
                 return None
+            if not prior.excerpt:
+                return f"{prior.subject}の{prior.attribute}についてですね。資料から直接の記述を確認できず、比較基準もないため、高低は判断できません。（未検証）"
             return f"{prior.subject}の{prior.attribute}についてですね。資料には「{prior.excerpt}」とありますが、比較基準が確認できないため、高低は判断できません。（未検証）"
         attribute=next((key for key,aliases in ATTRS.items() if any(a in text for a in aliases)),None)
         if not attribute:
