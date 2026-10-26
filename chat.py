@@ -3685,6 +3685,9 @@ def main() -> None:
                 if latest_event is not None:
                     print("[semantic_event=" + json.dumps(latest_event.to_dict(), ensure_ascii=False) + "]")
                     print("[semantic_replay=" + json.dumps(dialogue_manager.journal.replay().to_dict(), ensure_ascii=False) + "]")
+                    from semantic_state_consistency_v09778 import validate_semantic_consistency
+                    consistency = validate_semantic_consistency(dialogue_manager.journal)
+                    print("[semantic_consistency=" + json.dumps(consistency.to_dict(), ensure_ascii=False) + "]")
                 if dialogue_result.frame is not None:
                     print("[semantic_dialogue=" + json.dumps(
                         dialogue_result.frame.to_dict(), ensure_ascii=False) + "]")
