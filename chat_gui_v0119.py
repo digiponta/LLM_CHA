@@ -48,12 +48,12 @@ def should_display_line(line):
 def clipboard_answer(source, question):
     """Extract a grounded food list; do not send a long document to 512-token LLM."""
     if any(word in question for word in ("ドリンク","飲み物","ビバレッジ")):
-        match=re.search(r"ビバレッジ\\s+(.+?)\\s+ビバレッジ一覧へ",source,re.S)
+        match=re.search(r"ビバレッジ\s+(.+?)\s+ビバレッジ一覧へ",source,re.S)
         if not match:
             return "資料にドリンクの一覧は確認できませんでした。（未検証）"
         section=match.group(1)
         # The copied menu repeats each product name consecutively.
-        names=re.findall(r"(.{3,55}?)\\s+\\1(?=\\s|$)",section)
+        names=re.findall(r"(.{3,55}?)\s+\1(?=\s|$)",section)
         unique=[]
         for name in names:
             name=" ".join(name.split())
@@ -94,6 +94,8 @@ def contextual_followup(source, message):
     for suffix,reply in (
         ("を食べた","そうなんですね。食べてみて、味や食感はどうでしたか？"),
         ("を食べました","そうなんですね。食べてみて、どうでしたか？"),
+        ("を飲んだ","飲んでみたんですね。味や香りはどうでしたか？"),
+        ("を飲みました","飲んでみたんですね。どうでしたか？"),
         ("も好きです","それも好きなんですね。どんなところが気に入っていますか？"),
         ("も好き","それも好きなんですね。どんなところが気に入っていますか？"),
         ("が好き","好きなんですね。どんなところが気に入っていますか？"),
@@ -103,6 +105,20 @@ def contextual_followup(source, message):
             item=text[:-len(suffix)].strip()
             if len(item)>=3 and item in source:
                 return reply
+    # A short variant such as "黒耳" may be a product variant in the source.
+    short=re.fullmatch(r"(.{2,16}?)(?:を飲んだ|を飲みました)",text)
+    if short and short.group(1) in source:
+        return "そのドリンクを飲んだんですね。どんな味でしたか？"
+    return None
+
+def selected_item_from_utterance(source, utterance):
+    text=utterance.strip().rstrip("。！! ")
+    for suffix in ("を食べました","を食べた","を飲みました","を飲んだ",
+                   "も好きです","も好き","が好きです","が好き"):
+        if text.endswith(suffix):
+            item=text[:-len(suffix)].strip()
+            if item and item in source:
+                return item
     return None
 
 def reply_to_experience(message, active_item):
@@ -296,12 +312,9 @@ class ChatGUI:
                 # Detect the specific item mentioned, and keep it as dialogue
                 # topic. A user's taste report is not a verified external fact.
                 clean=value.strip().rstrip("。！! ")
-                for suffix in ("を食べました","を食べた","も好きです","も好き","が好きです","が好き"):
-                    if clean.endswith(suffix):
-                        item=clean[:-len(suffix)].strip()
-                        if item in source:
-                            self.active_food_item=item
-                        break
+                item=selected_item_from_utterance(source, clean)
+                if item:
+                    self.active_food_item=item
                 self._append("You> "+value+"\nAI> "+followup+"\n")
                 return
             experience=reply_to_experience(value,getattr(self,"active_food_item",""))
