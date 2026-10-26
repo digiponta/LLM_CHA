@@ -6747,6 +6747,14 @@ def main() -> None:
                 print("[route=CURATED_DEFINITION, truth_state=LOCAL_CURATED, source=LOCAL_CURATED, train_ready=False, auto_promote=False]")
                 print()
                 continue
+        if final_guard_enabled:
+            from incomplete_utterance_v09753 import detect as detect_incomplete
+            incomplete=detect_incomplete(user_text)
+            if incomplete is not None:
+                print("AI> " + incomplete.response)
+                print("[route=INCOMPLETE_UTTERANCE, topic={}, train_ready=False, auto_promote=False]".format(incomplete.topic))
+                print()
+                continue
         semantic_result = semantic_knowledge.resolve(
             user_text
         )
