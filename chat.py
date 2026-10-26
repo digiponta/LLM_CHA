@@ -3688,6 +3688,9 @@ def main() -> None:
                     from semantic_state_consistency_v09778 import validate_semantic_consistency
                     consistency = validate_semantic_consistency(dialogue_manager.journal)
                     print("[semantic_consistency=" + json.dumps(consistency.to_dict(), ensure_ascii=False) + "]")
+                    from cross_context_consistency_v09779 import validate_cross_context
+                    cross_context = validate_cross_context(dialogue_manager, topic_context)
+                    print("[cross_context_consistency=" + json.dumps(cross_context.to_dict(), ensure_ascii=False) + "]")
                 if dialogue_result.frame is not None:
                     print("[semantic_dialogue=" + json.dumps(
                         dialogue_result.frame.to_dict(), ensure_ascii=False) + "]")
