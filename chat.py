@@ -3694,6 +3694,16 @@ def main() -> None:
                 print("[route=CLIPBOARD_ATTRIBUTE_EVIDENCE, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]")
                 print()
                 continue
+        # v0.9.7.60: cite a literal causal statement from copied text.
+        if clipboard_context.text and not user_text.startswith("/"):
+            from clipboard_causal_evidence_v09760 import retrieve as retrieve_causal_evidence
+            causal_reply = retrieve_causal_evidence(
+                user_text, clipboard_context.text, topic_context.active_topic)
+            if causal_reply is not None:
+                print("AI> " + causal_reply)
+                print("[route=CLIPBOARD_CAUSAL_EVIDENCE, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]")
+                print()
+                continue
         if final_guard_enabled:
             from semantic_context_surface_v09755 import evaluation as short_evaluation
             surface_evaluation=short_evaluation(user_text)
