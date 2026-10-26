@@ -5,6 +5,7 @@ Conservative exact overlap only; never changes source verification status.
 import re
 from final_answer_guard_v09746 import inspect_answer,FinalDecision
 from semantic_action_consistency_v09748 import check as action_check
+from semantic_action_subject_v09749 import check as subject_check
 
 FOOD_WORDS=("バゲットサンド","サンドイッチ","ケーキ","パイ","スコーン")
 DRINK_WORDS=("ラテ","コーヒー","フラペチーノ","ジュース","紅茶")
@@ -14,6 +15,12 @@ DRINK_PATTERN=re.compile(r"(?P<item>[\w&®・ 　]+(?:ラテ|コーヒー|フラ
 def inspect_clipboard_answer(user_text,answer):
     user=str(user_text or "").strip()
     output=str(answer or "").strip()
+    subject=subject_check(user,output)
+    if subject.decision=="REPAIR":
+        return FinalDecision("REJECT","subject-action-consistency",output,
+                             subject.selected,"CLIPBOARD_CONTEXT_ANSWER")
+    if subject.reason in ("subject-mismatch","unresolved-response-subject","unresolved-user-subject"):
+        return FinalDecision("REVIEW",subject.reason,output,output,"CLIPBOARD_CONTEXT_ANSWER")
     action=action_check(user,output)
     if action.decision=="REPAIR":
         return FinalDecision("REJECT","semantic-action-consistency",output,
