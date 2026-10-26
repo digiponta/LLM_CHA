@@ -3687,6 +3687,9 @@ def main() -> None:
                     or extract_reason(user_text, pending_preference_topic)
                 )
                 print("AI> " + preference_reply)
+                if semantic_dialogue_frame is not None:
+                    print("[semantic_dialogue=" + json.dumps(
+                        semantic_dialogue_frame.to_dict(), ensure_ascii=False) + "]")
                 print("[route=TOPIC_PREFERENCE_ACK, train_ready=False, auto_promote=False, persisted=False]")
                 print()
                 continue
