@@ -3715,6 +3715,16 @@ def main() -> None:
                 print("[route=CLIPBOARD_CAUSAL_SOURCE_NEEDED, train_ready=False, auto_promote=False]")
                 print()
                 continue
+        # v0.9.7.67: acknowledge explicit likes in ordinary conversation.
+        # Ephemeral response; never approve evidence or train on preferences.
+        if not user_text.startswith("/"):
+            from topic_preference_ack_v09767 import acknowledge as acknowledge_preference
+            preference_reply = acknowledge_preference(user_text, topic_context.active_topic)
+            if preference_reply is not None:
+                print("AI> " + preference_reply)
+                print("[route=TOPIC_PREFERENCE_ACK, train_ready=False, auto_promote=False, persisted=False]")
+                print()
+                continue
         if final_guard_enabled:
             from semantic_context_surface_v09755 import evaluation as short_evaluation
             surface_evaluation=short_evaluation(user_text)
