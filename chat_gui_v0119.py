@@ -16,6 +16,7 @@ import threading
 import tkinter as tk
 from tkinter import messagebox, scrolledtext, ttk
 from pathlib import Path
+from dialogue_topic_context_v0135 import TopicContext
 
 CHOICES=("prefer_a","prefer_b","both_contextual","neither","skip")
 
@@ -222,6 +223,7 @@ class ChatGUI:
         self.last_clipboard_source=""
         self.active_food_item=""
         self.active_preference_topic=""
+        self.topic_context=TopicContext()
         self.line_buffer=""
         self.status_line_buffer=""
         self.chat_ready=False
@@ -389,6 +391,7 @@ class ChatGUI:
         self.last_clipboard_source=self.clipboard_context
         self.active_food_item=""
         self.active_preference_topic=""
+        self.topic_context=TopicContext()
         self._append(f"[クリップボードを読み込みました（{len(content)}文字・一時文脈・未検証）。新しい資料を読むまで参照できます。]\n")
 
     def send(self):
@@ -404,6 +407,14 @@ class ChatGUI:
         # consume it after an unsupported generic question.
         source=getattr(self,'last_clipboard_source','') or self.clipboard_context
         if source and not value.startswith("/"):
+            # Centralized dialogue state takes precedence over source search.
+            topic_context=getattr(self,"topic_context",None)
+            if topic_context is not None:
+                topic_answer=topic_context.respond(value)
+                if topic_answer is not None:
+                    self.active_preference_topic=topic_context.state.subject
+                    self._append("You> "+value+"\nAI> "+topic_answer+"\n")
+                    return
             preference=casual_preference_reply(value)
             if preference is not None:
                 match=re.fullmatch(r"私は[、,\\s]*(.{2,80}?)が好き(?:です)?[。！!\\s]*",value.strip())
