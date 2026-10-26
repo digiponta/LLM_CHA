@@ -20,21 +20,30 @@ class SubjectPreferenceBridge(DialogueBridge):
         self.subject_index=self.root/"subject_preference_index"
         self.pending_index=self.root/"subject_preference_pending"
 
-    def compare(self, question, generated_answer, memory_answer, assertion=None, *, context="", subject=None):
-        subject=subject or question
+    def lookup_preference(self, question, subject, context, memory_answer):
+        """Return reviewed prefer_b only for this exact question/subject/context/memory."""
         key=preference_key(question,subject,context,memory_answer)
         index=self.subject_index/(key+".json")
-        if index.exists():
-            entry=json.loads(index.read_text(encoding="utf-8"))
-            ticket=self.tickets.get(entry["ticket_id"])
-            # Reload and check what was actually approved by the user.
-            if (ticket["state"]=="USER_REVIEWED" and ticket["review"]["decision"]=="prefer_b"
-                and canonical_form(ticket["candidates"]["b"]["text"])==canonical_form(memory_answer)
-                and canonical_form(ticket["question"])==canonical_form(question)
-                and ticket["review"]["context"]==context):
-                return {"action":"USER_PREFERENCE","answer":memory_answer,
-                        "ticket_id":ticket["id"],"approval_state":"NOT_APPROVED",
-                        "factual_truth":"UNVERIFIED","reuse_scope":"QUESTION_SUBJECT_CONTEXT_MEMORY"}
+        if not index.is_file():
+            return None
+        entry=json.loads(index.read_text(encoding="utf-8"))
+        ticket=self.tickets.get(entry["ticket_id"])
+        if (ticket["state"]=="USER_REVIEWED" and ticket["review"]["decision"]=="prefer_b"
+            and canonical_form(ticket["candidates"]["b"]["text"])==canonical_form(memory_answer)
+            and canonical_form(ticket["question"])==canonical_form(question)
+            and ticket["review"]["context"]==context):
+            return {"action":"USER_PREFERENCE","answer":memory_answer,
+                    "ticket_id":ticket["id"],"approval_state":"NOT_APPROVED",
+                    "factual_truth":"UNVERIFIED",
+                    "reuse_scope":"QUESTION_SUBJECT_CONTEXT_MEMORY"}
+        return None
+
+    def compare(self, question, generated_answer, memory_answer, assertion=None, *, context="", subject=None):
+        subject=subject or question
+        existing=self.lookup_preference(question,subject,context,memory_answer)
+        if existing is not None:
+            return existing
+        key=preference_key(question,subject,context,memory_answer)
         # Do not use the legacy three-text preference cache here: it omits
         # subject and context and can silently reuse a decision in the wrong scope.
         result=resolve(question,generated_answer,memory_answer,assertion,store=self.tickets)
