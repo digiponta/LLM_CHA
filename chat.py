@@ -3679,6 +3679,8 @@ def main() -> None:
             attribute_reply = retrieve_clipboard_attribute(
                 user_text, clipboard_context.text, topic_context.active_topic)
             if attribute_reply is not None:
+                # Preserve the subject for subsequent elliptical questions.
+                topic_context.observe(user_text)
                 print("AI> " + attribute_reply)
                 print("[route=CLIPBOARD_ATTRIBUTE_EVIDENCE, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]")
                 print()
