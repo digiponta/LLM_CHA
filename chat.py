@@ -3684,6 +3684,7 @@ def main() -> None:
                 latest_event = dialogue_manager.journal.latest()
                 if latest_event is not None:
                     print("[semantic_event=" + json.dumps(latest_event.to_dict(), ensure_ascii=False) + "]")
+                    print("[semantic_replay=" + json.dumps(dialogue_manager.journal.replay().to_dict(), ensure_ascii=False) + "]")
                 if dialogue_result.frame is not None:
                     print("[semantic_dialogue=" + json.dumps(
                         dialogue_result.frame.to_dict(), ensure_ascii=False) + "]")
