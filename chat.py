@@ -7474,6 +7474,12 @@ def main() -> None:
             accepted = False
             cha_quality_guard_status = generation_check["reason"]
         if final_guard_enabled:
+            from semantic_action_subject_v09749 import check as check_subject_action
+            subject_action_check=check_subject_action(raw_user_text,reply)
+            if subject_action_check.decision=="REPAIR":
+                reply=subject_action_check.selected
+                accepted=False
+                cha_quality_guard_status="SEMANTIC_"+subject_action_check.reason
             from final_answer_guard_v09746 import inspect_answer
             final_check=inspect_answer(raw_user_text,reply,"MODEL_GENERATION")
             if final_check.decision=="REJECT":
