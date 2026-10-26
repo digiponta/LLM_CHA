@@ -6721,6 +6721,14 @@ def main() -> None:
                 print("[route={}, final_answer_guard=HANDLE, train_ready=False, auto_promote=False]".format(daily.route))
                 print()
                 continue
+        if final_guard_enabled:
+            from preference_intent_v09750 import detect as detect_preference
+            preference=detect_preference(user_text)
+            if preference is not None:
+                print("AI> " + preference.response)
+                print("[route=PERSONAL_PREFERENCE, source=USER_UTTERANCE, train_ready=False, auto_promote=False]")
+                print()
+                continue
         semantic_result = semantic_knowledge.resolve(
             user_text
         )
