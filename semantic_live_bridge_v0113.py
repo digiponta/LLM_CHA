@@ -20,7 +20,7 @@ def extract_subject(question):
             return question[:-len(suffix)].strip()
     return question
 
-def process_turn(question, *, generate, retrieve, bridge, subject=None, context=""):
+def process_turn(question, *, generate, retrieve, bridge, subject=None, context="", regenerate=None):
     """Dependency-injected integration for deterministic tests.
 
     retrieve(subject) must return a result with hit/answer/provenance.
@@ -35,12 +35,24 @@ def process_turn(question, *, generate, retrieve, bridge, subject=None, context=
     if not isinstance(generated_text,str) or not generated_text.strip():
         return {"action":"GENERATION_UNAVAILABLE","answer":None,"subject":resolved_subject}
     quality=assess_generation(generated)
+    retries=[]
+    if quality.status!="VALID" and regenerate is not None:
+        for attempt in range(1,3):
+            candidate=regenerate(question,attempt)
+            checked=assess_generation(candidate)
+            retries.append({"attempt":attempt,"status":checked.status,"reasons":list(checked.reasons)})
+            if checked.status=="VALID":
+                generated=candidate
+                generated_text=candidate if isinstance(candidate,str) else candidate.text
+                quality=checked
+                break
     if quality.status!="VALID":
         return {"action":"GENERATION_QUALITY_REVIEW","answer":None,
                 "subject":resolved_subject,"quality_status":quality.status,
                 "quality_reasons":list(quality.reasons),
                 "candidate_text":generated_text,
-                "message":"生成回答が未完了または不正の可能性があります。意味調停を保留します: "+", ".join(quality.reasons)}
+                "retry_history":retries,
+                "message":"再生成でも正常な回答が得られませんでした。意味調停を保留します: "+", ".join(quality.reasons)}
     if not evidence.hit or not evidence.answer.strip():
         return {"action":"MEMORY_MISS","answer":generated_text,"subject":resolved_subject,
                 "warning":"Model output is unverified"}
@@ -51,6 +63,8 @@ def process_turn(question, *, generate, retrieve, bridge, subject=None, context=
     outcome["subject"]=resolved_subject
     outcome["memory_provenance"]=evidence.provenance
     outcome["memory_approval"]="NOT_ATTESTED"
+    if retries:
+        outcome["retry_history"]=retries
     return outcome
 
 def build_services(checkpoint_loader, memory_path, root, max_tokens):
@@ -65,7 +79,12 @@ def build_services(checkpoint_loader, memory_path, root, max_tokens):
         return decode(model,tokenizer,prompt,beam_width=3,max_new_tokens=max_tokens)
     def retrieve(subject):
         return resolve_subject(memory,subject)
-    return generate,retrieve,DialogueBridge(root)
+    def regenerate(question,attempt):
+        prompt="人: "+question+"\\nAI: "
+        limit=max_tokens*(2 if attempt==1 else 3)
+        width=3 if attempt==1 else 1
+        return decode(model,tokenizer,prompt,beam_width=width,max_new_tokens=limit)
+    return generate,retrieve,DialogueBridge(root),regenerate
 
 def main():
     p=argparse.ArgumentParser(description="v0.11.3 isolated live model ↔ Semantic Memory experiment")
@@ -76,14 +95,14 @@ def main():
     args=p.parse_args()
     import importlib
     mod,name=args.factory.split(":",1)
-    generate,retrieve,bridge=build_services(getattr(importlib.import_module(mod),name),
+    generate,retrieve,bridge,regenerate=build_services(getattr(importlib.import_module(mod),name),
                                               args.memory,args.root,args.max_tokens)
     print("LLM_CHA experimental semantic reconciliation /exit to quit")
     while True:
         question=input("You> ").strip()
         if question=="/exit":break
         subject=input("Subject (Enter=auto)> ").strip() or None
-        result=process_turn(question,generate=generate,retrieve=retrieve,bridge=bridge,subject=subject)
+        result=process_turn(question,generate=generate,retrieve=retrieve,bridge=bridge,subject=subject,regenerate=regenerate)
         print(result.get("message",json.dumps(result,ensure_ascii=False)))
         if result["action"]=="ASK_USER":
             selection=input("Decision [prefer_a/prefer_b/both_contextual/neither/skip]> ").strip()
