@@ -3676,6 +3676,14 @@ def main() -> None:
             continue
         # v0.9.7.72: unified session-only Semantic Dialogue Manager.
         if not user_text.startswith("/"):
+            from semantic_integrity_gate_v09782 import evaluate_integrity
+            pre_integrity = evaluate_integrity(dialogue_manager, topic_context)
+            if not pre_integrity.allow_dialogue:
+                print("[semantic_integrity_gate=" + json.dumps(pre_integrity.to_dict(), ensure_ascii=False) + "]")
+                print("AI> 会話の意味状態に不整合があるため、その文脈を使った回答は保留します。")
+                print("[route=SEMANTIC_INTEGRITY_BLOCK, train_ready=False, auto_promote=False]")
+                print()
+                continue
             dialogue_result = dialogue_manager.handle(user_text, topic_context.active_topic)
             if dialogue_result is not None:
                 if dialogue_result.next_topic is not None:
@@ -3694,6 +3702,8 @@ def main() -> None:
                     from semantic_topic_isolation_v09781 import validate_topic_isolation
                     isolation = validate_topic_isolation(dialogue_manager.journal)
                     print("[semantic_topic_isolation=" + json.dumps(isolation.to_dict(), ensure_ascii=False) + "]")
+                    post_integrity = evaluate_integrity(dialogue_manager, topic_context)
+                    print("[semantic_integrity_gate=" + json.dumps(post_integrity.to_dict(), ensure_ascii=False) + "]")
                 if dialogue_result.frame is not None:
                     print("[semantic_dialogue=" + json.dumps(
                         dialogue_result.frame.to_dict(), ensure_ascii=False) + "]")
