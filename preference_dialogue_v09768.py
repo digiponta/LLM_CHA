@@ -24,6 +24,21 @@ class PreferenceDialogue:
             self.awaiting_reason_for = None
             reason = m.group("reason")
             return f"{subject}の{reason[:-2]}が好きなんだね。" if reason.endswith("が好き") else f"{subject}が{reason}なんだね。"
+        if self.awaiting_reason_for:
+            # Accept a bounded sensory reason, without making a factual claim
+            # about the object or memorizing a personal preference.
+            sensory = re.fullmatch(
+                r"(?P<quality>きらきら(?:して(?:い)?る)?|キラキラ(?:して(?:い)?る)?|"
+                r"輝いて(?:い)?る|色がきれい|綺麗|きれい|美しい)"
+                r"(?:ところ|感じ|様子)?(?:が|は)"
+                r"(?P<feeling>心地よい|好き|素敵|いい|落ち着く)"
+                r"(?:です|んです|よ|ね)?[。！! ]*",
+                text)
+            if sensory:
+                subject = self.awaiting_reason_for
+                self.awaiting_reason_for = None
+                return (f"{subject}の{sensory.group('quality')}ところが"
+                        f"{sensory.group('feeling')}んだね。")
         # Do not carry preference follow-up across unrelated turns.
         self.awaiting_reason_for = None
         return None
