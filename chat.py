@@ -3706,6 +3706,9 @@ def main() -> None:
                 continue
             from clipboard_causal_evidence_v09760 import INTENTS
             if topic_context.active_topic and any(pattern.search(user_text) for pattern, _ in INTENTS):
+                from clipboard_causal_diagnostic_v09764 import diagnose
+                causal_debug = diagnose(user_text, clipboard_context.text, topic_context.active_topic)
+                print("[causal_diagnostic=" + json.dumps(causal_debug, ensure_ascii=False) + "]")
                 print("AI> 取得した資料から理由を裏付ける記述を確認できませんでした。（外部情報・未検証）")
                 print("[route=CLIPBOARD_CAUSAL_SOURCE_NEEDED, train_ready=False, auto_promote=False]")
                 print()
