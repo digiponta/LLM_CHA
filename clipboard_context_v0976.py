@@ -8,17 +8,24 @@ class ClipboardContext:
         self.dialogue=ClipboardDialogue()
         from conversation_semantic_state_v09721 import ConversationalSemanticState
         self.semantic=ConversationalSemanticState()
+        from clipboard_composition_evidence_v09756 import CompositionContext
+        self.composition=CompositionContext()
     def set(self,text):
         self.text=str(text or "")[:12000]
         self.dialogue.reset()
         self.semantic.reset()
+        self.composition.reset()
     def clear(self):
         self.text=""
         self.dialogue.reset()
+        self.composition.reset()
     def answer(self,utterance):
         q=str(utterance or "").strip().rstrip("。？！? ")
         if not self.text:
             return None
+        composition_answer=self.composition.answer(utterance,self.text)
+        if composition_answer is not None:
+            return composition_answer
         before={"taste_turns":self.dialogue.taste_turns,
                 "awaiting_conclusion":self.dialogue.awaiting_conclusion}
         dialogue_answer=self.dialogue.respond(utterance,self.text)
