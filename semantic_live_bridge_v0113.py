@@ -80,7 +80,7 @@ def build_services(checkpoint_loader, memory_path, root, max_tokens):
     def retrieve(subject):
         return resolve_subject(memory,subject)
     def regenerate(question,attempt):
-        prompt="人: "+question+"\\nAI: "
+        prompt="人: "+question+"\nAI: "
         limit=max_tokens*(2 if attempt==1 else 3)
         width=3 if attempt==1 else 1
         return decode(model,tokenizer,prompt,beam_width=width,max_new_tokens=limit)
