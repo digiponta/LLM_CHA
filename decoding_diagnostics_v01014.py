@@ -17,7 +17,7 @@ def normalize(text):
 def repeated_fragment(text):
     # Heuristic: adjacent repeated phrases, not a semantic judgment.
     normalized = normalize(text)
-    return bool(re.search(r"(.{2,18}?)(?:\\s*[,、，]\\s*\\1){2,}", normalized))
+    return bool(re.search(r"(.{2,18}?)(?:\s*[,、，]\s*\1){2,}", normalized))
 
 def assess(row):
     a = row["baseline_output"]
