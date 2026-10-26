@@ -1,0 +1,32 @@
+{
+  "version": "v0.13.0",
+  "source": "Observed user GUI interactions on 2026-10-26. Clipboard source excerpts below are test fixtures, not verified facts.",
+  "scenarios": [
+    {
+      "id": "sphalerite-evidence-to-preference",
+      "clipboard_text": "スファレライトのモース硬度: 3.5 〜 4。カットが難しい理由: 完全な劈開があり、脆いため加工が難しい。屈折率: 2.37。きらきらした輝きが特徴。",
+      "turns": [
+        {"input": "なぜカットが難しい", "expected_contains": "カット", "intent": "evidence"},
+        {"input": "屈折率は？", "expected_contains": "2.37", "intent": "evidence"},
+        {"input": "私は、スファレライトが好きです。", "expected_contains": "好きなんですね", "intent": "preference"},
+        {"input": "きらきらしてるところが心地よい", "expected_contains": "心地よい", "intent": "preference_followup"},
+        {"input": "そうだよ", "expected_contains": "スファレライト", "intent": "acknowledgement"}
+      ]
+    },
+    {
+      "id": "starbucks-evidence-to-experience",
+      "clipboard_text": "メニュー ビバレッジ スターバックス ラテ スターバックス ラテ ブラックベリー ヨーグルト フラペチーノ® 黒耳 ver. ブラックベリー ヨーグルト フラペチーノ® 黒耳 ver. ビバレッジ一覧へ フード ハーブソーセージ スターバックス バゲットサンド ハーブソーセージ スターバックス バゲットサンド ハム&ゴーダチーズ スターバックス バゲットサンド ハム&ゴーダチーズ スターバックス バゲットサンド フード一覧へ コーヒー豆 ティー・紅茶",
+      "turns": [
+        {"input": "メニューは", "expected_contains": "ビバレッジ", "intent": "evidence"},
+        {"input": "フードの種類は", "expected_contains": "ハーブソーセージ", "intent": "evidence"},
+        {"input": "ハーブソーセージ スターバックス バゲットサンドを食べた", "expected_contains": "どうでしたか", "intent": "experience"},
+        {"input": "あっさりした味わいで、美味しかった", "expected_contains": "あっさり", "intent": "experience_followup"},
+        {"input": "満足した", "expected_contains": "満足", "intent": "experience_followup"},
+        {"input": "ハム&ゴーダチーズ スターバックス バゲットサンドも好き", "expected_contains": "好きなんですね", "intent": "topic_switch"},
+        {"input": "ドリンクの種類は", "expected_contains": "スターバックス ラテ", "intent": "evidence"},
+        {"input": "黒耳を飲んだ", "expected_contains": "飲ん", "intent": "experience"},
+        {"input": "美味しかった", "expected_contains": "黒耳", "intent": "experience_followup"}
+      ]
+    }
+  ]
+}
