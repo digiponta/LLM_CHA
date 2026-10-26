@@ -3704,6 +3704,12 @@ def main() -> None:
                 print("[route=CLIPBOARD_CAUSAL_EVIDENCE, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]")
                 print()
                 continue
+            from clipboard_causal_evidence_v09760 import INTENTS
+            if topic_context.active_topic and any(pattern.search(user_text) for pattern, _ in INTENTS):
+                print("AI> 取得した資料から理由を裏付ける記述を確認できませんでした。（外部情報・未検証）")
+                print("[route=CLIPBOARD_CAUSAL_SOURCE_NEEDED, train_ready=False, auto_promote=False]")
+                print()
+                continue
         if final_guard_enabled:
             from semantic_context_surface_v09755 import evaluation as short_evaluation
             surface_evaluation=short_evaluation(user_text)
@@ -3812,6 +3818,8 @@ def main() -> None:
         from google_browser_search_v0973 import search_intent, launch
         google_term = search_intent(user_text)
         if google_term is not None:
+            topic_context.active_topic = google_term
+            topic_context.topics.setdefault(google_term, {"attribute": None, "status": "SOURCE_NEEDED"})
             google_result = launch(google_term)
             print("AI> Googleで「{}」を検索します。{}".format(
                 google_term, "" if google_result["opened"] else
