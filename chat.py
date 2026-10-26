@@ -3671,6 +3671,13 @@ def main() -> None:
         # v0.9.7.6: answer supported follow-ups from user-copied page first.
         clipboard_answer = clipboard_context.answer(user_text)
         if clipboard_answer is not None:
+            if final_guard_enabled:
+                from clipboard_final_guard_v09747 import inspect_clipboard_answer
+                clipboard_check = inspect_clipboard_answer(user_text, clipboard_answer)
+                if clipboard_check.decision == "REJECT":
+                    clipboard_answer = clipboard_check.selected
+                print("[clipboard_final_guard={}, reason={}, train_ready=False]".format(
+                    clipboard_check.decision, clipboard_check.reason))
             print("AI> " + clipboard_answer)
             print("[route=CLIPBOARD_CONTEXT_ANSWER, truth_state=EXTERNAL_UNVERIFIED, train_ready=False]")
             print()
