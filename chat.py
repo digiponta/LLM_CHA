@@ -3696,7 +3696,7 @@ def main() -> None:
                 continue
         # v0.9.7.60: cite a literal causal statement from copied text.
         if clipboard_context.text and not user_text.startswith("/"):
-            from clipboard_causal_evidence_v09760 import retrieve as retrieve_causal_evidence
+            from clipboard_causal_evidence_v09762 import retrieve as retrieve_causal_evidence
             causal_reply = retrieve_causal_evidence(
                 user_text, clipboard_context.text, topic_context.active_topic)
             if causal_reply is not None:
