@@ -66,6 +66,24 @@ def clipboard_answer(source, question):
         return "資料にフード欄はありますが、商品名を安全に抽出できませんでした。"
     return "資料は一時文脈として読み込みましたが、この質問は資料から安全に抽出できません。質問を具体化するか、資料の該当部分を示してください。"
 
+def contextual_followup(source, message):
+    """Only respond locally when user's mentioned item occurs in copied text.
+
+    Treat eating/liking as personal remarks, not as factual evidence.
+    """
+    text=message.strip().rstrip("。！!")
+    for suffix,reply in (
+        ("を食べた","そうなんですね。食べてみて、味や食感はどうでしたか？"),
+        ("を食べました","そうなんですね。食べてみて、どうでしたか？"),
+        ("が好き","好きなんですね。どんなところが気に入っていますか？"),
+        ("が好きです","好きなんですね。どんなところが気に入っていますか？"),
+    ):
+        if text.endswith(suffix):
+            item=text[:-len(suffix)].strip()
+            if len(item)>=3 and item in source:
+                return reply
+    return None
+
 def launch_command():
     return [sys.executable, "-u", str(Path(__file__).resolve().parent / "chat.py")]
 
@@ -80,6 +98,7 @@ class ChatGUI:
         self.awaiting_context=False
         self.output_tail=""
         self.clipboard_context=""
+        self.last_clipboard_source=""
         self.line_buffer=""
         self.chat_ready=False
         self.transcript=scrolledtext.ScrolledText(root, wrap="word",state="disabled",font=("Yu Gothic UI",11))
@@ -186,7 +205,7 @@ class ChatGUI:
             if should_display_line(line) and not line.startswith("You> "):
                 self._append(line+"\n")
         # CLI prompts have no trailing newline.
-        if self.line_buffer in ("You> ","Context> ") or self.line_buffer.startswith("Decision ["):
+        if self.line_buffer in ("Context> ",) or self.line_buffer.startswith("Decision ["):
             self._append(self.line_buffer)
             self.line_buffer=""
 
@@ -218,6 +237,7 @@ class ChatGUI:
             messagebox.showwarning("クリップボード読込", "クリップボードのテキストが空です。")
             return
         self.clipboard_context=content[:20000]
+        self.last_clipboard_source=""
         self._append(f"[クリップボードを読み込みました（{len(content)}文字・一時文脈・未検証）。次の質問1回にのみ利用します。]\n")
 
     def send(self):
@@ -232,10 +252,16 @@ class ChatGUI:
         if self.clipboard_context and not value.startswith("/"):
             source=self.clipboard_context
             self.clipboard_context=""
+            self.last_clipboard_source=source
             answer=clipboard_answer(source,value)
             self._append("You> "+value+"\n")
             self._append("AI> "+answer+"\n")
             return
+        if self.last_clipboard_source and not value.startswith("/"):
+            answer=contextual_followup(self.last_clipboard_source,value)
+            if answer is not None:
+                self._append("You> "+value+"\nAI> "+answer+"\n")
+                return
         self.submit(value)
 
     def close(self):
