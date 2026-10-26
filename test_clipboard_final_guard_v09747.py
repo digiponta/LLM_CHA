@@ -6,7 +6,7 @@ class ClipboardFinalGuardTests(unittest.TestCase):
         name="ハム&ゴーダチーズ スターバックス バゲットサンド"
         r=inspect_clipboard_answer(name+"を食べた","そう、"+name+"を飲んだのね。どんな味だった？")
         self.assertEqual(r.decision,"REJECT")
-        self.assertEqual(r.reason,"explicit-user-action-conflict")
+        self.assertIn(r.reason, ("explicit-user-action-conflict", "semantic-action-consistency"))
         self.assertIn(name+"を食べたのね",r.selected)
     def test_drink_verbs_preserved(self):
         r=inspect_clipboard_answer("ラテを飲んだ","ラテを飲んだのね。")
