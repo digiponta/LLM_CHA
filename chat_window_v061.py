@@ -128,6 +128,7 @@ EXPERIMENTAL_MODELS = (
 def build_chat_command(argv=None, base_dir=None):
     """Build chat.py command; experimental checkpoints always require opt-in."""
     parser = argparse.ArgumentParser(description="LLM_CHA conversation mirror")
+    parser.add_argument("--gui-only-input", action="store_true", help="Disable terminal input relay to avoid console interleaving")
     parser.add_argument("--model", default=None, help="Explicit checkpoint")
     parser.add_argument("--tokenizer", default=None, help="Explicit tokenizer")
     parser.add_argument("--latest-experimental", action="store_true",
@@ -159,6 +160,7 @@ def build_chat_command(argv=None, base_dir=None):
 
 
 def run():
+    gui_only_input = "--gui-only-input" in sys.argv[1:]
     command, model_label = build_chat_command()
     events = queue.Queue()
     from gui_clipboard_display_v09710 import ClipboardDisplayFilter
@@ -166,7 +168,7 @@ def run():
     parser = ConversationParser(clipboard_display.feed)
     status_parser = StatusParser(lambda value: events.put(("status", value)))
     root = tk.Tk()
-    root.title("LLM_CHA — GUI / Semantic Diagnostics (v0.9.7.45)")
+    root.title("LLM_CHA — GUI / Semantic Diagnostics (v0.9.7.50)")
     root.geometry("960x700")
     root.minsize(460, 280)
 
@@ -319,7 +321,8 @@ def run():
             print("[GUI input relay error: {}]".format(exc), file=sys.stderr, flush=True)
 
     threading.Thread(target=read_child, daemon=True).start()
-    threading.Thread(target=forward_terminal, daemon=True).start()
+    if not gui_only_input:
+        threading.Thread(target=forward_terminal, daemon=True).start()
 
     closing_for_exit = False
 
