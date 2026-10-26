@@ -12,6 +12,8 @@ class ReplayState:
     truth_state: str = "USER_REPORTED"
     complete: bool = True
     last_sequence: int = 0
+    awaiting_clarification: str | None = None
+    awaiting_new_reason: str | None = None
 
     def to_dict(self):
         return asdict(self)
@@ -33,10 +35,21 @@ def replay_semantic_events(events):
             continue
         topic=e.topic
         if e.event=="switch_topic":
-            state.active_topic=topic
+            state.awaiting_clarification=None
+            state.awaiting_new_reason=None
+            state.active_topic=e.target_topic or topic
             continue
         if topic is None:
             continue
+        if e.event=="reject_previous":
+            state.awaiting_clarification=topic
+            state.awaiting_new_reason=None
+        elif e.event=="clarification_acknowledged":
+            state.awaiting_clarification=None
+            state.awaiting_new_reason=topic
+        elif e.event in ("clarification_provided", "clarification_cancelled"):
+            state.awaiting_clarification=None
+            state.awaiting_new_reason=None
         if e.event=="express_preference":
             state.active_topic=topic
             state.preferences.setdefault(topic,{"preference":"likes","quality":None})
