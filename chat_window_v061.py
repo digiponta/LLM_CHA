@@ -168,7 +168,8 @@ def run():
     parser = ConversationParser(clipboard_display.feed)
     status_parser = StatusParser(lambda value: events.put(("status", value)))
     root = tk.Tk()
-    root.title("LLM_CHA — GUI / Semantic Diagnostics (v0.9.7.58)")
+    from gui_runtime_version_v09766 import runtime_version
+    root.title("LLM_CHA — GUI / Semantic Diagnostics (" + runtime_version() + ")")
     root.geometry("960x700")
     root.minsize(460, 280)
 
