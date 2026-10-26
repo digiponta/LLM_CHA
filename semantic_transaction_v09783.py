@@ -12,6 +12,7 @@ class TransactionResult:
 def process_semantic_transaction(manager,topic_context,utterance):
     before_manager=copy.deepcopy(manager.__dict__)
     before_topic=getattr(topic_context,"active_topic",None)
+    before_sequence=manager.journal.sequence
     try:
         result=manager.handle(utterance,before_topic)
         if result is None:
@@ -20,7 +21,20 @@ def process_semantic_transaction(manager,topic_context,utterance):
             pass
         elif result.next_topic is not None:
             topic_context.active_topic=result.next_topic
+        # Validate newly appended topic transfers against pre-transaction context.
+        expected_topic=before_topic
+        provenance_error=False
+        for event in manager.journal.events:
+            if event.sequence <= before_sequence:
+                continue
+            if event.event == "switch_topic":
+                if expected_topic is not None and event.source_topic != expected_topic:
+                    provenance_error=True
+                expected_topic=event.target_topic
         decision=evaluate_integrity(manager,topic_context)
+        if provenance_error:
+            from semantic_integrity_gate_v09782 import GateDecision
+            decision=GateDecision("BLOCK",False,("transaction:topic_provenance",))
         if not decision.allow_dialogue:
             manager.__dict__.clear()
             manager.__dict__.update(before_manager)
