@@ -14,6 +14,7 @@ def evidence_question(text):
 
 def tokens(text):
     words=re.findall(r"[A-Za-z][A-Za-z0-9_-]{2,}|[一-龯々ァ-ヴー]{2,}",text.casefold())
+    words=[piece for word in words for piece in re.split(r"(?:について|教えて|ください|知りたい|とは|ですか|の|は|が|を|に|で|と)",word) if len(piece)>=2]
     found=[]
     for word in words:
         if word not in STOP and word not in found:
