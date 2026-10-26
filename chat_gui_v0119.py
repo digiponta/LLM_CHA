@@ -147,7 +147,7 @@ class ChatGUI:
         self.entry.delete(0,"end")
         self.entry.insert(0,flattened)
         self.entry.focus_set()
-        self._append(f"[クリップボードを入力欄へ読み込みました（{len(content)}文字）。未送信・未検証。送信前に編集できます。]\\n")
+        self._append(f"[クリップボードを入力欄へ読み込みました（{len(content)}文字）。未送信・未検証。送信前に編集できます。]\n")
 
     def send(self):
         value=self.entry.get().strip()
