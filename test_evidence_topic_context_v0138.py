@@ -26,7 +26,28 @@ class EvidenceTopicV0138Tests(unittest.TestCase):
         short_source="スファレライトの化学組成はZnSです。"
         self.assertIn("ZnS",ctx.answer(short_source,"スファレライトの化学組成は？"))
         self.assertIn("確認できません",ctx.answer(short_source,"屈折率は？"))
-        self.assertIsNone(ctx.answer(short_source,"それは高いの？"))
+        comparison=ctx.answer(short_source,"それは高いの？")
+        self.assertIn("スファレライトの屈折率",comparison)
+        self.assertIn("比較基準",comparison)
+        self.assertIn("未検証",comparison)
+
+    def test_gui_missing_evidence_followup(self):
+        short_source="スファレライトの化学組成は硫化亜鉛（ZnS）です。"
+        gui=ChatGUI.__new__(ChatGUI)
+        gui.entry=Mock()
+        gui._append=Mock()
+        gui.submit=Mock()
+        gui.clipboard_context=short_source
+        gui.last_clipboard_source=short_source
+        gui.active_preference_topic=""
+        gui.active_food_item=""
+        gui.evidence_topic_context=EvidenceTopicContext()
+        for msg in ("スファレライトの化学組成は？","屈折率は？","それは高いの？"):
+            gui.entry.get.return_value=msg
+            gui.send()
+        self.assertEqual(gui._append.call_count,3)
+        self.assertIn("比較基準",gui._append.call_args.args[0])
+        self.assertIn("スファレライトの屈折率",gui._append.call_args.args[0])
 
     def test_new_source_resets_previous_reference(self):
         ctx=EvidenceTopicContext()
