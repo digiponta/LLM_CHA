@@ -3681,6 +3681,15 @@ def main() -> None:
             if attribute_reply is not None:
                 # Preserve the subject for subsequent elliptical questions.
                 topic_context.observe(user_text)
+                explicit_attribute = re.match(
+                    r"^(.{2,55}?)の(?:モース硬度|硬度|屈折率|主な産地|産地|化学組成|成分|分散度)",
+                    user_text)
+                if explicit_attribute:
+                    subject = explicit_attribute.group(1).strip()
+                    topic_context.active_topic = subject
+                    topic_context.topics.setdefault(subject, {
+                        "attribute": "source_attribute",
+                        "status": "EXTERNAL_UNVERIFIED"})
                 print("AI> " + attribute_reply)
                 print("[route=CLIPBOARD_ATTRIBUTE_EVIDENCE, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]")
                 print()
