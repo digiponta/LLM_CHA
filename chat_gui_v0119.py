@@ -47,6 +47,21 @@ def should_display_line(line):
 
 def clipboard_answer(source, question):
     """Extract a grounded food list; do not send a long document to 512-token LLM."""
+    if any(word in question for word in ("ドリンク","飲み物","ビバレッジ")):
+        match=re.search(r"ビバレッジ\\s+(.+?)\\s+ビバレッジ一覧へ",source,re.S)
+        if not match:
+            return "資料にドリンクの一覧は確認できませんでした。（未検証）"
+        section=match.group(1)
+        # The copied menu repeats each product name consecutively.
+        names=re.findall(r"(.{3,55}?)\\s+\\1(?=\\s|$)",section)
+        unique=[]
+        for name in names:
+            name=" ".join(name.split())
+            if name and name not in unique:
+                unique.append(name)
+        if unique:
+            return "資料に記載されたドリンク: "+"、".join(unique)+"。（クリップボード由来・未検証）"
+        return "資料中のドリンク欄: "+section[:450]+"（クリップボード由来・未検証。商品名の区切りは未確認）"
     if "メニュー" in question and "フード" not in question:
         categories=[name for name in ("ビバレッジ","フード","コーヒー豆","ティー・紅茶","タンブラー","グッズ") if name in source]
         if categories:
@@ -79,6 +94,8 @@ def contextual_followup(source, message):
     for suffix,reply in (
         ("を食べた","そうなんですね。食べてみて、味や食感はどうでしたか？"),
         ("を食べました","そうなんですね。食べてみて、どうでしたか？"),
+        ("も好きです","それも好きなんですね。どんなところが気に入っていますか？"),
+        ("も好き","それも好きなんですね。どんなところが気に入っていますか？"),
         ("が好き","好きなんですね。どんなところが気に入っていますか？"),
         ("が好きです","好きなんですね。どんなところが気に入っていますか？"),
     ):
@@ -279,7 +296,7 @@ class ChatGUI:
                 # Detect the specific item mentioned, and keep it as dialogue
                 # topic. A user's taste report is not a verified external fact.
                 clean=value.strip().rstrip("。！! ")
-                for suffix in ("を食べました","を食べた","が好きです","が好き"):
+                for suffix in ("を食べました","を食べた","も好きです","も好き","が好きです","が好き"):
                     if clean.endswith(suffix):
                         item=clean[:-len(suffix)].strip()
                         if item in source:
