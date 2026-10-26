@@ -316,7 +316,12 @@ class ChatGUI:
             self.line_buffer=self.line_buffer[marker:]
         while "\n" in self.line_buffer:
             line,self.line_buffer=self.line_buffer.split("\n",1)
-            if should_display_line(line) and not line.startswith("You> "):
+            # input("You> ") emits a prompt without a newline; the subsequent
+            # print("AI> ...") may be delivered as "You> AI> ...".
+            # Drop only the CLI prompt, never the answer sharing its line.
+            if line.startswith("You> "):
+                line=line[len("You> "):]
+            if should_display_line(line) and line:
                 self._append(line+"\n")
         # CLI prompts have no trailing newline.
         if self.line_buffer in ("Context> ",) or self.line_buffer.startswith("Decision ["):
