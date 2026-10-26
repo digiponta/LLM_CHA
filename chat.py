@@ -6755,6 +6755,14 @@ def main() -> None:
                 print("[route=INCOMPLETE_UTTERANCE, topic={}, train_ready=False, auto_promote=False]".format(incomplete.topic))
                 print()
                 continue
+        if final_guard_enabled:
+            from opinion_intent_v09754 import detect as detect_opinion
+            opinion=detect_opinion(user_text)
+            if opinion is not None:
+                print("AI> " + opinion.response)
+                print("[route=OPINION, truth_state=USER_OPINION_UNVERIFIED, train_ready=False, auto_promote=False]")
+                print()
+                continue
         semantic_result = semantic_knowledge.resolve(
             user_text
         )
