@@ -136,6 +136,42 @@ def reply_to_experience(message, active_item):
         return "また食べたいと思えるほど気に入ったんですね。"
     return None
 
+def source_question_answer(source, question):
+    """Return source-grounded excerpts, never unsupported generated facts."""
+    normalized=question.strip().rstrip("？?。！!")
+    topics=(
+        (("屈折率",), ("屈折率","refractive index")),
+        (("カット","研磨","割れ","難しい"), ("カット","研磨","劈開","へき開","硬度","脆","割れ","加工")),
+    )
+    words=next((keys for hints,keys in topics if any(w in normalized for w in hints)),None)
+    if words is None:
+        return None
+    # Sentence boundary splitting; a web-page clipboard may be one long line.
+    spans=re.split(r"(?<=[。！？!?])\s*|[\r\n]+",source)
+    hits=[]
+    for span in spans:
+        span=" ".join(span.split())
+        if any(w.casefold() in span.casefold() for w in words):
+            if len(span)>300:
+                for word in words:
+                    i=span.casefold().find(word.casefold())
+                    if i>=0:
+                        span=span[max(0,i-90):i+170]
+                        break
+            if span not in hits:
+                hits.append(span)
+        if len(hits)>=3:
+            break
+    if hits:
+        return "資料の該当箇所（未検証）: "+" / ".join(hits)
+    return "取り込んだ資料には、この質問に直接対応する記述を確認できませんでした。"
+
+def casual_preference_reply(message):
+    match=re.fullmatch(r"私は[、,\s]*(.{2,80}?)が好き(?:です)?[。！!\s]*",message.strip())
+    if match:
+        return match.group(1)+"が好きなんですね。どんなところに魅力を感じますか？"
+    return None
+
 def launch_command():
     return [sys.executable, "-u", str(Path(__file__).resolve().parent / "chat.py")]
 
@@ -307,6 +343,10 @@ class ChatGUI:
         # consume it after an unsupported generic question.
         source=getattr(self,'last_clipboard_source','') or self.clipboard_context
         if source and not value.startswith("/"):
+            preference=casual_preference_reply(value)
+            if preference is not None:
+                self._append("You> "+value+"\nAI> "+preference+"\n")
+                return
             followup=contextual_followup(source,value)
             if followup is not None:
                 # Detect the specific item mentioned, and keep it as dialogue
@@ -320,6 +360,10 @@ class ChatGUI:
             experience=reply_to_experience(value,getattr(self,"active_food_item",""))
             if experience is not None:
                 self._append("You> "+value+"\nAI> "+experience+"\n")
+                return
+            grounded=source_question_answer(source,value)
+            if grounded is not None:
+                self._append("You> "+value+"\nAI> "+grounded+"\n")
                 return
             answer=clipboard_answer(source,value)
             if answer and not answer.startswith("資料は一時文脈として"):
