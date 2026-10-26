@@ -10,7 +10,10 @@ class TransitionIntegrationTests(unittest.TestCase):
     def test_reject(self):
         m=self.prepared()
         self.assertEqual(m.handle("そうじゃない","スファレライト").route,"SEMANTIC_DIALOGUE_REJECTION")
-        self.assertIsNone(m.handle("そうだよ","スファレライト"))
+        confirmation=m.handle("そうだよ","スファレライト")
+        self.assertEqual(confirmation.route,"SEMANTIC_DIALOGUE_CLARIFICATION")
+        self.assertEqual(m.journal.latest().event,"clarification_acknowledged")
+        self.assertNotIn("スファレライト",m.journal.focus)
     def test_correction(self):
         m=self.prepared()
         r=m.handle("きらきらより色が好き","スファレライト")
