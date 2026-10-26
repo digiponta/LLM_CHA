@@ -19,6 +19,15 @@ from pathlib import Path
 
 CHOICES=("prefer_a","prefer_b","both_contextual","neither","skip")
 
+TITLE_BASE="LLM_CHA — Chat + Semantic Reconciliation (experimental)"
+
+def sleep_pending_from_log(line):
+    """Only the Nagato /sleep metric, not knowledge-queue or verification pending."""
+    if not re.search(r"\[(?:Nagato Semantic Memory:|semantic sleep(?::| completed:| prepared:))",line):
+        return None
+    match=re.search(r"\bpending=(\d+)\b",line)
+    return int(match.group(1)) if match else None
+
 def google_query(text):
     match=re.fullmatch(r"\s*(.+?)\s*(?:を)?(?:ググって|ぐぐって|googleで検索して|Googleで検索して)\s*[。！!]*",text)
     return match.group(1).strip() if match else None
@@ -193,7 +202,7 @@ def launch_command():
 class ChatGUI:
     def __init__(self, root):
         self.root=root
-        root.title("LLM_CHA — Chat + Semantic Reconciliation (experimental)")
+        root.title(TITLE_BASE+" | /sleep待ち: 確認中")
         root.geometry("920x700")
         self.events=queue.Queue()
         self.process=None
@@ -205,6 +214,7 @@ class ChatGUI:
         self.active_food_item=""
         self.active_preference_topic=""
         self.line_buffer=""
+        self.status_line_buffer=""
         self.chat_ready=False
         self.transcript=scrolledtext.ScrolledText(root, wrap="word",state="disabled",font=("Yu Gothic UI",11))
         self.transcript.pack(fill="both",expand=True,padx=10,pady=10)
@@ -288,6 +298,7 @@ class ChatGUI:
                 self._set_decisions(False)
         if parts:
             chunk="".join(parts)
+            self._update_sleep_title(chunk)
             self._show_filtered(chunk)
             self.output_tail=(self.output_tail+chunk)[-500:]
             # CLI input() prompts may not be newline-terminated.
@@ -303,6 +314,16 @@ class ChatGUI:
                 self.awaiting_decision=False
                 self._set_decisions(False)
         self.root.after(50,self.poll)
+
+    def _update_sleep_title(self, chunk):
+        # stdout is read one character at a time; reconstruct complete lines.
+        self.status_line_buffer=getattr(self,"status_line_buffer","")+chunk
+        while "\n" in self.status_line_buffer:
+            line,self.status_line_buffer=self.status_line_buffer.split("\n",1)
+            pending=sleep_pending_from_log(line)
+            if pending is not None:
+                self.root.title(f"{TITLE_BASE} | /sleep待ち: {pending}件")
+        self.status_line_buffer=self.status_line_buffer[-2000:]
 
     def _show_filtered(self, chunk):
         """Show dialogue only; retain CLI prompts and reconciliation choices."""
