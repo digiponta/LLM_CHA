@@ -24,6 +24,16 @@ def assess_generation(generated):
     # Obvious consecutive repetition, avoiding semantic claims about repeated words.
     if re.search(r"(.{5,}?)\1{2,}",text):
         reasons.append("REPEATED_FRAGMENT")
+    # Detect local Japanese phrase loops even with intervening tokens.
+    # Keep thresholds conservative to avoid rejecting ordinary topic repetition.
+    spans=re.findall(r"[一-龥ぁ-んァ-ヶ]{2,8}(?:は|が|を|に|の|と|で)",text)
+    if any(spans[i:i+5].count(phrase)>=4
+           for i in range(max(0,len(spans)-4))
+           for phrase in set(spans[i:i+5])):
+        reasons.append("JAPANESE_PHRASE_LOOP")
+    if re.search(r"([一-龥ぁ-んァ-ヶ]{2,8}(?:は|が|を|に|の))\\s*[,、]?\\s*\\1",text):
+        if "JAPANESE_PHRASE_LOOP" not in reasons:
+            reasons.append("JAPANESE_PHRASE_LOOP")
     if termination=="MAX_TOKENS":
         reasons.append("MAX_TOKENS")
     if reasons:
