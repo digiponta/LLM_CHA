@@ -3684,10 +3684,17 @@ def main() -> None:
                 print("[route=SEMANTIC_INTEGRITY_BLOCK, train_ready=False, auto_promote=False]")
                 print()
                 continue
-            dialogue_result = dialogue_manager.handle(user_text, topic_context.active_topic)
+            from semantic_transaction_v09783 import process_semantic_transaction
+            tx = process_semantic_transaction(dialogue_manager, topic_context, user_text)
+            if not tx.committed:
+                print("[semantic_transaction=" + tx.status + "]")
+                print("AI> 会話の意味状態を安全に更新できなかったため、回答を保留します。")
+                print("[route=SEMANTIC_TRANSACTION_ROLLBACK, train_ready=False, auto_promote=False]")
+                print()
+                continue
+            dialogue_result = tx.dialogue_result
             if dialogue_result is not None:
-                if dialogue_result.next_topic is not None:
-                    topic_context.active_topic = dialogue_result.next_topic
+                print("[semantic_transaction=" + tx.status + "]")
                 print("AI> " + dialogue_result.reply)
                 latest_event = dialogue_manager.journal.latest()
                 if latest_event is not None:
