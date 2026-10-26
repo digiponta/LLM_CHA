@@ -3,6 +3,7 @@
 Keeps reported feelings separate from unverified external evidence. No persistence.
 """
 from dataclasses import dataclass
+import re
 from semantic_event_journal_v09774 import SemanticEventJournal
 from semantic_dialogue_transition_v09773 import parse_transition
 from preference_dialogue_v09768 import PreferenceDialogue
@@ -22,11 +23,23 @@ class SemanticDialogueManager:
         self.agreement = AgreementContext()
         self.last_frame = None
         self.journal = SemanticEventJournal()
+        self.awaiting_clarification = None
 
     def handle(self, utterance, topic=None):
         text = str(utterance or "").strip()
         if not text or text.startswith("/"):
             return None
+        # Confirmation after a rejection acknowledges the correction request,
+        # never reactivates the rejected preference.
+        if self.awaiting_clarification is not None:
+            clarification_topic = self.awaiting_clarification
+            if re.fullmatch(r"(?:そうだよ|そうです|うん|はい|その通り)[。！! ]*", text):
+                self.awaiting_clarification = None
+                self.journal.record("clarification_acknowledged", clarification_topic)
+                return DialogueResult(
+                    "わかった。どんなところが好きなのか、もう少し教えて。",
+                    "SEMANTIC_DIALOGUE_CLARIFICATION")
+            self.awaiting_clarification = None
         transition = parse_transition(text, topic, self.last_frame)
         if transition is not None:
             previous_quality = (self.last_frame.quality if self.last_frame is not None else None)
@@ -41,6 +54,7 @@ class SemanticDialogueManager:
                     f"{transition.topic}の話だね。何について知りたい？",
                     "SEMANTIC_DIALOGUE_TOPIC_SWITCH", next_topic=transition.topic)
             if transition.intent == "reject_previous":
+                self.awaiting_clarification = transition.topic
                 return DialogueResult("そうではなかったんだね。どういう意味だった？",
                                       "SEMANTIC_DIALOGUE_REJECTION")
             return DialogueResult(
