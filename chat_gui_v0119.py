@@ -186,6 +186,12 @@ def preference_dialogue_reply(message, topic):
     if not topic:
         return None
     text=message.strip().rstrip("。！! ")
+    # Reply to the previous color-preference question, without misclassifying
+    # this as an external-evidence lookup or a factual claim.
+    colors=("黄色","黄","赤色","赤","青色","青","緑色","緑","オレンジ","紫","白","黒","琥珀色","蜂蜜色")
+    if any(color in text for color in colors) and any(
+        suffix in text for suffix in ("が好き","が好み","が好きです","が好みです")):
+        return "その色合いが好みなんですね。"+topic+"の輝きとよく合いそうですね。"
     if text in ("そうだよ","そうです","うん","はい","そうそう"):
         return "そうなんですね。"+topic+"の魅力が伝わってきます。"
     if ("きらきら" in text or "キラキラ" in text or "輝き" in text) and any(
