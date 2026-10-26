@@ -6739,6 +6739,14 @@ def main() -> None:
                     everyday.intent, everyday.action or "-"))
                 print()
                 continue
+        if final_guard_enabled:
+            from definition_intent_v09752 import resolve as resolve_definition
+            definition=resolve_definition(user_text)
+            if definition is not None and definition.response is not None:
+                print("AI> " + definition.response)
+                print("[route=CURATED_DEFINITION, truth_state=LOCAL_CURATED, source=LOCAL_CURATED, train_ready=False, auto_promote=False]")
+                print()
+                continue
         semantic_result = semantic_knowledge.resolve(
             user_text
         )
