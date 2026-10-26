@@ -3499,6 +3499,8 @@ def main() -> None:
     final_guard_enabled = bool(args.final_guard)
     from semantic_context_surface_v09755 import Carryover
     semantic_carryover = Carryover()
+    from topic_keyed_context_v09756 import TopicContext
+    topic_context = TopicContext()
     while True:
         try:
             user_text = input("You> ").strip()
@@ -3676,6 +3678,12 @@ def main() -> None:
             if surface_evaluation is not None:
                 print("AI> " + surface_evaluation)
                 print("[route=SHORT_EVALUATION, train_ready=False, auto_promote=False]")
+                print()
+                continue
+            topic_reply=topic_context.observe(user_text)
+            if topic_reply is not None:
+                print("AI> " + topic_reply)
+                print("[route=TOPIC_KEYED_CONTEXT, topic={}, evidence=SOURCE_NEEDED, train_ready=False, auto_promote=False]".format(topic_context.active_topic))
                 print()
                 continue
             context_reply=semantic_carryover.observe(user_text)
