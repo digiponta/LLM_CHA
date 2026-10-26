@@ -3697,15 +3697,17 @@ def main() -> None:
         # v0.9.7.60: cite a literal causal statement from copied text.
         if clipboard_context.text and not user_text.startswith("/"):
             from clipboard_causal_evidence_v09762 import retrieve as retrieve_causal_evidence
+            from causal_question_normalization_v09765 import normalize_causal_question
+            causal_question = normalize_causal_question(user_text)
             causal_reply = retrieve_causal_evidence(
-                user_text, clipboard_context.text, topic_context.active_topic)
+                causal_question, clipboard_context.text, topic_context.active_topic)
             if causal_reply is not None:
                 print("AI> " + causal_reply)
                 print("[route=CLIPBOARD_CAUSAL_EVIDENCE, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]")
                 print()
                 continue
             from clipboard_causal_evidence_v09760 import INTENTS
-            if topic_context.active_topic and any(pattern.search(user_text) for pattern, _ in INTENTS):
+            if topic_context.active_topic and any(pattern.search(causal_question) for pattern, _ in INTENTS):
                 from clipboard_causal_diagnostic_v09764 import diagnose
                 causal_debug = diagnose(user_text, clipboard_context.text, topic_context.active_topic)
                 print("[causal_diagnostic=" + json.dumps(causal_debug, ensure_ascii=False) + "]")
