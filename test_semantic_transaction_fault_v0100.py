@@ -59,6 +59,13 @@ class FaultInjectionTests(unittest.TestCase):
             raise RuntimeError("injected")
         self.assertEqual(self.inject(corrupt).status,"ROLLBACK:EXCEPTION")
 
+    def test_first_switch_source_checked_against_topic_context(self):
+        def corrupt(m,t):
+            m.journal.record("switch_topic","ダイヤモンド",
+                source_topic="ルビー",target_topic="ダイヤモンド")
+            t.active_topic="ダイヤモンド"
+        result=self.inject(corrupt)
+        self.assertEqual(result.status,"ROLLBACK:BLOCK")
     def test_recovery_commit(self):
         self.test_bad_provenance()
         result=process_semantic_transaction(
