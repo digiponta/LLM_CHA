@@ -3501,6 +3501,8 @@ def main() -> None:
     semantic_carryover = Carryover()
     from topic_keyed_context_v09756 import TopicContext
     topic_context = TopicContext()
+    from preference_dialogue_v09768 import PreferenceDialogue
+    preference_dialogue = PreferenceDialogue()
     while True:
         try:
             user_text = input("You> ").strip()
@@ -3718,8 +3720,7 @@ def main() -> None:
         # v0.9.7.67: acknowledge explicit likes in ordinary conversation.
         # Ephemeral response; never approve evidence or train on preferences.
         if not user_text.startswith("/"):
-            from topic_preference_ack_v09767 import acknowledge as acknowledge_preference
-            preference_reply = acknowledge_preference(user_text, topic_context.active_topic)
+            preference_reply = preference_dialogue.reply(user_text, topic_context.active_topic)
             if preference_reply is not None:
                 print("AI> " + preference_reply)
                 print("[route=TOPIC_PREFERENCE_ACK, train_ready=False, auto_promote=False, persisted=False]")
