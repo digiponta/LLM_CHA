@@ -172,6 +172,21 @@ def casual_preference_reply(message):
         return match.group(1)+"が好きなんですね。どんなところに魅力を感じますか？"
     return None
 
+def preference_dialogue_reply(message, topic):
+    """Acknowledge a user's qualitative preference without inventing facts."""
+    if not topic:
+        return None
+    text=message.strip().rstrip("。！! ")
+    if text in ("そうだよ","そうです","うん","はい","そうそう"):
+        return "そうなんですね。"+topic+"の魅力が伝わってきます。"
+    if ("きらきら" in text or "キラキラ" in text or "輝き" in text) and any(
+        word in text for word in ("心地よい","好き","気に入","きれい","綺麗","美しい")):
+        return "きらきらした輝きが心地よいんですね。"+topic+"のどんな色合いが好みですか？"
+    if any(word in text for word in ("心地よい","癒される","きれい","綺麗")) and not (
+        "なぜ" in text or "理由" in text or "？" in text or "?" in text):
+        return "そう感じるんですね。"+topic+"の魅力を楽しんでいるんですね。"
+    return None
+
 def launch_command():
     return [sys.executable, "-u", str(Path(__file__).resolve().parent / "chat.py")]
 
@@ -188,6 +203,7 @@ class ChatGUI:
         self.clipboard_context=""
         self.last_clipboard_source=""
         self.active_food_item=""
+        self.active_preference_topic=""
         self.line_buffer=""
         self.chat_ready=False
         self.transcript=scrolledtext.ScrolledText(root, wrap="word",state="disabled",font=("Yu Gothic UI",11))
@@ -328,6 +344,7 @@ class ChatGUI:
         self.clipboard_context=content[:20000]
         self.last_clipboard_source=self.clipboard_context
         self.active_food_item=""
+        self.active_preference_topic=""
         self._append(f"[クリップボードを読み込みました（{len(content)}文字・一時文脈・未検証）。新しい資料を読むまで参照できます。]\n")
 
     def send(self):
@@ -345,7 +362,15 @@ class ChatGUI:
         if source and not value.startswith("/"):
             preference=casual_preference_reply(value)
             if preference is not None:
+                match=re.fullmatch(r"私は[、,\\s]*(.{2,80}?)が好き(?:です)?[。！!\\s]*",value.strip())
+                if match:
+                    self.active_preference_topic=match.group(1)
                 self._append("You> "+value+"\nAI> "+preference+"\n")
+                return
+            preference_followup=preference_dialogue_reply(
+                value,getattr(self,"active_preference_topic",""))
+            if preference_followup is not None:
+                self._append("You> "+value+"\nAI> "+preference_followup+"\n")
                 return
             followup=contextual_followup(source,value)
             if followup is not None:
