@@ -37,5 +37,5 @@ def validate_cross_context(manager, topic_context=None, semantic_memory=None):
         issues.append("manager.awaiting_clarification")
     if replay.awaiting_new_reason != manager.awaiting_new_reason:
         issues.append("manager.awaiting_new_reason")
-    return CrossContextResult("MISMATCH" if issues else ("CONSISTENT" if len(compared)>1 else "NOT_COMPARABLE"),
+    return CrossContextResult("MISMATCH" if issues else ("CONSISTENT" if topic_switch and topic_context is not None else "NOT_COMPARABLE"),
         tuple(issues),tuple(compared),unavailable,replay.last_sequence)
