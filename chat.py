@@ -3678,6 +3678,8 @@ def main() -> None:
         if not user_text.startswith("/"):
             dialogue_result = dialogue_manager.handle(user_text, topic_context.active_topic)
             if dialogue_result is not None:
+                if dialogue_result.next_topic is not None:
+                    topic_context.active_topic = dialogue_result.next_topic
                 print("AI> " + dialogue_result.reply)
                 if dialogue_result.frame is not None:
                     print("[semantic_dialogue=" + json.dumps(
