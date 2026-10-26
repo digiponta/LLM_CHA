@@ -35,6 +35,8 @@ class ChatGUI:
         self.entry=ttk.Entry(bottom)
         self.entry.pack(side="left",fill="x",expand=True)
         self.entry.bind("<Return>",lambda _: self.send())
+        self.clipboard_btn=ttk.Button(bottom,text="クリップボード読込",command=self.read_clipboard)
+        self.clipboard_btn.pack(side="left",padx=5)
         self.send_btn=ttk.Button(bottom,text="送信",command=self.send)
         self.send_btn.pack(side="left",padx=5)
         self.decisions=ttk.Frame(root)
@@ -128,6 +130,24 @@ class ChatGUI:
                 self.awaiting_context=False
         except (BrokenPipeError,OSError):
             messagebox.showerror("送信失敗","chat.pyとの接続が切断されました。")
+
+    def read_clipboard(self):
+        """Load text from OS clipboard into the editable chat input, not memory."""
+        try:
+            content=self.root.clipboard_get()
+        except tk.TclError:
+            messagebox.showwarning("クリップボード読込", "テキスト形式のクリップボードが見つかりません。")
+            return
+        if not isinstance(content,str) or not content.strip():
+            messagebox.showwarning("クリップボード読込", "クリップボードのテキストが空です。")
+            return
+        # chat.py reads one line per turn; folding line breaks prevents accidental
+        # multiple submissions when the user sends this pasted text.
+        flattened=" ".join(content.splitlines()).strip()
+        self.entry.delete(0,"end")
+        self.entry.insert(0,flattened)
+        self.entry.focus_set()
+        self._append(f"[クリップボードを入力欄へ読み込みました（{len(content)}文字）。未送信・未検証。送信前に編集できます。]\\n")
 
     def send(self):
         value=self.entry.get().strip()
