@@ -85,8 +85,8 @@ class ReconciliationStore:
         return record
 
 def render_question(ticket):
-    return ("候補の説明が一致しません。どちらを優先しますか？\\n"
-            "質問: "+ticket["question"]+"\\n"
-            "A: "+ticket["candidates"]["a"]["text"]+"\\n"
-            "B: "+ticket["candidates"]["b"]["text"]+"\\n"
+    return ("候補の説明が一致しません。どちらを優先しますか？\n"
+            "質問: "+ticket["question"]+"\n"
+            "A: "+ticket["candidates"]["a"]["text"]+"\n"
+            "B: "+ticket["candidates"]["b"]["text"]+"\n"
             "選択: prefer_a / prefer_b / both_contextual / neither")
