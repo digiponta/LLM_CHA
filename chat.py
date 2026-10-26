@@ -3501,12 +3501,8 @@ def main() -> None:
     semantic_carryover = Carryover()
     from topic_keyed_context_v09756 import TopicContext
     topic_context = TopicContext()
-    from preference_dialogue_v09768 import PreferenceDialogue
-    preference_dialogue = PreferenceDialogue()
-    from semantic_dialogue_state_v09770 import extract_preference, extract_reason
-    semantic_dialogue_frame = None
-    from dialogue_agreement_v09771 import AgreementContext
-    agreement_context = AgreementContext()
+    from semantic_dialogue_manager_v09772 import SemanticDialogueManager
+    dialogue_manager = SemanticDialogueManager()
     while True:
         try:
             user_text = input("You> ").strip()
@@ -3678,30 +3674,15 @@ def main() -> None:
                     print("AI> 生成実験に失敗: {}".format(exc))
             print()
             continue
-        # v0.9.7.71: short agreement about the immediately preceding preference.
+        # v0.9.7.72: unified session-only Semantic Dialogue Manager.
         if not user_text.startswith("/"):
-            agreement_reply = agreement_context.reply(user_text)
-            if agreement_reply is not None:
-                print("AI> " + agreement_reply)
-                print("[route=SEMANTIC_DIALOGUE_AGREEMENT, train_ready=False, auto_promote=False, persisted=False]")
-                print()
-                continue
-        # v0.9.7.67: acknowledge explicit likes in ordinary conversation.
-        # Ephemeral response; never approve evidence or train on preferences.
-        if not user_text.startswith("/"):
-            pending_preference_topic = preference_dialogue.awaiting_reason_for
-            preference_reply = preference_dialogue.reply(user_text, topic_context.active_topic)
-            if preference_reply is not None:
-                semantic_dialogue_frame = (
-                    extract_preference(user_text)
-                    or extract_reason(user_text, pending_preference_topic)
-                )
-                agreement_context.record(semantic_dialogue_frame)
-                print("AI> " + preference_reply)
-                if semantic_dialogue_frame is not None:
+            dialogue_result = dialogue_manager.handle(user_text, topic_context.active_topic)
+            if dialogue_result is not None:
+                print("AI> " + dialogue_result.reply)
+                if dialogue_result.frame is not None:
                     print("[semantic_dialogue=" + json.dumps(
-                        semantic_dialogue_frame.to_dict(), ensure_ascii=False) + "]")
-                print("[route=TOPIC_PREFERENCE_ACK, train_ready=False, auto_promote=False, persisted=False]")
+                        dialogue_result.frame.to_dict(), ensure_ascii=False) + "]")
+                print("[route=" + dialogue_result.route + ", train_ready=False, auto_promote=False, persisted=False]")
                 print()
                 continue
         # v0.9.7.59: source-literal attribute retrieval (also for ellipsis).
