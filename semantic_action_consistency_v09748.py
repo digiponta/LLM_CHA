@@ -41,6 +41,8 @@ class ActionCheck:
 
 def extract(text,source):
     s=str(text or "").strip()
+    if source=="ASSISTANT_RESPONSE":
+        s=re.sub(r"^(?:そう[、，]|うん[、，])\s*", "", s)
     hits=list(PATTERN.finditer(s))
     if len(hits)!=1:return None
     m=hits[0]
@@ -62,7 +64,6 @@ def check(utterance,response):
     # Allow the answer to include an acknowledgment before the object's name.
     left=user.object
     right=ai.object
-    if right.startswith("そう、"):right=right[3:].strip()
     if left!=right:
         return ActionCheck("REVIEW","object-identity-not-established",original,original,
                            user.snapshot(),ai.snapshot())
@@ -77,7 +78,7 @@ def check(utterance,response):
     if len(found)!=1:
         return ActionCheck("REVIEW","uncertain-output-span",original,original,user.snapshot(),ai.snapshot())
     match=found[0]
-    if match.group("particle")!=next(iter(["を" if user.action not in ("GO",) else "へ"])):
+    if match.group("particle")!=("を" if user.action!="GO" else "へ"):
         # avoid replacing differing grammatical roles.
         if user.action!="GO" or match.group("particle") not in ("へ","に"):
             return ActionCheck("REVIEW","particle-mismatch",original,original,user.snapshot(),ai.snapshot())
