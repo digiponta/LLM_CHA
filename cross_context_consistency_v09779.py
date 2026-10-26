@@ -32,8 +32,10 @@ def validate_cross_context(manager, topic_context=None, semantic_memory=None):
             issues.append("topic_context.active_topic")
     else:
         unavailable+=("topic_context.active_topic",)
-    # Compare independently held manager state only when pending clarification
-    # is meaningful. Replay does not encode the manager's expiry semantics.
-    unavailable+=("manager.pending_clarification",)
+    compared.extend(("manager.awaiting_clarification", "manager.awaiting_new_reason"))
+    if replay.awaiting_clarification != manager.awaiting_clarification:
+        issues.append("manager.awaiting_clarification")
+    if replay.awaiting_new_reason != manager.awaiting_new_reason:
+        issues.append("manager.awaiting_new_reason")
     return CrossContextResult("MISMATCH" if issues else ("CONSISTENT" if len(compared)>1 else "NOT_COMPARABLE"),
         tuple(issues),tuple(compared),unavailable,replay.last_sequence)
