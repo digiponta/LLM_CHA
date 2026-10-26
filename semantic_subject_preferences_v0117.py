@@ -6,8 +6,9 @@ generated A changes. Candidate history remains immutable and unapproved.
 import hashlib
 import json
 from pathlib import Path
-from semantic_dialogue_bridge_v0112 import DialogueBridge
-from semantic_reconciliation_v0110 import canonical_form, _save
+from semantic_dialogue_bridge_v0112 import DialogueBridge, _key
+from semantic_equivalence_router_v0111 import resolve
+from semantic_reconciliation_v0110 import canonical_form, _save, render_question
 
 def preference_key(question, subject, context, memory_answer):
     values=[canonical_form(x) for x in (question,subject,context,memory_answer)]
@@ -34,7 +35,12 @@ class SubjectPreferenceBridge(DialogueBridge):
                 return {"action":"USER_PREFERENCE","answer":memory_answer,
                         "ticket_id":ticket["id"],"approval_state":"NOT_APPROVED",
                         "factual_truth":"UNVERIFIED","reuse_scope":"QUESTION_SUBJECT_CONTEXT_MEMORY"}
-        result=super().compare(question,generated_answer,memory_answer,assertion,context=context)
+        # Do not use the legacy three-text preference cache here: it omits
+        # subject and context and can silently reuse a decision in the wrong scope.
+        result=resolve(question,generated_answer,memory_answer,assertion,store=self.tickets)
+        if result["action"]=="ASK_USER":
+            result["message"]=render_question(self.tickets.get(result["ticket_id"]))
+            result["session_key"]=_key(question,generated_answer,memory_answer)
         if result["action"]=="ASK_USER":
             _save(self.pending_index/(result["ticket_id"]+".json"),
                   {"preference_key":key,"context":context,"subject":subject})
