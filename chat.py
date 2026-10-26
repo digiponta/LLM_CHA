@@ -3336,6 +3336,14 @@ def main() -> None:
         f"pending={semantic_sleep_initial.pending}]"
     )
     print("[use /sleep to internalize pending Semantic Memory into model weights]")
+    # v0.10.0: read-only audit of the checkpoint/learning-state intersection.
+    from audit_semantic_internalization_v0100 import audit as audit_internalization
+    internalization_audit = audit_internalization(
+        nagato_semantic_memory_path, learning_state,
+        checkpoint_trained_fingerprints(checkpoint),
+    )
+    print("[semantic_internalization_audit=" + json.dumps(
+        internalization_audit, ensure_ascii=False) + "]")
     print()
 
     migrated_legacy_queue = consolidate_legacy_resolved(
