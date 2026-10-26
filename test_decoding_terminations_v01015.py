@@ -7,7 +7,7 @@ class Tok:
     eos_id=3
     def encode(self,prompt,add_bos=False):return [0]
     def decode(self,ids,skip_special_tokens=True):
-        return "".join({1:"a",2:"\\n",3:""}.get(i,"?") for i in ids)
+        return "".join({1:"a",2:"\n",3:""}.get(i,"?") for i in ids)
 
 class Model:
     context_length=16
