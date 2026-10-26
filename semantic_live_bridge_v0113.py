@@ -11,6 +11,7 @@ from pathlib import Path
 from semantic_dialogue_bridge_v0112 import DialogueBridge
 from semantic_equivalence_router_v0111 import EquivalenceAssertion
 from semantic_reconciliation_v0110 import canonical_form
+from generation_quality_gate_v0114 import assess_generation
 
 def extract_subject(question):
     question=question.strip()
@@ -33,6 +34,13 @@ def process_turn(question, *, generate, retrieve, bridge, subject=None, context=
     generated_text=generated if isinstance(generated,str) else generated.text
     if not isinstance(generated_text,str) or not generated_text.strip():
         return {"action":"GENERATION_UNAVAILABLE","answer":None,"subject":resolved_subject}
+    quality=assess_generation(generated)
+    if quality.status!="VALID":
+        return {"action":"GENERATION_QUALITY_REVIEW","answer":None,
+                "subject":resolved_subject,"quality_status":quality.status,
+                "quality_reasons":list(quality.reasons),
+                "candidate_text":generated_text,
+                "message":"生成回答が未完了または不正の可能性があります。意味調停を保留します: "+", ".join(quality.reasons)}
     if not evidence.hit or not evidence.answer.strip():
         return {"action":"MEMORY_MISS","answer":generated_text,"subject":resolved_subject,
                 "warning":"Model output is unverified"}
