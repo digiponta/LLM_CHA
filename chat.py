@@ -3497,6 +3497,8 @@ def main() -> None:
     emotion_dialogue = EmotionDialogue()
     emotion_enabled = False
     final_guard_enabled = bool(args.final_guard)
+    from semantic_context_surface_v09755 import Carryover
+    semantic_carryover = Carryover()
     while True:
         try:
             user_text = input("You> ").strip()
@@ -3668,6 +3670,20 @@ def main() -> None:
                     print("AI> 生成実験に失敗: {}".format(exc))
             print()
             continue
+        if final_guard_enabled:
+            from semantic_context_surface_v09755 import evaluation as short_evaluation
+            surface_evaluation=short_evaluation(user_text)
+            if surface_evaluation is not None:
+                print("AI> " + surface_evaluation)
+                print("[route=SHORT_EVALUATION, train_ready=False, auto_promote=False]")
+                print()
+                continue
+            context_reply=semantic_carryover.observe(user_text)
+            if context_reply is not None:
+                print("AI> " + context_reply)
+                print("[route=SEMANTIC_CONTEXT_CARRYOVER, truth_state=UNVERIFIED, train_ready=False, auto_promote=False]")
+                print()
+                continue
         # v0.9.7.6: answer supported follow-ups from user-copied page first.
         from definition_search_priority_v09751 import clipboard_allowed, daily_allowed
         clipboard_answer = clipboard_context.answer(user_text) if clipboard_allowed(user_text) else None
