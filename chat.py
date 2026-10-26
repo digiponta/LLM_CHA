@@ -3674,6 +3674,15 @@ def main() -> None:
                     print("AI> 生成実験に失敗: {}".format(exc))
             print()
             continue
+        # v0.9.7.67: acknowledge explicit likes in ordinary conversation.
+        # Ephemeral response; never approve evidence or train on preferences.
+        if not user_text.startswith("/"):
+            preference_reply = preference_dialogue.reply(user_text, topic_context.active_topic)
+            if preference_reply is not None:
+                print("AI> " + preference_reply)
+                print("[route=TOPIC_PREFERENCE_ACK, train_ready=False, auto_promote=False, persisted=False]")
+                print()
+                continue
         # v0.9.7.59: source-literal attribute retrieval (also for ellipsis).
         # This route does not approve, persist, or train retrieved material.
         if clipboard_context.text and not user_text.startswith("/"):
@@ -3715,15 +3724,6 @@ def main() -> None:
                 print("[causal_diagnostic=" + json.dumps(causal_debug, ensure_ascii=False) + "]")
                 print("AI> 取得した資料から理由を裏付ける記述を確認できませんでした。（外部情報・未検証）")
                 print("[route=CLIPBOARD_CAUSAL_SOURCE_NEEDED, train_ready=False, auto_promote=False]")
-                print()
-                continue
-        # v0.9.7.67: acknowledge explicit likes in ordinary conversation.
-        # Ephemeral response; never approve evidence or train on preferences.
-        if not user_text.startswith("/"):
-            preference_reply = preference_dialogue.reply(user_text, topic_context.active_topic)
-            if preference_reply is not None:
-                print("AI> " + preference_reply)
-                print("[route=TOPIC_PREFERENCE_ACK, train_ready=False, auto_promote=False, persisted=False]")
                 print()
                 continue
         if final_guard_enabled:
