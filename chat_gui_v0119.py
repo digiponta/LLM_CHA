@@ -9,6 +9,7 @@ import queue
 import subprocess
 import sys
 import re
+from html import unescape
 import webbrowser
 from urllib.parse import quote_plus
 import threading
@@ -21,6 +22,49 @@ CHOICES=("prefer_a","prefer_b","both_contextual","neither","skip")
 def google_query(text):
     match=re.fullmatch(r"\s*(.+?)\s*(?:を)?(?:ググって|ぐぐって|googleで検索して|Googleで検索して)\s*[。！!]*",text)
     return match.group(1).strip() if match else None
+
+def should_display_line(line):
+    stripped=line.strip()
+    if not stripped:
+        return True
+    if stripped.startswith(("[normalized input:", "[candidate=", "[gate=", "[0 generated",
+                             "[semantic reconciliation enabled:", "[Nagato Semantic Memory:",
+                             "[use /sleep", "[decode-factory]")):
+        return False
+    if re.match(r"^\[\d+ generated probe tokens",stripped):
+        return False
+    return not stripped.startswith(("Device ", "GPU ", "Model ", "Tokenizer ", "Vocabulary size ",
+                                    "Parameters ", "Context length ", "d_model ", "Layers ",
+                                    "Attention heads ", "Checkpoint ", "Unknown reject ",
+                                    "Probe count ", "Min confidence ", "Min token ",
+                                    "Min mean ", "Min agreement ", "Min sem ",
+                                    "Min int ", "Fallback ", "Context policy ",
+                                    "Teaching queue ", "Knowledge queue ",
+                                    "Gate review ", "Proposition db ", "Subject index ",
+                                    "Typed index ", "Corpus memory ", "Conditional db ",
+                                    "Cond candidates ", "Concept calib ", "Centroid source ",
+                                    "Holdout in fit ", "Binding version "))
+
+def clipboard_answer(source, question):
+    """Extract a grounded food list; do not send a long document to 512-token LLM."""
+    if "フード" in question and ("種類" in question or "メニュー" in question):
+        match=re.search(r"フード\s+(.+?)\s+フード一覧へ",source,re.S)
+        if not match:
+            return "取り込んだ資料には、フードの一覧を確認できません。"
+        food=match.group(1)
+        # Page text repeats each product twice; dedupe adjacent runs.
+        items=re.findall(r"([^。]+?(?:サンド|モンブラン|アップルパイ|ケーキ))",food)
+        clean=[]
+        for item in items:
+            item=" ".join(item.strip().split())
+            if len(item)>75:
+                item=item[-75:]
+            if item and item not in clean:
+                clean.append(item)
+        if clean:
+            return "取り込んだ資料に記載のフード: "+"、".join(clean)+"。（クリップボード由来・未検証）"
+        return "資料にフード欄はありますが、商品名を安全に抽出できませんでした。"
+    return "資料は一時文脈として読み込みましたが、この質問は資料から安全に抽出できません。質問を具体化するか、資料の該当部分を示してください。"
 
 def launch_command():
     return [sys.executable, "-u", str(Path(__file__).resolve().parent / "chat.py")]
@@ -36,6 +80,7 @@ class ChatGUI:
         self.awaiting_context=False
         self.output_tail=""
         self.clipboard_context=""
+        self.line_buffer=""
         self.transcript=scrolledtext.ScrolledText(root, wrap="word",state="disabled",font=("Yu Gothic UI",11))
         self.transcript.pack(fill="both",expand=True,padx=10,pady=10)
         bottom=ttk.Frame(root)
@@ -109,7 +154,7 @@ class ChatGUI:
                 self._set_decisions(False)
         if parts:
             chunk="".join(parts)
-            self._append(chunk)
+            self._show_filtered(chunk)
             self.output_tail=(self.output_tail+chunk)[-500:]
             # CLI input() prompts may not be newline-terminated.
             if "Decision [prefer_a/prefer_b/both_contextual/neither/skip]>" in self.output_tail:
@@ -125,12 +170,25 @@ class ChatGUI:
                 self._set_decisions(False)
         self.root.after(50,self.poll)
 
-    def submit(self,text):
+    def _show_filtered(self, chunk):
+        """Hide startup diagnostics and verbose normalization logs in the GUI."""
+        self.line_buffer += chunk
+        while "\n" in self.line_buffer:
+            line,self.line_buffer=self.line_buffer.split("\n",1)
+            if should_display_line(line):
+                self._append(line+"\n")
+        # CLI prompts have no trailing newline.
+        if self.line_buffer in ("You> ","Context> ") or self.line_buffer.startswith("Decision ["):
+            self._append(self.line_buffer)
+            self.line_buffer=""
+
+    def submit(self,text, *, display=True):
         if self.process is None or self.process.poll() is not None:return
         try:
             self.process.stdin.write(text+"\n")
             self.process.stdin.flush()
-            self._append(text+"\n")
+            if display:
+                self._append("You> "+text+"\n")
             self.output_tail=""
             self.awaiting_decision=False
             self._set_decisions(False)
@@ -166,13 +224,9 @@ class ChatGUI:
         if self.clipboard_context and not value.startswith("/"):
             source=self.clipboard_context
             self.clipboard_context=""
-            # Evidence stays unverified and only travels with this one turn.
-            # CLI chat.py consumes one line per input; avoid newline-driven turns.
-            flattened=" ".join(source.splitlines())
-            request=("次の資料はクリップボードからの未検証の一時情報です。"
-                     "資料の内容を事実として承認・学習せず、根拠がある範囲で回答してください。 "
-                     "資料: "+flattened+" 質問: "+value)
-            self.submit(request)
+            answer=clipboard_answer(source,value)
+            self._append("You> "+value+"\n")
+            self._append("AI> "+answer+"\n")
             return
         self.submit(value)
 
