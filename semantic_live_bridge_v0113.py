@@ -30,6 +30,15 @@ def process_turn(question, *, generate, retrieve, bridge, subject=None, context=
         raise ValueError("nonempty question required")
     resolved_subject=subject.strip() if isinstance(subject,str) and subject.strip() else extract_subject(question)
     evidence=retrieve(resolved_subject)
+    if (isinstance(bridge,SubjectPreferenceBridge) and evidence.hit
+        and isinstance(evidence.answer,str) and evidence.answer.strip()):
+        prior=bridge.lookup_preference(question,resolved_subject,context,evidence.answer)
+        if prior is not None:
+            prior["subject"]=resolved_subject
+            prior["memory_provenance"]=evidence.provenance
+            prior["memory_approval"]="NOT_ATTESTED"
+            prior["generation_skipped"]=True
+            return prior
     generated=generate(question)
     generated_text=generated if isinstance(generated,str) else generated.text
     if not isinstance(generated_text,str) or not generated_text.strip():
