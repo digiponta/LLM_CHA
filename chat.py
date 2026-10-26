@@ -3691,6 +3691,9 @@ def main() -> None:
                     from cross_context_consistency_v09779 import validate_cross_context
                     cross_context = validate_cross_context(dialogue_manager, topic_context)
                     print("[cross_context_consistency=" + json.dumps(cross_context.to_dict(), ensure_ascii=False) + "]")
+                    from semantic_topic_isolation_v09781 import validate_topic_isolation
+                    isolation = validate_topic_isolation(dialogue_manager.journal)
+                    print("[semantic_topic_isolation=" + json.dumps(isolation.to_dict(), ensure_ascii=False) + "]")
                 if dialogue_result.frame is not None:
                     print("[semantic_dialogue=" + json.dumps(
                         dialogue_result.frame.to_dict(), ensure_ascii=False) + "]")
