@@ -3672,6 +3672,17 @@ def main() -> None:
                     print("AI> 生成実験に失敗: {}".format(exc))
             print()
             continue
+        # v0.9.7.59: source-literal attribute retrieval (also for ellipsis).
+        # This route does not approve, persist, or train retrieved material.
+        if clipboard_context.text and not user_text.startswith("/"):
+            from clipboard_attribute_retrieval_v09759 import retrieve as retrieve_clipboard_attribute
+            attribute_reply = retrieve_clipboard_attribute(
+                user_text, clipboard_context.text, topic_context.active_topic)
+            if attribute_reply is not None:
+                print("AI> " + attribute_reply)
+                print("[route=CLIPBOARD_ATTRIBUTE_EVIDENCE, truth_state=EXTERNAL_UNVERIFIED, train_ready=False, auto_promote=False]")
+                print()
+                continue
         if final_guard_enabled:
             from semantic_context_surface_v09755 import evaluation as short_evaluation
             surface_evaluation=short_evaluation(user_text)
