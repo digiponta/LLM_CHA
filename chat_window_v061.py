@@ -1,4 +1,4 @@
-"""LLM_CHA v0.6.8: model-selectable terminal chat mirror.
+"""LLM_CHA v0.9.7.58 GUI: model-selectable terminal chat mirror.
 
 Run: python chat_window_v061.py
 The command prompt remains the input interface; chat.py runs unchanged.
@@ -168,7 +168,7 @@ def run():
     parser = ConversationParser(clipboard_display.feed)
     status_parser = StatusParser(lambda value: events.put(("status", value)))
     root = tk.Tk()
-    root.title("LLM_CHA — GUI / Semantic Diagnostics (v0.9.7.50)")
+    root.title("LLM_CHA — GUI / Semantic Diagnostics (v0.9.7.58)")
     root.geometry("960x700")
     root.minsize(460, 280)
 
@@ -209,6 +209,7 @@ def run():
     display.tag_configure("ai", foreground="#174b34", spacing1=12, spacing3=6)
     display.tag_configure("ai_continuation", foreground="#174b34")
     display.tag_configure("source_raw", foreground="#845422", spacing1=5)
+    display.tag_configure("source_clipboard", foreground="#845422", spacing1=7)
     display.tag_configure("source_wiki", foreground="#245ea8", spacing1=7)
     display.tag_configure("source_link", foreground="#245ea8", underline=True)
     display.tag_configure("semantic_diagnostic", foreground="#855223", spacing1=4, spacing3=8)
@@ -227,7 +228,9 @@ def run():
         display.configure(state="normal")
         selected = kind
         if kind != "user":
-            if "【Wikipedia検索結果・外部情報・未検証】" in message:
+            if "クリップボード由来・未検証" in message or "一時文脈・未検証" in message:
+                selected = "source_clipboard"
+            elif "【Wikipedia検索結果・外部情報・未検証】" in message:
                 selected = "source_wiki"
             elif message.startswith("出典：https://"):
                 selected = "source_link"
