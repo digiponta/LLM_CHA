@@ -10,6 +10,8 @@ class SemanticEvent:
     updated_quality: str | None = None
     truth_state: str = "USER_REPORTED"
     persistence: str = "SESSION_ONLY"
+    source_topic: str | None = None
+    target_topic: str | None = None
 
     def to_dict(self):
         return asdict(self)
@@ -20,9 +22,10 @@ class SemanticEventJournal:
         self.events=[]
         self.sequence=0
         self.focus={}
-    def record(self,event,topic,previous_quality=None,updated_quality=None):
+    def record(self,event,topic,previous_quality=None,updated_quality=None,source_topic=None,target_topic=None):
         self.sequence+=1
-        item=SemanticEvent(self.sequence,event,topic,previous_quality,updated_quality)
+        item=SemanticEvent(self.sequence,event,topic,previous_quality,updated_quality,
+                           source_topic=source_topic,target_topic=target_topic)
         self.events.append(item)
         if len(self.events)>self.max_events:
             self.events.pop(0)
