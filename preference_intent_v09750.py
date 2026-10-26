@@ -24,6 +24,9 @@ def detect(text):
     if m is None:return None
     obj=m.group("object").strip(" 、")
     if not obj or "、" in obj or "けど" in obj or "けれど" in obj:return None
+    from semantic_context_surface_v09755 import repair_preference_object
+    obj=repair_preference_object(obj)
+    if not obj:return None
     p=m.group("polarity")
     if p in NEGATIVE:
         reply=obj+"は"+("苦手" if p=="苦手" else "好きではない")+"んだね。"
