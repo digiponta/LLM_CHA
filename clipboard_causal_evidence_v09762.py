@@ -19,7 +19,9 @@ def retrieve(question, source, active_topic=None):
         return None
     if active_topic not in text[:650]:
         return None
-    explicit = re.match(r"^(.{2,55}?)の", q)
+    # Do not interpret a sentence-final explanatory の as a possessive.
+    # A question without an explicit subject inherits the active topic.
+    explicit = re.match(r"^(.{2,55}?)の(?:カット|加工|硬度|屈折率|成分|化学組成|産地)", q)
     if explicit and explicit.group(1).strip() != active_topic:
         return None
     matched = [(i, cues) for i, (pattern, cues) in enumerate(INTENTS) if pattern.search(q)]
