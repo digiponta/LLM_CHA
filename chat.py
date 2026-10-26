@@ -3669,7 +3669,8 @@ def main() -> None:
             print()
             continue
         # v0.9.7.6: answer supported follow-ups from user-copied page first.
-        clipboard_answer = clipboard_context.answer(user_text)
+        from definition_search_priority_v09751 import clipboard_allowed, daily_allowed
+        clipboard_answer = clipboard_context.answer(user_text) if clipboard_allowed(user_text) else None
         if clipboard_answer is not None:
             if final_guard_enabled:
                 from clipboard_final_guard_v09747 import inspect_clipboard_answer
@@ -6713,7 +6714,7 @@ def main() -> None:
                 print()
                 continue
 
-        if final_guard_enabled:
+        if final_guard_enabled and daily_allowed(user_text):
             from final_answer_guard_v09746 import daily_intent
             daily = daily_intent(user_text)
             if daily is not None:
@@ -6721,7 +6722,7 @@ def main() -> None:
                 print("[route={}, final_answer_guard=HANDLE, train_ready=False, auto_promote=False]".format(daily.route))
                 print()
                 continue
-        if final_guard_enabled:
+        if final_guard_enabled and daily_allowed(user_text):
             from preference_intent_v09750 import detect as detect_preference
             preference=detect_preference(user_text)
             if preference is not None:
@@ -6729,7 +6730,7 @@ def main() -> None:
                 print("[route=PERSONAL_PREFERENCE, source=USER_UTTERANCE, train_ready=False, auto_promote=False]")
                 print()
                 continue
-        if final_guard_enabled:
+        if final_guard_enabled and daily_allowed(user_text):
             from conversational_intent_v09751 import detect as detect_conversation_intent
             everyday=detect_conversation_intent(user_text)
             if everyday is not None:
