@@ -473,6 +473,8 @@ def parse_args() -> argparse.Namespace:
         default=True,
         help="Show confidence/agreement diagnostics.",
     )
+    parser.add_argument("--final-guard", action="store_true", default=False,
+                        help="Opt-in v0.9.7.46 final response consistency guard.")
     return parser.parse_args()
 
 
@@ -3494,6 +3496,7 @@ def main() -> None:
     from emotion_aware_dialogue_v09733 import EmotionDialogue
     emotion_dialogue = EmotionDialogue()
     emotion_enabled = False
+    final_guard_enabled = bool(args.final_guard)
     while True:
         try:
             user_text = input("You> ").strip()
@@ -3502,6 +3505,12 @@ def main() -> None:
             break
 
         if not user_text:
+            continue
+        if user_text in ("/final-guard-on", "/final-guard-off", "/final-guard-status"):
+            if user_text=="/final-guard-on": final_guard_enabled=True
+            if user_text=="/final-guard-off": final_guard_enabled=False
+            print("[final_answer_guard={}, train_ready=False]".format("ON" if final_guard_enabled else "OFF"))
+            print()
             continue
         # v0.9.6.3: opt-in, read-only subtopic diagnostics for memory.
         if user_text in ("/cha-memory-subtopics", "/cha-memory-eval"):
@@ -6697,6 +6706,14 @@ def main() -> None:
                 print()
                 continue
 
+        if final_guard_enabled:
+            from final_answer_guard_v09746 import daily_intent
+            daily = daily_intent(user_text)
+            if daily is not None:
+                print("AI> " + daily.selected)
+                print("[route={}, final_answer_guard=HANDLE, train_ready=False, auto_promote=False]".format(daily.route))
+                print()
+                continue
         semantic_result = semantic_knowledge.resolve(
             user_text
         )
@@ -7449,6 +7466,13 @@ def main() -> None:
             reply = generation_check["fallback"]
             accepted = False
             cha_quality_guard_status = generation_check["reason"]
+        if final_guard_enabled:
+            from final_answer_guard_v09746 import inspect_answer
+            final_check=inspect_answer(raw_user_text,reply,"MODEL_GENERATION")
+            if final_check.decision=="REJECT":
+                reply=final_check.selected
+                accepted=False
+                cha_quality_guard_status="FINAL_"+final_check.reason
         cha_wiki_last_generated = reply
         print(f"AI> {reply}")
         if cha_quality_guard_status is not None:
