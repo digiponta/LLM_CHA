@@ -81,6 +81,7 @@ class ChatGUI:
         self.output_tail=""
         self.clipboard_context=""
         self.line_buffer=""
+        self.chat_ready=False
         self.transcript=scrolledtext.ScrolledText(root, wrap="word",state="disabled",font=("Yu Gothic UI",11))
         self.transcript.pack(fill="both",expand=True,padx=10,pady=10)
         bottom=ttk.Frame(root)
@@ -171,11 +172,18 @@ class ChatGUI:
         self.root.after(50,self.poll)
 
     def _show_filtered(self, chunk):
-        """Hide startup diagnostics and verbose normalization logs in the GUI."""
+        """Show dialogue only; retain CLI prompts and reconciliation choices."""
         self.line_buffer += chunk
+        if not self.chat_ready:
+            marker=self.line_buffer.find("You> ")
+            if marker<0:
+                self.line_buffer=self.line_buffer[-1000:]
+                return
+            self.chat_ready=True
+            self.line_buffer=self.line_buffer[marker:]
         while "\n" in self.line_buffer:
             line,self.line_buffer=self.line_buffer.split("\n",1)
-            if should_display_line(line):
+            if should_display_line(line) and not line.startswith("You> "):
                 self._append(line+"\n")
         # CLI prompts have no trailing newline.
         if self.line_buffer in ("You> ","Context> ") or self.line_buffer.startswith("Decision ["):
