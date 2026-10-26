@@ -6729,6 +6729,15 @@ def main() -> None:
                 print("[route=PERSONAL_PREFERENCE, source=USER_UTTERANCE, train_ready=False, auto_promote=False]")
                 print()
                 continue
+        if final_guard_enabled:
+            from conversational_intent_v09751 import detect as detect_conversation_intent
+            everyday=detect_conversation_intent(user_text)
+            if everyday is not None:
+                print("AI> " + everyday.response)
+                print("[route=CONVERSATIONAL_INTENT, intent={}, action={}, train_ready=False, auto_promote=False]".format(
+                    everyday.intent, everyday.action or "-"))
+                print()
+                continue
         semantic_result = semantic_knowledge.resolve(
             user_text
         )
