@@ -52,4 +52,5 @@ class SemanticDialogueManager:
             self.agreement.record(frame)
             return DialogueResult(reply, "TOPIC_PREFERENCE_ACK", frame)
         self.last_frame = None
+        self.preference.awaiting_reason_for = None
         return None
