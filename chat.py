@@ -3111,6 +3111,15 @@ def checkpoint_trained_fingerprints(
 
 def main() -> None:
     args = parse_args()
+    # v0.11.9: opt-in experiment, existing Truth Gate remains authoritative.
+    import os as _reconcile_os
+    _reconcile_enabled = _reconcile_os.environ.get("LLM_CHA_RECONCILIATION", "0") == "1"
+    _reconcile_bridge = None
+    if _reconcile_enabled:
+        from chat_semantic_reconciliation_v0119 import get_bridge
+        _reconcile_bridge = get_bridge(_reconcile_os.environ.get(
+            "LLM_CHA_RECONCILIATION_ROOT", "data/semantic_dialogue_v0113"))
+        print("[semantic reconciliation enabled: experimental / not fact-approved]")
 
     tokenizer_path = resolve_runtime_path(args.tokenizer)
     model_path = choose_startup_model(
@@ -5155,6 +5164,29 @@ def main() -> None:
             last_ai_reply = None
             continue
 
+        # v0.11.9: only after existing routing and truth decisions.
+        _reconcile_candidate = None
+        _reconcile_subject = ""
+        _reconcile_truth = ""
+        if _reconcile_bridge is not None and not force_internalized_verification:
+            from chat_semantic_reconciliation_v0119 import memory_candidate, prelookup
+            _reconcile_subject = str(dispatch.focus or "").strip()
+            _reconcile_truth = str(truth_record.state) if truth_record is not None else "UNVERIFIED"
+            if _reconcile_subject:
+                _reconcile_candidate = memory_candidate(
+                    resolve_runtime_path(args.corpus_memory), _reconcile_subject)
+                _preferred = prelookup(
+                    _reconcile_bridge, user_text, _reconcile_subject, "",
+                    _reconcile_candidate, _reconcile_truth)
+                if _preferred is not None:
+                    print("AI> " + _preferred["answer"])
+                    print("[reconciliation=USER_PREFERENCE, generation_skipped=true, factual_truth=UNVERIFIED]")
+                    print("[0 generated probe tokens, preference lookup]")
+                    print()
+                    history.append((user_text, _preferred["answer"]))
+                    last_ai_reply = _preferred["answer"]
+                    continue
+
         # GENERATE: INTERNALIZED, NON_CONCEPT, or active repair verification.
         if force_internalized_verification:
             internalized_record = verification_override_record
@@ -5434,6 +5466,23 @@ def main() -> None:
 
         if not reply:
             reply = UNKNOWN_REPLY if args.unknown_rejection else "(no response)"
+
+        # v0.11.9: only compare accepted generated answers; do not bypass the
+        # existing unknown rejection, truthful routing or internalized checks.
+        if (accepted and _reconcile_bridge is not None
+                and _reconcile_candidate is not None
+                and not force_internalized_verification):
+            from chat_semantic_reconciliation_v0119 import reconcile, ask_and_save
+            _assessment = reconcile(
+                _reconcile_bridge, user_text, _reconcile_subject, "",
+                reply, _reconcile_candidate, _reconcile_truth)
+            if _assessment is not None:
+                if _assessment["action"]=="ASK_USER":
+                    _decision = ask_and_save(_reconcile_bridge, _assessment)
+                    if _decision.get("action")=="USER_PREFERENCE_RECORDED" and _decision.get("preference"):
+                        reply = _decision["preference"]
+                elif _assessment["action"]=="USER_PREFERENCE":
+                    reply = _assessment["answer"]
 
         print(f"AI> {reply}")
 
