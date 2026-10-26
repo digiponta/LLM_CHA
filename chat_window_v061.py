@@ -274,6 +274,10 @@ def run():
               font=("Yu Gothic UI", 10)).pack(side="left")
     def trigger_sleep():
         send_to_chat("/sleep", show_user=False)
+    def trigger_exit():
+        send_to_chat("/exit", show_user=False)
+    tk.Button(input_frame, text="/exit", command=trigger_exit,
+              font=("Yu Gothic UI", 10)).pack(side="left", padx=(6, 0))
     tk.Button(input_frame, text="/sleep", command=trigger_sleep,
               font=("Yu Gothic UI", 10)).pack(side="left", padx=(6, 0))
     def trigger_read_clipboard():
@@ -348,17 +352,32 @@ def run():
             root.after(60, poll)
 
     def close_window():
-        # Closing the mirror must not end the CLI conversation.
+        # GUI-only mode has no console input relay: closing must also stop
+        # the child instead of blocking forever in child.wait().
+        if gui_only_input and child.poll() is None:
+            send_to_chat("/exit", show_user=False)
         root.destroy()
 
     root.protocol("WM_DELETE_WINDOW", close_window)
     root.after(60, poll)
-    print("LLM_CHA GUI: GUI入力またはコマンドプロンプトに入力してください。", flush=True)
+    print("LLM_CHA GUI: {}入力。終了はGUIの /exit または窓を閉じてください。".format(
+        "GUIのみで" if gui_only_input else "GUI/コマンドプロンプトで"), flush=True)
     root.mainloop()
     # A manually closed mirror should not block CLI input or force the child to stop.
     # The process remains until the CLI receives /exit, like the original launcher.
     if child.poll() is None:
-        child.wait()
+        if gui_only_input:
+            try:
+                child.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                child.terminate()
+                try:
+                    child.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    child.kill()
+                    child.wait()
+        else:
+            child.wait()
 
 
 if __name__ == "__main__":
