@@ -88,6 +88,21 @@ def contextual_followup(source, message):
                 return reply
     return None
 
+def reply_to_experience(message, active_item):
+    """Conservative local follow-up for a user-reported food experience."""
+    if not active_item:
+        return None
+    text=message.strip().rstrip("。！! ")
+    if any(term in text for term in ("美味しかった","おいしかった","美味しい","おいしい")):
+        if any(term in text for term in ("あっさり","さっぱり","軽い味")):
+            return "あっさりした味わいが気に入ったんですね。"+active_item+"、また食べたいと思いますか？"
+        return "美味しかったんですね。"+active_item+"のどんなところが気に入りましたか？"
+    if any(term in text for term in ("満足した","満足です","満足だった","満足している")):
+        return "満足できたんですね。"+active_item+"、いい食事になったようですね。"
+    if any(term in text for term in ("また食べたい","リピートしたい")):
+        return "また食べたいと思えるほど気に入ったんですね。"
+    return None
+
 def launch_command():
     return [sys.executable, "-u", str(Path(__file__).resolve().parent / "chat.py")]
 
@@ -103,6 +118,7 @@ class ChatGUI:
         self.output_tail=""
         self.clipboard_context=""
         self.last_clipboard_source=""
+        self.active_food_item=""
         self.line_buffer=""
         self.chat_ready=False
         self.transcript=scrolledtext.ScrolledText(root, wrap="word",state="disabled",font=("Yu Gothic UI",11))
@@ -242,6 +258,7 @@ class ChatGUI:
             return
         self.clipboard_context=content[:20000]
         self.last_clipboard_source=self.clipboard_context
+        self.active_food_item=""
         self._append(f"[クリップボードを読み込みました（{len(content)}文字・一時文脈・未検証）。新しい資料を読むまで参照できます。]\n")
 
     def send(self):
@@ -259,7 +276,20 @@ class ChatGUI:
         if source and not value.startswith("/"):
             followup=contextual_followup(source,value)
             if followup is not None:
+                # Detect the specific item mentioned, and keep it as dialogue
+                # topic. A user's taste report is not a verified external fact.
+                clean=value.strip().rstrip("。！! ")
+                for suffix in ("を食べました","を食べた","が好きです","が好き"):
+                    if clean.endswith(suffix):
+                        item=clean[:-len(suffix)].strip()
+                        if item in source:
+                            self.active_food_item=item
+                        break
                 self._append("You> "+value+"\nAI> "+followup+"\n")
+                return
+            experience=reply_to_experience(value,getattr(self,"active_food_item",""))
+            if experience is not None:
+                self._append("You> "+value+"\nAI> "+experience+"\n")
                 return
             answer=clipboard_answer(source,value)
             if answer and not answer.startswith("資料は一時文脈として"):
