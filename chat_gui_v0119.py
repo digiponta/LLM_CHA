@@ -415,6 +415,12 @@ class ChatGUI:
                     self.active_preference_topic=topic_context.state.subject
                     self._append("You> "+value+"\nAI> "+topic_answer+"\n")
                     return
+            if topic_context is not None:
+                experience_answer=topic_context.respond_experience(value,source)
+                if experience_answer is not None:
+                    self.active_food_item=topic_context.state.subject
+                    self._append("You> "+value+"\nAI> "+experience_answer+"\n")
+                    return
             preference=casual_preference_reply(value)
             if preference is not None:
                 match=re.fullmatch(r"私は[、,\\s]*(.{2,80}?)が好き(?:です)?[。！!\\s]*",value.strip())
