@@ -35,6 +35,8 @@ class SemanticDialogueManager:
             reason_topic = self.awaiting_new_reason
             new_reason = parse_clarification(text)
             self.awaiting_new_reason = None
+            if new_reason is None:
+                self.journal.record("clarification_cancelled", reason_topic)
             if new_reason is not None:
                 self.journal.record("clarification_provided", reason_topic,
                                     updated_quality=new_reason)
@@ -54,6 +56,8 @@ class SemanticDialogueManager:
                     "SEMANTIC_DIALOGUE_CLARIFICATION")
             new_reason = parse_clarification(text)
             self.awaiting_clarification = None
+            if new_reason is None:
+                self.journal.record("clarification_cancelled", clarification_topic)
             if new_reason is not None:
                 self.journal.record("clarification_provided", clarification_topic,
                                     updated_quality=new_reason)
@@ -64,8 +68,10 @@ class SemanticDialogueManager:
         if transition is not None:
             previous_quality = (self.last_frame.quality if self.last_frame is not None else None)
             self.journal.record(transition.intent, transition.topic,
-                                previous_quality=previous_quality,
-                                updated_quality=transition.quality)
+                                previous_quality=None if transition.intent == "switch_topic" else previous_quality,
+                                updated_quality=transition.quality,
+                                source_topic=(topic or self.journal.replay().active_topic) if transition.intent == "switch_topic" else None,
+                                target_topic=transition.topic if transition.intent == "switch_topic" else None)
             self.preference.awaiting_reason_for = None
             self.agreement.record(None)
             self.last_frame = None
