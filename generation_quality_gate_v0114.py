@@ -31,7 +31,7 @@ def assess_generation(generated):
            for i in range(max(0,len(spans)-4))
            for phrase in set(spans[i:i+5])):
         reasons.append("JAPANESE_PHRASE_LOOP")
-    if re.search(r"([一-龥ぁ-んァ-ヶ]{2,8}(?:は|が|を|に|の))\\s*[,、]?\\s*\\1",text):
+    if re.search(r"([一-龥ぁ-んァ-ヶ]{2,8}(?:は|が|を|に|の))\s*[,、]?\s*\1",text):
         if "JAPANESE_PHRASE_LOOP" not in reasons:
             reasons.append("JAPANESE_PHRASE_LOOP")
     if termination=="MAX_TOKENS":
