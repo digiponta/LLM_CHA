@@ -52,7 +52,9 @@ def process_turn(question, *, generate, retrieve, bridge, subject=None, context=
                 "quality_reasons":list(quality.reasons),
                 "candidate_text":generated_text,
                 "retry_history":retries,
-                "message":"再生成でも正常な回答が得られませんでした。意味調停を保留します: "+", ".join(quality.reasons)}
+                "memory_reference":evidence.answer if evidence.hit else None,
+                "memory_approval":"NOT_ATTESTED",
+                "message":"正常な生成回答を得られませんでした。未検証のSemantic Memory参考情報を表示します。生成文の調停は行いません。\n"+(evidence.answer if evidence.hit else "Semantic Memoryに該当記録がありません。") }
     if not evidence.hit or not evidence.answer.strip():
         return {"action":"MEMORY_MISS","answer":generated_text,"subject":resolved_subject,
                 "warning":"Model output is unverified"}
