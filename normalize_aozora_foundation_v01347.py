@@ -43,16 +43,27 @@ def extract_sentences(text,min_chars=20,max_chars=500):
                 sentences.append(s);seen.add(s)
     return sentences
 
-def convert(source,output,report,min_chars=20,max_chars=500):
+def read_japanese_source(source, encoding="auto"):
+    raw=source.read_bytes()
+    if encoding=="auto":
+        for name in ("utf-8-sig","cp932"):
+            try:
+                return raw.decode(name),name
+            except UnicodeDecodeError:
+                pass
+        raise UnicodeError("source is neither UTF-8 nor CP932; specify --encoding")
+    return raw.decode(encoding),encoding
+
+def convert(source,output,report,min_chars=20,max_chars=500,encoding="auto"):
     if output.exists() or report.exists():raise FileExistsError("output exists")
-    raw=source.read_text(encoding="utf-8-sig")
+    raw,detected_encoding=read_japanese_source(source,encoding)
     normalized,stats=strip_aozora(raw)
     sentences=extract_sentences(normalized,min_chars,max_chars)
-    if not sentences:raise ValueError("no extracted sentences; inspect source format")
+    if not sentences:raise ValueError(f"no extracted sentences; encoding={detected_encoding}, normalized_chars={len(normalized)}, full_stops={normalized.count(chr(0x3002))}, lines={len(normalized.splitlines())}; inspect source format")
     output.parent.mkdir(parents=True,exist_ok=True)
     report.parent.mkdir(parents=True,exist_ok=True)
     output.write_text("\n".join(sentences)+"\n",encoding="utf-8")
-    meta={"version":"v0.13.47","source":str(source),"sentences":len(sentences),
+    meta={"version":"v0.13.47","source":str(source),"encoding":detected_encoding,"sentences":len(sentences),
           "statistics":stats,"training_approved":False,
           "needs_manual_text_and_licensing_review":True,
           "limitations":["Inline annotations on multiple lines are not supported.",
@@ -66,7 +77,8 @@ def main():
     p.add_argument("--source",type=Path,required=True)
     p.add_argument("--output",type=Path,required=True)
     p.add_argument("--report",type=Path,required=True)
+    p.add_argument("--encoding",default="auto",choices=("auto","utf-8-sig","cp932"))
     a=p.parse_args()
     if not a.source.is_file():p.error(f"missing source: {a.source}")
-    print(json.dumps(convert(a.source,a.output,a.report),ensure_ascii=False))
+    print(json.dumps(convert(a.source,a.output,a.report,encoding=a.encoding),ensure_ascii=False))
 if __name__=="__main__":main()
