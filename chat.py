@@ -5100,13 +5100,23 @@ def main() -> None:
                     )
                     _grounded = choose_answer(_generated.text, _unapproved_evidence)
                     _quoted = _grounded["answer"]
+                    from grounded_generation_diagnostics_v01322 import make_record, append_record
+                    append_record(
+                        Path("results/grounded_generation_diagnostics_v01322.jsonl"),
+                        make_record(resolver_query, _unapproved_evidence, _generated,
+                                    _grounded, model_path),
+                    )
+                    print(f"[grounded-diagnostics: generated_tokens={_generated.token_count}, recorded=true]")
                     print(f"[grounded-unapproved: route={_grounded['route']}, validation={_grounded['validation']}]")
                 print(f"AI> {_quoted}")
                 print(f"[knowledge-state=TRAINED_UNAPPROVED, concept={dispatch.focus}, "
                       f"knowledge_id={_unapproved_evidence['knowledge_id']}, "
                       f"truth_state=UNVERIFIED, approval_state=UNAPPROVED, "
                       "route=checkpoint-bound-source-quotation]")
-                print("[0 generated probe tokens, source quotation only]")
+                if args.grounded_unapproved:
+                    print(f"[generated probe tokens={_generated.token_count}, accepted_route={_grounded['route']}]")
+                else:
+                    print("[0 generated probe tokens, source quotation only]")
                 print()
                 history.append((resolver_query, _quoted))
                 last_ai_reply = _quoted
