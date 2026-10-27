@@ -1,0 +1,18 @@
+{
+  "sources": [
+    {
+      "id": "demo-daily-20261027",
+      "path": "foundation_demo_daily_v01343.txt",
+      "license": "AI-generated example; verify applicability before any reuse",
+      "provenance": "newly generated illustrative sentences for pipeline smoke test",
+      "approved_for_training": true
+    },
+    {
+      "id": "demo-technical-20261027",
+      "path": "foundation_demo_technical_v01343.txt",
+      "license": "AI-generated example; verify applicability before any reuse",
+      "provenance": "newly generated illustrative technical sentences for pipeline smoke test",
+      "approved_for_training": true
+    }
+  ]
+}
