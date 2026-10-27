@@ -28,7 +28,6 @@ class CandidateTrainingTests(unittest.TestCase):
     def test_no_approval_promotion(self):
         build_batch(self.queue,self.ledger,self.batch)
         self.assertIn('"REJECTED"',self.ledger.read_text(encoding="utf-8"))
-        self.assertTrue(all(x["truth_state"]=="UNVERIFIED" for x in json.loads(line) for line in [])) if False else None
         self.assertTrue(all(json.loads(x)["truth_state"]=="UNVERIFIED" for x in self.batch.read_text(encoding="utf-8").splitlines()))
     def test_bounded_batch(self):
         self.assertEqual(len(build_batch(self.queue,self.ledger,None,limit=1)),1)
