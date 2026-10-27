@@ -247,6 +247,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--max-new-tokens", type=int, default=96)
+    parser.add_argument("--grounded-unapproved", action="store_true", help="Experimental source-bounded model generation; fallback to quotation")
     parser.add_argument("--temperature", type=float, default=0.45)
     parser.add_argument("--top-k", type=int, default=20)
     parser.add_argument("--repetition-penalty", type=float, default=1.05)
@@ -5088,6 +5089,18 @@ def main() -> None:
             )
             if _unapproved_evidence is not None:
                 _quoted = format_quotation(_unapproved_evidence)
+                if args.grounded_unapproved:
+                    from grounded_unapproved_generation_v01321 import grounded_prompt, choose_answer
+                    _prompt = grounded_prompt(resolver_query, _unapproved_evidence)
+                    _generated = generate_reply(
+                        model=model, tokenizer=tokenizer, prompt=_prompt,
+                        max_new_tokens=min(args.max_new_tokens, 96),
+                        temperature=0.0, top_k=args.top_k,
+                        repetition_penalty=args.repetition_penalty,
+                    )
+                    _grounded = choose_answer(_generated.text, _unapproved_evidence)
+                    _quoted = _grounded["answer"]
+                    print(f"[grounded-unapproved: route={_grounded['route']}, validation={_grounded['validation']}]")
                 print(f"AI> {_quoted}")
                 print(f"[knowledge-state=TRAINED_UNAPPROVED, concept={dispatch.focus}, "
                       f"knowledge_id={_unapproved_evidence['knowledge_id']}, "
