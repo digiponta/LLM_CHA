@@ -78,7 +78,7 @@ def main():
         training_results[key]={"returncode":exit_code,"model":str(model),"data":str(data)}
         if exit_code!=0:break
     summary.update(status="TRAINED_CANDIDATES" if len(training_results)==3 and all(r["returncode"]==0 for r in training_results.values()) else "FAILED",
-                   "training":training_results)
+                   training=training_results)
     report=Path(str(a.prefix)+"_manifest.json")
     report.write_text(json.dumps(summary,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(json.dumps(summary,ensure_ascii=False,indent=2))
