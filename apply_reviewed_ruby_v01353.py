@@ -8,11 +8,15 @@ from pathlib import Path
 
 def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 
-def propose(item,line):
+def propose(item,line,override=None):
     start,end=item["start"],item["end"]
     if not (0<=start<end<=len(line)) or line[start:end]!=item["surface"]:
         raise ValueError(f"source location mismatch: {item['id']}")
     kanji,reading=item.get("kanji"),item.get("reading")
+    if override is not None:
+        if reading is not None:
+            raise ValueError(f"unexpected override for classified reading: {item['id']}")
+        kanji,reading=override["kanji"],override["reading"]
     if not (isinstance(kanji,str) and kanji and isinstance(reading,str) and reading):
         raise ValueError(f"ACCEPT lacks explicit dictionary reading: {item['id']}")
     surface=item["surface"]
@@ -26,7 +30,8 @@ def propose(item,line):
     return {"id":item["id"],"line":item["line"],"start":rs,"end":re,
             "removed":reading,"surface":surface,"decision":"ACCEPT"}
 
-def apply_review(lines,review):
+def apply_review(lines,review,overrides=None):
+    overrides=overrides or {}
     if review.get("version")!="v0.13.52" or review.get("manual_review_complete") is not True:
         raise ValueError("review must be finalized v0.13.52")
     items=review.get("review_items",[])
@@ -39,7 +44,7 @@ def apply_review(lines,review):
         if it["decision"]!="ACCEPT":continue
         ln=it["line"]
         if not isinstance(ln,int) or not 1<=ln<=len(lines):raise ValueError("invalid line")
-        changes.append(propose(it,lines[ln-1]))
+        changes.append(propose(it,lines[ln-1],overrides.get(it["id"])))
     byline={}
     for change in changes:byline.setdefault(change["line"],[]).append(change)
     out=list(lines)
@@ -55,13 +60,19 @@ def apply_review(lines,review):
             out[ln-1]=source[:e["start"]]+source[e["end"]:]
     return out,changes
 
-def run(source,review_path,output,report):
+def run(source,review_path,output,report,readings_path=None):
     if output.exists() or report.exists():raise FileExistsError("refusing to overwrite")
     review=json.loads(review_path.read_text(encoding="utf-8-sig"))
     if sha(source)!=review.get("source_sha256"):raise ValueError("source SHA256 mismatch")
     original=source.read_text(encoding="utf-8-sig")
     lines=original.splitlines()
-    revised,changes=apply_review(lines,review)
+    overrides={}
+    if readings_path:
+        readings_doc=json.loads(readings_path.read_text(encoding="utf-8-sig"))
+        if readings_doc.get("version")!="v0.13.53" or not isinstance(readings_doc.get("readings"),dict):
+            raise ValueError("invalid approved readings document")
+        overrides=readings_doc["readings"]
+    revised,changes=apply_review(lines,review,overrides)
     counts={k:sum(i.get("decision")==k for i in review["review_items"]) for k in ("ACCEPT","REJECT","UNSURE")}
     audit={"version":"v0.13.53","status":"APPLIED_REVIEWED_ONLY",
            "source_sha256":sha(source),"review_sha256":sha(review_path),
@@ -83,9 +94,10 @@ def run(source,review_path,output,report):
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--input",type=Path,required=True)
+    p.add_argument("--approved-readings",type=Path)
     p.add_argument("--review",type=Path,required=True)
     p.add_argument("--output",type=Path,required=True)
     p.add_argument("--report",type=Path,required=True)
     a=p.parse_args()
-    run(a.input,a.review,a.output,a.report)
+    run(a.input,a.review,a.output,a.report,a.approved_readings)
 if __name__=="__main__":main()
