@@ -42,6 +42,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--base-model", default="model/model-gpu-v0.8-chat-clean.pt")
     p.add_argument("--output", default="model/model-gpu-v1.6.2-online.pt")
     p.add_argument("--epochs", type=int, default=8)
+    p.add_argument("--early-token-count", type=int, default=0, help="Opt-in number of answer-start tokens weighted in training loss.")
+    p.add_argument("--early-token-weight", type=float, default=1.0, help="Opt-in training loss multiplier for first N answer tokens.")
     p.add_argument("--learning-rate", type=float, default=1e-5)
     p.add_argument("--batch-size", type=int, default=8)
     p.add_argument("--validation-ratio", type=float, default=0.15)
@@ -255,7 +257,18 @@ class ConversationDataset(Dataset):
         return self.rows[index]
 
 
-def masked_loss(model, x, y, mask):
+def weighted_answer_mask(mask, count=0, weight=1.0):
+    """Apply per-sample start-token weights only to nonzero answer labels."""
+    if count < 0 or weight < 1.0:
+        raise ValueError("count must be >=0 and weight >=1")
+    if count == 0 or weight == 1.0:
+        return mask
+    ordinal = (mask > 0).long().cumsum(dim=-1)
+    return torch.where((mask > 0) & (ordinal <= count), mask * weight, mask)
+
+
+def masked_loss(model, x, y, mask, early_token_count=0, early_token_weight=1.0):
+    mask = weighted_answer_mask(mask, early_token_count, early_token_weight)
     logits = model(x)
     losses = F.cross_entropy(
         logits.reshape(-1, logits.size(-1)),
@@ -279,6 +292,8 @@ def evaluate(model, loader, device):
 
 def main() -> None:
     args = parse_args()
+    if args.early_token_count < 0 or args.early_token_weight < 1.0:
+        raise ValueError("early-token-count must be >=0 and early-token-weight must be >=1")
     random.seed(SEED)
     torch.manual_seed(SEED)
 
@@ -445,7 +460,7 @@ def main() -> None:
         for x, y, mask in train_loader:
             x, y, mask = x.to(device), y.to(device), mask.to(device)
             optimizer.zero_grad(set_to_none=True)
-            loss = masked_loss(model, x, y, mask)
+            loss = masked_loss(model, x, y, mask, args.early_token_count, args.early_token_weight)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
