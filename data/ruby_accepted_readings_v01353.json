@@ -1,0 +1,74 @@
+{
+  "version": "v0.13.53",
+  "description": "Explicit reading segments for ACCEPT items with missing v0.13.52 dictionary readings. Review against original before adoption.",
+  "readings": {
+    "L3788-C16": {
+      "kanji": "照準",
+      "reading": "しょうじゅん"
+    },
+    "L705-C93": {
+      "kanji": "可被下候",
+      "reading": "くださるべくそろ"
+    },
+    "L1874-C60": {
+      "kanji": "近々",
+      "reading": "きんきん"
+    },
+    "L2906-C90": {
+      "kanji": "単簡",
+      "reading": "たんかん"
+    },
+    "L3367-C9": {
+      "kanji": "湯槽",
+      "reading": "ゆぶね"
+    },
+    "L3380-C5": {
+      "kanji": "残喘",
+      "reading": "ざんぜん"
+    },
+    "L5271-C21": {
+      "kanji": "安宅",
+      "reading": "あたか"
+    },
+    "L106-C0": {
+      "kanji": "昔",
+      "reading": "むかし"
+    },
+    "L5537-C100": {
+      "kanji": "恬",
+      "reading": "てん"
+    },
+    "L1221-C29": {
+      "kanji": "無暗",
+      "reading": "むやみ"
+    },
+    "L1847-C71": {
+      "kanji": "撰",
+      "reading": "せん"
+    },
+    "L4035-C85": {
+      "kanji": "挟",
+      "reading": "さしはさむ"
+    },
+    "L2559-C14": {
+      "kanji": "間",
+      "reading": "ま"
+    },
+    "L2575-C80": {
+      "kanji": "間",
+      "reading": "ま"
+    },
+    "L3791-C0": {
+      "kanji": "幸",
+      "reading": "さいわい"
+    },
+    "L355-C3": {
+      "kanji": "御三",
+      "reading": "おさん"
+    },
+    "L894-C51": {
+      "kanji": "手詰",
+      "reading": "てづめ"
+    }
+  }
+}
