@@ -5075,6 +5075,30 @@ def main() -> None:
             last_ai_reply = dispatch.answer
             continue
 
+        # v0.13.20: checkpoint-bound source quotation, never a generated definition.
+        # Explicit truth blocking and stale-checkpoint protections remain intact.
+        if (dispatch.action == "BLOCK"
+                and dispatch.state == "RAW_CORPUS_ONLY"
+                and not force_internalized_verification
+                and not (truth_result is not None and truth_result.runtime_status == "BLOCK")):
+            from trained_unapproved_binding_v01320 import lookup, format_quotation
+            _unapproved_evidence = lookup(
+                str(dispatch.focus or ""), model_path,
+                Path("data/unapproved_corpus_ledger_v0139.jsonl"),
+            )
+            if _unapproved_evidence is not None:
+                _quoted = format_quotation(_unapproved_evidence)
+                print(f"AI> {_quoted}")
+                print(f"[knowledge-state=TRAINED_UNAPPROVED, concept={dispatch.focus}, "
+                      f"knowledge_id={_unapproved_evidence['knowledge_id']}, "
+                      f"truth_state=UNVERIFIED, approval_state=UNAPPROVED, "
+                      "route=checkpoint-bound-source-quotation]")
+                print("[0 generated probe tokens, source quotation only]")
+                print()
+                history.append((resolver_query, _quoted))
+                last_ai_reply = _quoted
+                continue
+
         if dispatch.action == "BLOCK" and not force_internalized_verification:
             truth_block = (
                 truth_result is not None
