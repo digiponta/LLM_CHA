@@ -125,6 +125,7 @@ def deduplicate_trusted_rows(
         "chat-approved": 1,
         "chat-manual": 2,
         "semantic-sleep": 2,
+        "corpus-unapproved": 0,
         "chat-recovery": 3,
     }
     selected: dict[str, Tuple[str, str, str]] = {}
@@ -319,11 +320,12 @@ def main() -> None:
 
     manual_rows = [(u, a) for u, a, s in pending_rows if s == "chat-manual"]
     sleep_rows = [(u, a) for u, a, s in pending_rows if s == "semantic-sleep"]
+    unapproved_rows = [(u, a) for u, a, s in pending_rows if s == "corpus-unapproved"]
     approved_rows = [(u, a) for u, a, s in pending_rows if s == "chat-approved"]
     recovery_rows = [(u, a) for u, a, s in pending_rows if s == "chat-recovery"]
     auto_rows = [
         (u, a) for u, a, s in new_rows
-        if s not in ("chat-manual", "semantic-sleep", "chat-approved", "chat-recovery")
+        if s not in ("chat-manual", "semantic-sleep", "chat-approved", "chat-recovery", "corpus-unapproved")
     ]
 
     weighted_new_pairs: List[Tuple[str, str]] = []
@@ -331,6 +333,8 @@ def main() -> None:
         weighted_new_pairs.extend([pair] * max(1, args.manual_weight))
     for pair in sleep_rows:
         weighted_new_pairs.extend([pair] * max(1, args.manual_weight))
+    # Unapproved records have minimum weight; no manual/approved priority.
+    weighted_new_pairs.extend(unapproved_rows)
     for pair in approved_rows:
         weighted_new_pairs.extend([pair] * max(1, args.manual_weight))
     for pair in recovery_rows:
