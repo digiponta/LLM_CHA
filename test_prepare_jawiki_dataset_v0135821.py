@@ -24,8 +24,8 @@ class Tests(unittest.TestCase):
    r=prepare(a,b,c,out,max_tokens=32)
    self.assertTrue(r["article_split_disjoint"])
    self.assertFalse(r["independent_holdout_verified"])
-   train=[json.loads(x) for x in (out/"train_chunks.jsonl").read_text().splitlines()]
-   val=[json.loads(x) for x in (out/"validation_chunks.jsonl").read_text().splitlines()]
+   train=[json.loads(x) for x in (out/"train_chunks.jsonl").read_text(encoding="utf-8").splitlines()]
+   val=[json.loads(x) for x in (out/"validation_chunks.jsonl").read_text(encoding="utf-8").splitlines()]
    self.assertFalse({x["article_id"] for x in train}&{x["article_id"] for x in val})
    self.assertTrue(all(len(x["token_ids"])<=33 and x["supervised_tokens"]<=32 for x in train+val))
  @patch("tokenizer_bpe.Tokenizer",T)
