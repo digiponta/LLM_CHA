@@ -1,0 +1,2 @@
+{"id":"literature-stage-1","user":"吾輩は猫であるについて教えて","assistant":"『吾輩は猫である』は夏目漱石の小説。","approved":true,"reviewer":"ChatGPT GPT-6","review_type":"assistant_content_review","parent":"correct-literature-004","purpose":"short factual anchor"}
+{"id":"literature-stage-2","user":"吾輩は猫であるについて教えて","assistant":"『吾輩は猫である』は夏目漱石の小説。名前のない猫の視点から、人間社会をユーモラスに描く作品。","approved":true,"reviewer":"ChatGPT GPT-6","review_type":"assistant_content_review","parent":"correct-literature-004","purpose":"expand to plot and perspective"}
