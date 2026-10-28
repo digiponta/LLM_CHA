@@ -10,7 +10,7 @@ from dialogue_format_v0135817 import dialogue_for
 from aligned_replay_examples_v0135816 import make_aligned_examples
 from train_japanese_foundation_v01344 import masked_ce
 from train_iterative_corrective_v0135832 import generate,exact_match
-from train_staged_literature_v0135834 import validate as validate_stage,SEVEN,sha as digest
+from train_staged_literature_v0135834 import SEVEN,sha as digest
 
 START_SHA="7e23f8164ad8e8ed9b5dfcfb177a5244ecbcd51c956fb30787bd3d5bf8128469"
 ORDER=("lit-author","lit-narrator","lit-theme","lit-title")
@@ -18,7 +18,16 @@ def validate(a):
     if a.output_dir.exists():raise FileExistsError(a.output_dir)
     if not 1<=a.rounds<=20 or not 1<=a.steps_per_round<=100 or not 1<=a.max_new_tokens<=256:raise ValueError("invalid budget")
     if digest(a.start)!=START_SHA:raise ValueError("start SHA mismatch")
-    stages,protected=validate_stage(a.stages,a.reviewed,a.previous_report,a.start,a.output_dir,a.rounds,a.steps_per_round)
+    previous=json.loads(a.previous_report.read_text(encoding='utf-8-sig'))
+    if previous.get('version')!='v0.13.58.34' or previous.get('latest_accepted_sha256')!=START_SHA:raise ValueError('invalid previous report')
+    if previous.get('status')!='STOPPED_STAGE_LIMIT' or not previous.get('accepted_checkpoints'):raise ValueError('unaccepted prior stage')
+    if digest(a.stages)!=previous.get('stages_sha256'):raise ValueError('stages hash mismatch')
+    stages=[json.loads(line) for line in a.stages.read_text(encoding='utf-8-sig').splitlines() if line.strip()]
+    if len(stages)!=2 or stages[0].get('id')!='literature-stage-1':raise ValueError('invalid stage data')
+    prev_rows=[json.loads(line) for line in a.reviewed.read_text(encoding='utf-8-sig').splitlines() if line.strip()]
+    byid={r['id']:r for r in prev_rows}
+    if len(byid)!=8 or not set(SEVEN).issubset(byid):raise ValueError('invalid previous reviewed data')
+    protected=[byid[k] for k in SEVEN]
     candidates=[json.loads(x) for x in a.facts.read_text(encoding="utf-8-sig").splitlines() if x.strip()]
     if [r.get("id") for r in candidates]!=list(ORDER):raise ValueError("wrong order")
     for r in candidates:
