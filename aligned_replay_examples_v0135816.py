@@ -4,17 +4,9 @@ For an approved dialogue serialized as '人: ...\nAI: ...', only assistant
 continuation and EOS contribute to loss. Literature remains full LM loss.
 The prompt is tokenized separately to match inference's prompt prefix.
 """
+from dialogue_format_v0135817 import split_dialogue, ANSWER_SEPARATOR
 import torch
 from torch.utils.data import TensorDataset
-
-SEPARATOR="\nAI: "
-def split_dialogue(line):
-    if not line.startswith("人: ") or line.count(SEPARATOR)!=1:
-        raise ValueError("expected one-turn canonical 人/AI record")
-    user,answer=line.split(SEPARATOR,1)
-    if not user[3:].strip() or not answer.strip():
-        raise ValueError("empty user or assistant reply")
-    return user+SEPARATOR,answer
 
 def make_aligned_examples(mixed,tokenizer,context_length,assistant_only=True):
     if context_length<2:raise ValueError("context too short")
