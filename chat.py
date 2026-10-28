@@ -3327,6 +3327,7 @@ def main() -> None:
     )
     if context_recovery_path:
         print("[context recovery available: /context-save, /context-load]")
+    semantic_followup_subject = None  # v0.13.58.45: experimental, session-only
     last_user_text: str | None = None
     last_ai_reply: str | None = None
 
@@ -3353,17 +3354,28 @@ def main() -> None:
         if command in ("/exit", "exit", "quit"):
             break
 
-        # v0.13.58.44: explicit experimental Semantic answer path; no command interception.
+        # v0.13.58.45: session-only follow-up and per-turn source reload.
         if not user_text.startswith("/"):
-            from chat_semantic_router_v0135844 import route as experimental_semantic_route
-            semantic_result = experimental_semantic_route(user_text)
+            from semantic_followup_router_v0135845 import (
+                route as semantic_route_v45, audit as semantic_audit_v45,
+                explicit_subject as semantic_subject_v45,
+            )
+            semantic_result = semantic_route_v45(user_text, semantic_followup_subject)
             if semantic_result is not None:
-                print("AI>", semantic_result["answer"])
+                evidence = semantic_result["result"]
+                semantic_followup_subject = semantic_result["subject"]
+                print("AI>", evidence["answer"])
                 print("[route=EXPERIMENTAL_SEMANTIC, sources=" +
-                      ",".join(x["source_id"] for x in semantic_result["facts"]) + "]")
+                      ",".join(x["source_id"] for x in evidence["facts"]) + "]")
+                semantic_audit_v45({"route":"EXPERIMENTAL_SEMANTIC",
+                    "followup":semantic_result["followup"],
+                    "source_ids":[x["source_id"] for x in evidence["facts"]]})
                 print()
-                # Never add experimental retrieval responses to learning log/history.
                 continue
+            # Don't attach an old context to an unrelated explicit topic.
+            if semantic_subject_v45(user_text) is None:
+                semantic_followup_subject = None
+            semantic_audit_v45({"route":"LEGACY_FALLBACK","source_ids":[]})
 
         if command in ("/context-save", "/context-load"):
             if not context_recovery_path or topic_adapter is None:
@@ -3402,6 +3414,7 @@ def main() -> None:
                 topic_adapter.context.reset()
                 proposition_cursor.reset()
             history.clear()
+            semantic_followup_subject = None
             print("[conversation history cleared]")
             print()
             continue
