@@ -1,0 +1,49 @@
+{
+  "format": "cha-semantic-memory-experimental-v0.13.58.41",
+  "records": [
+    {
+      "record_id": "wagahai-author-001",
+      "subject": "吾輩は猫である",
+      "relation": "author",
+      "value": "夏目漱石",
+      "source_id": "lit-author",
+      "approval_state": "ASSISTANT_REVIEWED_EXPERIMENTAL",
+      "source_type": "CORRECTIVE_SFT_REVIEWED",
+      "active": true,
+      "production_approved": false
+    },
+    {
+      "record_id": "wagahai-narrator-001",
+      "subject": "吾輩は猫である",
+      "relation": "narrator",
+      "value": "名前のない猫",
+      "source_id": "lit-narrator",
+      "approval_state": "ASSISTANT_REVIEWED_EXPERIMENTAL",
+      "source_type": "CORRECTIVE_SFT_REVIEWED",
+      "active": true,
+      "production_approved": false
+    },
+    {
+      "record_id": "wagahai-theme-001",
+      "subject": "吾輩は猫である",
+      "relation": "theme",
+      "value": "猫の視点から人間社会をユーモラスに描く小説",
+      "source_id": "theme-stage-3",
+      "approval_state": "ASSISTANT_REVIEWED_EXPERIMENTAL",
+      "source_type": "CORRECTIVE_SFT_REVIEWED",
+      "active": true,
+      "production_approved": false
+    },
+    {
+      "record_id": "wagahai-title-001",
+      "subject": "吾輩は猫である",
+      "relation": "title",
+      "value": "『吾輩は猫である』",
+      "source_id": "lit-title",
+      "approval_state": "ASSISTANT_REVIEWED_EXPERIMENTAL",
+      "source_type": "CORRECTIVE_SFT_REVIEWED",
+      "active": true,
+      "production_approved": false
+    }
+  ]
+}
