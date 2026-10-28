@@ -7,6 +7,7 @@ cached Wikipedia data for training automatically.
 """
 import argparse,collections,hashlib,json,re
 from pathlib import Path
+from dialogue_format_v0135817 import dialogue_for
 
 ROOT=Path(".")
 INPUTS={
@@ -28,7 +29,7 @@ def read_file(path):
             if obj.get("approved") is not True:raise ValueError(f"{path}:{lineno}: unapproved record")
             user=str(obj.get("user","")).strip();answer=str(obj.get("assistant","")).strip()
             if not user or not answer:raise ValueError(f"{path}:{lineno}: missing user/assistant")
-            items.append("人: "+user+"\nAI: "+answer)
+            items.append(dialogue_for(user,answer))
         return items
     return [line.strip() for line in path.read_text(encoding="utf-8-sig").splitlines() if line.strip()]
 def choose_sources(base):
