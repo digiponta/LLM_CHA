@@ -6,6 +6,7 @@ no automatic winner or production promotion.
 """
 import argparse,hashlib,json
 from pathlib import Path
+from dialogue_format_v0135817 import prompt_for
 from compare_literature_generation_v01356 import PROMPTS,repetition
 
 def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -26,9 +27,12 @@ def compare(paths,tokenizer,output,max_new_tokens=80,temperature=.6,top_k=20,
         models[name]=model.eval()
     cases=[]
     for index,item in enumerate(prompts if prompts is not None else PROMPTS):
-        prefix=tok.encode(item["prompt"],add_bos=True)
+        prompt=item["prompt"]
+        if item.get("category") in ("conversation","persona","knowledge") and prompt.startswith("人: ") and prompt.endswith("\nAI: ") and prompt.count("\nAI: ")==1 and prompt.count("人: ")==1:
+            prompt=prompt_for(prompt[3:-5])
+        prefix=tok.encode(prompt,add_bos=True)
         if not prefix:raise ValueError("empty prefix")
-        row={"id":item["id"],"category":item["category"],"prompt":item["prompt"],
+        row={"id":item["id"],"category":item["category"],"prompt":prompt,
              "prompt_tokens":len(prefix),"outputs":{}}
         for name,model in models.items():
             torch.manual_seed(seed+index)
