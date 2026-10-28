@@ -28,7 +28,7 @@ def read_file(path):
             if obj.get("approved") is not True:raise ValueError(f"{path}:{lineno}: unapproved record")
             user=str(obj.get("user","")).strip();answer=str(obj.get("assistant","")).strip()
             if not user or not answer:raise ValueError(f"{path}:{lineno}: missing user/assistant")
-            items.append("人: "+user+" AI: "+answer)
+            items.append("人: "+user+"\nAI: "+answer)
         return items
     return [line.strip() for line in path.read_text(encoding="utf-8-sig").splitlines() if line.strip()]
 def choose_sources(base):
