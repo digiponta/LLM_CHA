@@ -31,17 +31,13 @@ def next_token_logits(model,context,device):
     return output[0,-1,:]
 
 def sequence_score(model,tok,prompt,continuation,device):
-    """Conditional token NLL, aligned on exact continuation token positions.
-
-    Encode prefix and continuation jointly. Verify prefix is an exact token
-    prefix to avoid accidentally scoring a tokenization boundary mismatch.
+    """Conditional NLL using the same prompt-token and continuation-token
+    boundary for every model. Reported as an experimental tokenization choice.
     """
     import torch
     prefix=tok.encode(prompt,add_bos=True)
-    full=tok.encode(prompt+continuation,add_bos=True)
-    if not full[:len(prefix)]==prefix:
-        raise ValueError("BPE boundary drift; cannot safely align continuation")
-    targets=full[len(prefix):]
+    targets=tok.encode(continuation,add_bos=False)
+    full=prefix+targets
     if not prefix or not targets:raise ValueError("empty tokens")
     window=model.context_length
     logsum=0.
@@ -111,7 +107,7 @@ def run(paths,tokenizer,report,max_new_tokens=80,temperature=.6,top_k=20,
        "input_sha256":{**{name:digest(p) for name,p in paths.items()},"tokenizer":digest(tokenizer)},
        "cases":cases,"quality_gate_run":False,"human_review_complete":False,
        "independent_holdout_verified":False,"production_promotion_allowed":False,
-       "interpretation":["Teacher-forced NLL is measured on identical positive references per probe.",
+       "interpretation":["Teacher-forced NLL uses separately tokenized prompt/continuation boundaries, identically across models.",
         "Generated text quality remains a separate subjective and objective evaluation.",
         "These probes may overlap historical training and are not independent holdout.",
         "First-token divergence is a property of sampling/decoding, not proof of semantic change."]}
