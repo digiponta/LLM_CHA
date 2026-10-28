@@ -3353,6 +3353,18 @@ def main() -> None:
         if command in ("/exit", "exit", "quit"):
             break
 
+        # v0.13.58.44: explicit experimental Semantic answer path; no command interception.
+        if not user_text.startswith("/"):
+            from chat_semantic_router_v0135844 import route as experimental_semantic_route
+            semantic_result = experimental_semantic_route(user_text)
+            if semantic_result is not None:
+                print("AI>", semantic_result["answer"])
+                print("[route=EXPERIMENTAL_SEMANTIC, sources=" +
+                      ",".join(x["source_id"] for x in semantic_result["facts"]) + "]")
+                print()
+                # Never add experimental retrieval responses to learning log/history.
+                continue
+
         if command in ("/context-save", "/context-load"):
             if not context_recovery_path or topic_adapter is None:
                 print("[context recovery disabled; set LLM_CHA_MULTITOPIC=1, LLM_CHA_CONTEXT_RECOVERY=1, LLM_CHA_CONTEXT_PATH]")
