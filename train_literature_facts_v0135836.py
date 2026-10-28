@@ -7,6 +7,7 @@ never claims independent generalization or human attestation.
 import argparse,hashlib,json,random
 from pathlib import Path
 from dialogue_format_v0135817 import dialogue_for
+from text_integrity_gate_v0135837 import validate_training_records, defects
 from aligned_replay_examples_v0135816 import make_aligned_examples
 from train_japanese_foundation_v01344 import masked_ce
 from train_iterative_corrective_v0135832 import generate,exact_match
@@ -30,6 +31,8 @@ def validate(a):
     protected=[byid[k] for k in SEVEN]
     candidates=[json.loads(x) for x in a.facts.read_text(encoding="utf-8-sig").splitlines() if x.strip()]
     if [r.get("id") for r in candidates]!=list(ORDER):raise ValueError("wrong order")
+    _,bad=validate_training_records(candidates+protected)
+    if bad:raise ValueError("unsafe training records: "+repr(bad))
     for r in candidates:
         if r.get("approved") is not True or r.get("reviewer")!="ChatGPT GPT-6" or r.get("review_type")!="assistant_content_review" or r.get("approval_scope")!="experimental_sft_candidate_only":raise ValueError("unapproved fact")
         if r.get("human_reviewer_attested") is not False or r.get("production_promotion_allowed") is not False:raise ValueError("unsafe fact record")
@@ -77,7 +80,8 @@ def run(a):
                         (loss/len(xs)).backward()
                     torch.nn.utils.clip_grad_norm_(model.parameters(),1.);opt.step();steps+=1
             answer=generate(model,tok,fact,a.max_new_tokens);bad=failures()
-            event={"id":fact["id"],"round":rnd,"answer":answer,"exact":exact_match(answer,fact["assistant"]),
+            integrity=defects(answer)
+            event={"id":fact["id"],"round":rnd,"answer":answer,"text_integrity_issues":integrity,"quarantined":bool(integrity),"exact":not integrity and exact_match(answer,fact["assistant"]),
                    "regressions":bad,"total_steps":steps}
             events.append(event);print(json.dumps(event,ensure_ascii=False))
             if bad:
