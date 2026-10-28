@@ -3377,6 +3377,16 @@ def main() -> None:
                 semantic_followup_subject = None
             semantic_audit_v45({"route":"LEGACY_FALLBACK","source_ids":[]})
 
+        # v0.13.58.46: opt-in small-talk fallback; fact questions go to legacy runtime.
+        if not user_text.startswith("/"):
+            from daily_conversation_v0135846 import route as daily_route_v46
+            daily_result = daily_route_v46(user_text)
+            if daily_result is not None:
+                print("AI>", daily_result.answer)
+                print(f"[route=DAILY_RULE_EXPERIMENTAL, intent={daily_result.intent}]")
+                print()
+                continue
+
         if command in ("/context-save", "/context-load"):
             if not context_recovery_path or topic_adapter is None:
                 print("[context recovery disabled; set LLM_CHA_MULTITOPIC=1, LLM_CHA_CONTEXT_RECOVERY=1, LLM_CHA_CONTEXT_PATH]")
