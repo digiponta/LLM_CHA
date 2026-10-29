@@ -247,12 +247,15 @@ class ChatGUI:
         preview=clip[:4000]
         self.add(self.diagnostics, "\n[一時クリップ資料・未検証 / "+str(len(clip))+"文字]\n"+preview+
                  ("\n[以下省略]\n" if len(clip)>4000 else "\n"))
-        self.tabs.select(self.diagnostics)
         self._clipboard_context=preview
         self.evidence.add(preview, 'clipboard', source_title="クリップボードからの貼り付け")
         self.refresh_evidence()
-        messagebox.showinfo("クリップ読込",
-            "クリップボードを一時資料として読み込み、ログに表示しました。\n自動的な学習や回答への採用は行いません。")
+        self.add(self.conversation,
+                 f"システム: クリップボードを読み込みました（{len(clip)}文字）。"
+                 "一時Evidenceに登録しました（外部未検証・自動学習なし）。"
+                 + ("\nシステム: 長文のため先頭4,000文字のみ登録しました。" if len(clip)>4000 else "")
+                 + "\n", "system")
+        self.tabs.select(self.conversation)
 
     def wiki_search(self):
         query=self.entry.get().strip() or simpledialog.askstring("Wikipedia検索","検索語を入力",parent=self.root)
