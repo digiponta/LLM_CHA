@@ -244,7 +244,8 @@ class ChatGUI:
             self.entry.delete(0,"end")
             return
         # Explicit self-reported episode details are recorded in session only.
-        self.episodes.observe(text,self.evidence.topic)
+        if not re.search(r"(?:飲んだ|飲みました|食べた|食べました|好き)",text):
+            self.episodes.observe(text,self.evidence.topic)
         general_reply=self.general_intent.respond(text,self.evidence.topic)
         if general_reply is not None:
             self.intent_gate.awaiting_taste=False
@@ -330,6 +331,8 @@ class ChatGUI:
             if preference_reply is not None:
                 self.add(self.conversation,"あなた: "+text+"\n","user")
                 self.general_intent.observe(preference_reply,self.preference_context.topic,self.evidence.topic)
+                self.episodes.start(self.evidence.topic,self.preference_context.topic,"好み")
+                self.episodes.observe(text,self.evidence.topic)
                 self.add(self.conversation,"AI: "+preference_reply+"\n","assistant")
                 self.entry.delete(0,"end")
                 return
