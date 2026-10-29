@@ -4,6 +4,7 @@ A user statement is recorded as SELF_REPORTED, distinct from external Evidence.
 No persistence, semantic promotion, training, or inferred experiences.
 """
 import re
+from episode_semantic_v013588221 import normalize_observation
 from dataclasses import dataclass,field
 
 FEATURES = (
@@ -54,7 +55,7 @@ class EpisodeContext:
   for clause in clauses:
    senses=[name for name,pattern in FEATURES if re.search(pattern,clause)]
    if not senses:continue
-   item={"text":clause,"dimensions":senses,"source":"USER_SELF_REPORTED"}
+   item={"text":clause,"original_utterance":text.strip(),"dimensions":senses,"semantic":normalize_observation(clause),"source":"USER_SELF_REPORTED"}
    if item not in self.active.observations:
     self.active.observations.append(item)
     results.append(item)
