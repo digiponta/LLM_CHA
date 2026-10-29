@@ -64,6 +64,9 @@ def format_result(result):
         for hit in result["hits"]:
             parts.append(hit["title"]+"\n"+hit["extract"]+"\n出典: "+hit["url"])
         return "\n\n".join(parts)+"\n"
+    if result["status"]=="NO_ATTRIBUTE_EVIDENCE":
+        return (f"AI: Wikipediaに「{result.get('topic','')}」の記事は見つかりましたが、"
+                f"「{result.get('attribute','')}」について回答できる記述は確認できません。\n")
     if result["status"]=="NO_HIT":
         return "AI: 未学習です（Wikipediaにも該当する検索結果がありません）。\n"
     return "AI: Wikipedia検索に接続できませんでした。未学習かどうかは確認できません。\n"
