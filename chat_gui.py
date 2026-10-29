@@ -12,7 +12,11 @@ import sys
 import threading
 import tkinter as tk
 from pathlib import Path
-from tkinter import messagebox, scrolledtext, ttk
+from tkinter import messagebox, scrolledtext, ttk, simpledialog
+import webbrowser
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+import json
 
 from chat_runtime_status_v0135882 import status_text
 
@@ -58,7 +62,10 @@ class ChatGUI:
         self.entry.pack(side="left", fill="x", expand=True)
         self.entry.bind("<Return>", lambda event: self.send())
         ttk.Button(bar, text="送信", command=self.send).pack(side="left", padx=4)
-        ttk.Button(bar, text="状態", command=self.status).pack(side="left", padx=4)
+        ttk.Button(bar, text="ググる", command=self.google).pack(side="left", padx=3)
+        ttk.Button(bar, text="クリップ読込", command=self.clipboard_read).pack(side="left", padx=3)
+        ttk.Button(bar, text="Wiki検索", command=self.wiki_search).pack(side="left", padx=3)
+        ttk.Button(bar, text="状態", command=self.status).pack(side="left", padx=3)
         ttk.Button(bar, text="再起動", command=self.restart).pack(side="left", padx=4)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         self.launch()
@@ -145,6 +152,8 @@ class ChatGUI:
                 break
             if kind == "text":
                 self.process_output(data)
+            elif kind == "wiki":
+                self.add(self.diagnostics, data)
             elif data is self.proc:
                 self.status_label.configure(text="終了")
                 if self.pending:
@@ -168,6 +177,66 @@ class ChatGUI:
             return
         self.add(self.conversation, "あなた: " + text + "\n", "user")
         self.entry.delete(0, "end")
+
+
+    def google(self):
+        query=self.entry.get().strip() or simpledialog.askstring("Google検索", "検索語を入力", parent=self.root)
+        if not query:
+            return
+        url="https://www.google.com/search?"+urlencode({"q":query})
+        try:
+            opened=webbrowser.open(url)
+            self.add(self.diagnostics, "\n[Google検索] "+query+"\n"+url+"\n")
+            if not opened:
+                messagebox.showinfo("Google検索", "ブラウザーを起動できませんでした。ログにURLを表示しました。")
+        except Exception as exc:
+            messagebox.showerror("Google検索", str(exc))
+
+    def clipboard_read(self):
+        try:
+            clip=self.root.clipboard_get()
+        except tk.TclError:
+            messagebox.showinfo("クリップ読込", "テキストがクリップボードにありません。")
+            return
+        if not isinstance(clip,str) or not clip.strip():
+            messagebox.showinfo("クリップ読込","クリップボードが空です。")
+            return
+        # Treat web/clipboard as untrusted source, display in logs, no silent training/injection.
+        preview=clip[:4000]
+        self.add(self.diagnostics, "\n[一時クリップ資料・未検証 / "+str(len(clip))+"文字]\n"+preview+
+                 ("\n[以下省略]\n" if len(clip)>4000 else "\n"))
+        self.tabs.select(self.diagnostics)
+        self._clipboard_context=preview
+        messagebox.showinfo("クリップ読込",
+            "クリップボードを一時資料として読み込み、ログに表示しました。\n自動的な学習や回答への採用は行いません。")
+
+    def wiki_search(self):
+        query=self.entry.get().strip() or simpledialog.askstring("Wikipedia検索","検索語を入力",parent=self.root)
+        if not query:return
+        self.add(self.diagnostics,"\n[Wikipedia検索中] "+query+"\n")
+        self.tabs.select(self.diagnostics)
+        def worker():
+            try:
+                params=urlencode({"action":"query","generator":"search","gsrsearch":query,
+                                  "gsrlimit":"3","prop":"extracts","exintro":"1",
+                                  "explaintext":"1","exchars":"700","format":"json"})
+                url="https://ja.wikipedia.org/w/api.php?"+params
+                req=Request(url,headers={"User-Agent":"LLM_CHA-ResearchGUI/0.13.58.82.2 (local educational client)"})
+                with urlopen(req,timeout=12) as response:
+                    payload=json.load(response)
+                pages=payload.get("query",{}).get("pages",{})
+                if not pages:
+                    self.out.put(("wiki","[Wikipedia] 検索結果がありません。\n"))
+                else:
+                    lines=["[Wikipedia・外部未検証情報]"]
+                    for page in sorted(pages.values(),key=lambda v:v.get("index",999)):
+                        title=page.get("title","")
+                        extract=page.get("extract","")
+                        lines.append(title+"\n"+extract+"\n")
+                    self.out.put(("wiki","\n".join(lines)+"\n"))
+            except Exception as exc:
+                self.out.put(("wiki","[Wikipedia検索失敗] "+str(exc)+"\n"))
+        threading.Thread(target=worker,daemon=True).start()
 
     def status(self):
         self.add(self.diagnostics, "\n" + status_text(ROOT) + "\n")
