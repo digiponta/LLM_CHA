@@ -28,6 +28,7 @@ from dialogue_intent_gate_v013588218 import DialogueIntentGate
 from general_dialogue_intent_v013588219 import GeneralDialogueIntentContext
 from episodic_context_v013588220 import EpisodeContext
 from episodic_retrieval_v013588222 import retrieve_episodes, natural_summary
+from episodic_memory_gate_v013588223 import EpisodicMemoryGate
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
@@ -57,6 +58,8 @@ class ChatGUI:
         self.intent_gate = DialogueIntentGate()
         self.general_intent = GeneralDialogueIntentContext()
         self.episodes = EpisodeContext()
+        self.episode_gate = EpisodicMemoryGate(ROOT / 'data' / 'approved_episodic_memory.json')
+        self.last_staged_episode_id = None
         self.dialogue_context = UnifiedDialogueContext()
         self.recent_products = []
         self.pending_llm_questions = queue.Queue()
@@ -217,6 +220,43 @@ class ChatGUI:
     def send(self):
         text = self.entry.get().strip()
         if not text:
+            return
+        # Explicit approval: never save a user episode silently.
+        if text.startswith("/episode"):
+            parts=text.split()
+            action=parts[1] if len(parts)>1 else "help"
+            self.add(self.conversation,"あなた: "+text+"\n","user")
+            try:
+                if action=="stage":
+                    if not self.episodes.active:
+                        reply="保存候補のEpisodeがありません。"
+                    else:
+                        item=self.episode_gate.stage(self.episodes.active)
+                        self.last_staged_episode_id=item["episode_id"]
+                        reply=("Episodeを承認待ちにしました。ID: "+item["episode_id"]+
+                               "\n対象: "+item["subject"]+
+                               "\n保存する場合は /episode approve "+item["episode_id"])
+                elif action=="approve" and len(parts)==3:
+                    record=self.episode_gate.approve(parts[2])
+                    reply="明示承認によりローカルのEpisodeストアへ保存しました: "+record["episode_id"]
+                elif action=="reject" and len(parts)==3:
+                    self.episode_gate.reject(parts[2])
+                    reply="承認待ちEpisodeを破棄しました。"
+                elif action=="list":
+                    entries=self.episode_gate.list_approved()
+                    reply=("承認済みEpisode "+str(len(entries))+"件\n"+
+                           "\n".join(x["episode_id"]+" : "+x["subject"] for x in entries)) if entries else "承認済みEpisodeはありません。"
+                elif action=="revoke" and len(parts)==3:
+                    self.episode_gate.revoke(parts[2])
+                    reply="指定した承認済みEpisodeをローカルストアから削除しました。"
+                else:
+                    reply=("使い方: /episode stage、/episode approve <ID>、"+
+                           "/episode reject <ID>、/episode list、/episode revoke <ID>。"+
+                           "\n承認済みのEpisodeはLLMの重みや従来Semantic Memoryには自動反映されません。")
+            except (OSError,ValueError,KeyError) as exc:
+                reply="Episode操作は完了しませんでした: "+str(exc)
+            self.add(self.conversation,"システム: "+reply+"\n","system")
+            self.entry.delete(0,"end")
             return
         # Multi-topic reference resolution, before knowledge/social routing.
         recovered=self.dialogue_context.resolve(text)
