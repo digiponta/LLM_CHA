@@ -3111,6 +3111,12 @@ def checkpoint_trained_fingerprints(
 
 
 def main() -> None:
+    # Ensure UTF-8 pipes when invoked by the GUI, without changing native CLI defaults.
+    if __import__("os").environ.get("LLM_CHA_GUI_UTF8") == "1":
+        for name in ("stdin", "stdout", "stderr"):
+            stream = getattr(sys, name, None)
+            if stream is not None and hasattr(stream, "reconfigure"):
+                stream.reconfigure(encoding="utf-8", errors="replace")
     args = parse_args()
     # v0.11.9: opt-in experiment, existing Truth Gate remains authoritative.
     import os as _reconcile_os
