@@ -21,6 +21,7 @@ import json
 from chat_runtime_status_v0135882 import status_text
 from natural_tool_router_v01358823 import route
 from temporary_evidence_v01358824 import TemporaryEvidence
+from general_evidence_retrieval_v01358827 import retrieve
 
 ROOT = Path(__file__).resolve().parent
 PROMPT = "You> "
@@ -188,6 +189,28 @@ class ChatGUI:
                 detail=self.evidence.lookup(text)
                 if detail:
                     self.add(self.conversation,"  根拠: "+detail["quote"]+"\n","system")
+                self.entry.delete(0,"end")
+                return
+        if intent is None:
+            result=retrieve(self.evidence,text)
+            if result is not None:
+                self.add(self.conversation,"あなた: "+text+"\n","user")
+                if result["status"]=="EXCERPTS":
+                    self.add(self.conversation,
+                             "AI: 【外部未検証資料："+result["source"]+"】"
+                             +result["topic"]+"について、資料に次の記載があります。\n"
+                             +"\n".join("  引用: "+q for q in result["quotes"])+"\n",
+                             "assistant")
+                elif result["status"]=="NO_EVIDENCE":
+                    self.add(self.conversation,
+                             "AI: "+result["topic"]+"の検索結果は、まだ一時資料として読み込まれていません。"
+                             "ブラウザーの関連文章をコピーして「クリップ読込」を実行してください。\n",
+                             "system")
+                else:
+                    self.add(self.conversation,
+                             "AI: 一時資料に質問へ直接答えられる記述が見つかりません。"
+                             "関連するメニューやフードの説明をコピーしてください。\n",
+                             "system")
                 self.entry.delete(0,"end")
                 return
         if intent is not None:
