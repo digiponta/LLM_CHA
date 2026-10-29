@@ -26,6 +26,7 @@ from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
 from unified_dialogue_context_v013588211 import UnifiedDialogueContext
+from auto_wiki_unknown_v013588212 import is_unknown_answer, search_term, search_wikipedia, format_result
 
 ROOT = Path(__file__).resolve().parent
 PROMPT = "You> "
@@ -47,6 +48,8 @@ class ChatGUI:
         self.preference_context = PreferenceContext()
         self.dialogue_context = UnifiedDialogueContext()
         self.recent_products = []
+        self.pending_llm_questions = queue.Queue()
+        self.wiki_inflight = False
         self.header = ttk.Frame(root, padding=(12, 10))
         self.header.pack(fill="x")
         ttk.Label(self.header, text="LLM_CHA Chat", font=("Yu Gothic UI", 17, "bold")).pack(side="left")
@@ -81,7 +84,6 @@ class ChatGUI:
         ttk.Button(bar, text="送信", command=self.send).pack(side="left", padx=4)
         ttk.Button(bar, text="ググる", command=self.google).pack(side="left", padx=3)
         ttk.Button(bar, text="クリップ読込", command=self.clipboard_read).pack(side="left", padx=3)
-        ttk.Button(bar, text="Wiki検索", command=self.wiki_search).pack(side="left", padx=3)
         ttk.Button(bar, text="状態", command=self.status).pack(side="left", padx=3)
         ttk.Button(bar, text="再起動", command=self.restart).pack(side="left", padx=4)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
@@ -159,7 +161,15 @@ class ChatGUI:
             return
         if line.startswith("AI>"):
             answer = line[3:].strip()
-            self.add(self.conversation, "AI: " + answer + "\n", "assistant")
+            try:
+                question = self.pending_llm_questions.get_nowait()
+            except queue.Empty:
+                question = ""
+            if question and is_unknown_answer(answer):
+                self.add(self.conversation,"システム: 未学習のためWikipediaを検索しています。\n","system")
+                self.auto_wiki(question)
+            else:
+                self.add(self.conversation,"AI: "+answer+"\n","assistant")
         elif self.booted and not (DIAGNOSTIC.match(line) or line.startswith("You>")
                                  or line.startswith("PS ") or line.startswith("/")):
             # Unclassified output is kept in diagnostic tab, not silently interpreted as AI.
@@ -173,6 +183,10 @@ class ChatGUI:
                 break
             if kind == "text":
                 self.process_output(data)
+            elif kind == "auto_wiki":
+                self.add(self.diagnostics, "[自動Wikipedia] "+data["status"]+"\n")
+                self.add(self.conversation,format_result(data),"assistant")
+                self.wiki_inflight=False
             elif kind == "wiki":
                 self.add(self.diagnostics, data)
             elif kind == "wiki_evidence":
@@ -299,9 +313,20 @@ class ChatGUI:
         except (OSError, ValueError):
             messagebox.showerror("LLM_CHA", "送信できませんでした")
             return
+        self.pending_llm_questions.put(text)
         self.add(self.conversation, "あなた: " + text + "\n", "user")
         self.entry.delete(0, "end")
 
+
+    def auto_wiki(self, question):
+        query=search_term(question,self.evidence.topic)
+        if not query:
+            self.out.put(("auto_wiki",{"status":"NO_HIT","hits":[]}))
+            return
+        def worker():
+            result=search_wikipedia(query)
+            self.out.put(("auto_wiki",result))
+        threading.Thread(target=worker,daemon=True).start()
 
     def google(self):
         query=self.entry.get().strip() or simpledialog.askstring("Google検索", "検索語を入力", parent=self.root)
