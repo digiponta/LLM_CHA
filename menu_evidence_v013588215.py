@@ -85,7 +85,9 @@ def extract_menu(records,topic):
     continue
    food=bool(PRODUCT_FOOD.search(line))
    drink=bool(PRODUCT_DRINK.search(line))
-   if food:
+   if re.search(r"(?:ラテ|フラペチーノ|マキアート|コーヒー|スープチーノ)(?:®)?(?:\\s|$)",line):
+    kind="ドリンク"
+   elif food:
     kind="フード"
    elif drink:
     kind="ドリンク"
