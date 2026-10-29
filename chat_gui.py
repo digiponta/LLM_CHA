@@ -1,127 +1,222 @@
 #!/usr/bin/env python3
-"""Tkinter GUI wrapper around the existing CLI chat.py session.
+"""LLM_CHA GUI: Japanese chat view backed by the existing chat.py runtime.
 
-The GUI sends ordinary lines to the unmodified input protocol, and shows
-stdout incrementally. chat.py remains the single source of inference logic.
+CLI stdout is preserved in a separate diagnostic tab. All pipe traffic is UTF-8.
 """
+import codecs
 import os
 import queue
+import re
 import subprocess
 import sys
 import threading
 import tkinter as tk
-from tkinter import scrolledtext, messagebox
 from pathlib import Path
+from tkinter import messagebox, scrolledtext, ttk
+
 from chat_runtime_status_v0135882 import status_text
 
-ROOT=Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent
+PROMPT = "You> "
+DIAGNOSTIC = re.compile(
+    r"^\s*(?:\[|(?:[0-9]+ generated probe tokens)|(?:Device|Model|Tokenizer|GPU|Parameters|Context length)\s*:)"
+)
+
 
 class ChatGUI:
-    def __init__(self,root):
-        self.root=root
-        root.title("LLM_CHA Chat — v0.13.58.82")
-        root.geometry("920x660")
-        self.proc=None
-        self.out=queue.Queue()
-        self.view=scrolledtext.ScrolledText(root,wrap="word",state="disabled",font=("Consolas",11))
-        self.view.pack(fill="both",expand=True,padx=8,pady=8)
-        toolbar=tk.Frame(root)
-        toolbar.pack(fill="x",padx=8)
-        self.entry=tk.Entry(toolbar,font=("Yu Gothic UI",12))
-        self.entry.pack(side="left",fill="x",expand=True)
-        self.entry.bind("<Return>",lambda e:self.send())
-        tk.Button(toolbar,text="送信",command=self.send).pack(side="left",padx=3)
-        tk.Button(toolbar,text="/status",command=self.status).pack(side="left",padx=3)
-        tk.Button(toolbar,text="再起動",command=self.restart).pack(side="left",padx=3)
-        self.root.protocol("WM_DELETE_WINDOW",self.close)
-        self.launch()
-        root.after(50,self.drain)
+    def __init__(self, root):
+        self.root = root
+        root.title("LLM_CHA — Chat")
+        root.geometry("900x680")
+        self.proc = None
+        self.out = queue.Queue()
+        self.pending = ""
+        self.booted = False
+        self.header = ttk.Frame(root, padding=(12, 10))
+        self.header.pack(fill="x")
+        ttk.Label(self.header, text="LLM_CHA Chat", font=("Yu Gothic UI", 17, "bold")).pack(side="left")
+        self.status_label = ttk.Label(self.header, text="起動中")
+        self.status_label.pack(side="right")
 
-    def append(self,txt):
-        self.view.configure(state="normal")
-        self.view.insert("end",txt)
-        self.view.see("end")
-        self.view.configure(state="disabled")
+        self.tabs = ttk.Notebook(root)
+        self.tabs.pack(fill="both", expand=True, padx=10, pady=4)
+        self.conversation = scrolledtext.ScrolledText(
+            self.tabs, wrap="word", state="disabled",
+            font=("Yu Gothic UI", 12), padx=12, pady=10)
+        self.diagnostics = scrolledtext.ScrolledText(
+            self.tabs, wrap="word", state="disabled",
+            font=("Consolas", 10), padx=8, pady=8)
+        self.tabs.add(self.conversation, text="会話")
+        self.tabs.add(self.diagnostics, text="ログ・コマンド")
+        self.conversation.tag_configure("user", foreground="#2159a4", spacing1=12)
+        self.conversation.tag_configure("assistant", spacing1=10)
+        self.conversation.tag_configure("system", foreground="#5c6571")
+
+        bar = ttk.Frame(root, padding=10)
+        bar.pack(fill="x")
+        self.entry = ttk.Entry(bar, font=("Yu Gothic UI", 12))
+        self.entry.pack(side="left", fill="x", expand=True)
+        self.entry.bind("<Return>", lambda event: self.send())
+        ttk.Button(bar, text="送信", command=self.send).pack(side="left", padx=4)
+        ttk.Button(bar, text="状態", command=self.status).pack(side="left", padx=4)
+        ttk.Button(bar, text="再起動", command=self.restart).pack(side="left", padx=4)
+        self.root.protocol("WM_DELETE_WINDOW", self.close)
+        self.launch()
+        root.after(50, self.drain)
+        self.entry.focus_set()
+
+    @staticmethod
+    def add(widget, text, tag=None):
+        widget.configure(state="normal")
+        widget.insert("end", text, tag)
+        widget.see("end")
+        widget.configure(state="disabled")
 
     def launch(self):
-        # -u is necessary: prompt 'You> ' has no newline in chat.py.
-        self.proc=subprocess.Popen([sys.executable,"-u",str(ROOT/"chat.py")],
-            cwd=str(ROOT),stdin=subprocess.PIPE,stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,bufsize=0)
-        process=self.proc
+        env = os.environ.copy()
+        env.update(PYTHONUTF8="1", PYTHONIOENCODING="utf-8",
+                   LLM_CHA_GUI_UTF8="1")
+        self.pending = ""
+        self.booted = False
+        self.status_label.configure(text="起動中")
+        self.proc = subprocess.Popen(
+            [sys.executable, "-u", str(ROOT / "chat.py")],
+            cwd=str(ROOT), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT, bufsize=0, env=env)
+        process = self.proc
+
         def reader():
-            decoder=__import__("codecs").getincrementaldecoder("utf-8")("replace")
+            decoder = codecs.getincrementaldecoder("utf-8")("replace")
             try:
                 while True:
-                    raw=process.stdout.read(1)
-                    if not raw:break
-                    txt=decoder.decode(raw)
-                    if txt:self.out.put(txt)
-                tail=decoder.decode(b"",final=True)
-                if tail:self.out.put(tail)
-            except (OSError,ValueError) as exc:
-                self.out.put("\n[reader error: "+str(exc)+"]\n")
-            finally:self.out.put("\n[chat process stopped]\n")
-        threading.Thread(target=reader,daemon=True).start()
+                    data = process.stdout.read(256)
+                    if not data:
+                        break
+                    text = decoder.decode(data)
+                    if text:
+                        self.out.put(("text", text))
+                tail = decoder.decode(b"", final=True)
+                if tail:
+                    self.out.put(("text", tail))
+            except (OSError, ValueError) as exc:
+                self.out.put(("text", "\n[reader error: {}]\n".format(exc)))
+            finally:
+                self.out.put(("ended", process))
+        threading.Thread(target=reader, daemon=True).start()
+
+    def process_output(self, chunk):
+        self.add(self.diagnostics, chunk)
+        self.pending += chunk
+        # CLI prompts aren't newline terminated; force flushing on prompt.
+        while True:
+            prompt_at = self.pending.find(PROMPT)
+            newline_at = self.pending.find("\n")
+            if prompt_at >= 0 and (newline_at < 0 or prompt_at < newline_at):
+                before = self.pending[:prompt_at]
+                self.pending = self.pending[prompt_at + len(PROMPT):]
+                if before:
+                    self.route_line(before)
+                self.booted = True
+                self.status_label.configure(text="対話可能")
+                continue
+            if newline_at < 0:
+                break
+            line = self.pending[:newline_at].rstrip("\r")
+            self.pending = self.pending[newline_at + 1:]
+            self.route_line(line)
+
+    def route_line(self, line):
+        line = line.strip()
+        if not line:
+            return
+        if line.startswith("AI>"):
+            answer = line[3:].strip()
+            self.add(self.conversation, "AI: " + answer + "\n", "assistant")
+        elif self.booted and not (DIAGNOSTIC.match(line) or line.startswith("You>")
+                                 or line.startswith("PS ") or line.startswith("/")):
+            # Unclassified output is kept in diagnostic tab, not silently interpreted as AI.
+            pass
 
     def drain(self):
-        chunks=[]
-        try:
-            while len(chunks)<4096:chunks.append(self.out.get_nowait())
-        except queue.Empty:pass
-        if chunks:self.append("".join(chunks))
-        self.root.after(50,self.drain)
+        for _ in range(1500):
+            try:
+                kind, data = self.out.get_nowait()
+            except queue.Empty:
+                break
+            if kind == "text":
+                self.process_output(data)
+            elif data is self.proc:
+                self.status_label.configure(text="終了")
+                if self.pending:
+                    self.route_line(self.pending)
+                    self.pending = ""
+                self.add(self.diagnostics, "\n[chat process stopped]\n")
+        self.root.after(50, self.drain)
 
     def send(self):
-        text=self.entry.get().strip()
-        if not text:return
-        if not self.proc or self.proc.poll() is not None:
-            messagebox.showwarning("LLM_CHA","Chatプロセスが起動していません")
+        text = self.entry.get().strip()
+        if not text:
+            return
+        if self.proc is None or self.proc.poll() is not None:
+            messagebox.showwarning("LLM_CHA", "Chatプロセスが起動していません")
             return
         try:
-            self.proc.stdin.write((text+"\n").encode("utf-8"))
+            self.proc.stdin.write((text + "\n").encode("utf-8"))
             self.proc.stdin.flush()
-        except (OSError,ValueError):
-            messagebox.showerror("LLM_CHA","Chatへの送信に失敗しました")
+        except (OSError, ValueError):
+            messagebox.showerror("LLM_CHA", "送信できませんでした")
             return
-        self.entry.delete(0,"end")
-        self.append("\n[送信] "+text+"\n")
+        self.add(self.conversation, "あなた: " + text + "\n", "user")
+        self.entry.delete(0, "end")
 
     def status(self):
-        self.append("\n"+status_text(ROOT)+"\n")
-        if self.proc and self.proc.poll() is None:
+        self.add(self.diagnostics, "\n" + status_text(ROOT) + "\n")
+        self.tabs.select(self.diagnostics)
+        if self.proc is not None and self.proc.poll() is None:
             try:
                 self.proc.stdin.write(b"/status\n")
                 self.proc.stdin.flush()
-            except (OSError,ValueError):pass
+            except (OSError, ValueError):
+                pass
 
     def stop(self):
-        if not self.proc:return
-        p=self.proc
-        if p.poll() is None:
-            try:p.stdin.write(b"/exit\n");p.stdin.flush()
-            except (OSError,ValueError):pass
-            try:p.wait(timeout=2)
+        proc = self.proc
+        if proc is None:
+            return
+        if proc.poll() is None:
+            try:
+                proc.stdin.write(b"/exit\n")
+                proc.stdin.flush()
+            except (OSError, ValueError):
+                pass
+            try:
+                proc.wait(timeout=2)
             except subprocess.TimeoutExpired:
-                p.terminate()
-                try:p.wait(timeout=2)
-                except subprocess.TimeoutExpired:p.kill()
-        try:
-            if p.stdin:p.stdin.close()
-            if p.stdout:p.stdout.close()
-        except OSError:pass
-        self.proc=None
+                proc.terminate()
+                try:
+                    proc.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    proc.wait()
+        for stream in (proc.stdin, proc.stdout):
+            if stream:
+                try:
+                    stream.close()
+                except OSError:
+                    pass
+        self.proc = None
 
     def restart(self):
         self.stop()
-        self.append("\n[restarting chat]\n")
+        self.add(self.conversation, "（Chatを再起動しました）\n", "system")
         self.launch()
 
     def close(self):
         self.stop()
         self.root.destroy()
 
-if __name__=="__main__":
-    root=tk.Tk()
+
+if __name__ == "__main__":
+    root = tk.Tk()
     ChatGUI(root)
     root.mainloop()
