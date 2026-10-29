@@ -25,6 +25,7 @@ from general_evidence_retrieval_v01358827 import retrieve
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
+from unified_dialogue_context_v013588211 import UnifiedDialogueContext
 
 ROOT = Path(__file__).resolve().parent
 PROMPT = "You> "
@@ -44,6 +45,7 @@ class ChatGUI:
         self.booted = False
         self.evidence = TemporaryEvidence()
         self.preference_context = PreferenceContext()
+        self.dialogue_context = UnifiedDialogueContext()
         self.recent_products = []
         self.header = ttk.Frame(root, padding=(12, 10))
         self.header.pack(fill="x")
@@ -191,6 +193,18 @@ class ChatGUI:
         text = self.entry.get().strip()
         if not text:
             return
+        # Multi-topic reference resolution, before knowledge/social routing.
+        recovered=self.dialogue_context.resolve(text)
+        if recovered:
+            self.dialogue_context.switch(recovered)
+            self.evidence.set_topic(recovered)
+            self.preference_context.set_topic(recovered)
+            self.add(self.conversation,"システム: 話題を「"+recovered+"」に戻しました。\n","system")
+            # Discard the anaphoric prefix but preserve the actual preference.
+            text=re.sub(r"^(?:さっき|先ほど|前に).{0,10}(?:宝石|石)の?","",text).strip()
+            if not text:
+                self.entry.delete(0,"end")
+                return
         intent=route(text)
         if intent is None:
             causal=retrieve_cause(self.evidence,text)
@@ -258,6 +272,7 @@ class ChatGUI:
         if intent is not None:
             if intent.query:
                 self.recent_products = []
+                self.dialogue_context.switch(intent.query)
                 self.evidence.set_topic(intent.query)
                 self.preference_context.set_topic(intent.query)
             self.entry.delete(0,"end")
