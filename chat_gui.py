@@ -27,6 +27,7 @@ from product_dialogue_v013588217 import ProductDialogue
 from dialogue_intent_gate_v013588218 import DialogueIntentGate
 from general_dialogue_intent_v013588219 import GeneralDialogueIntentContext
 from episodic_context_v013588220 import EpisodeContext
+from episodic_retrieval_v013588222 import retrieve_episodes, natural_summary
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
@@ -229,8 +230,15 @@ class ChatGUI:
             if not text:
                 self.entry.delete(0,"end")
                 return
+        episode_answer=retrieve_episodes(self.episodes,text)
+        if episode_answer is not None:
+            self.add(self.conversation,"あなた: "+text+"\n","user")
+            self.add(self.conversation,"AI: "+episode_answer+"\n","assistant")
+            self.entry.delete(0,"end")
+            return
         if re.fullmatch(r"(?:さっきの|先ほどの)?(?:感想|印象)(?:は|を教えて)?[？?]?",text):
-            summary=self.episodes.summary(self.evidence.topic)
+            active=self.episodes.active
+            summary=(natural_summary(active) if active is not None and active.topic==self.evidence.topic else None) or self.episodes.summary(self.evidence.topic)
             self.add(self.conversation,"あなた: "+text+"\n","user")
             self.add(self.conversation,"AI: "+(summary or "この話題で記録した感想はまだありません。")+"\n","assistant")
             self.entry.delete(0,"end")
