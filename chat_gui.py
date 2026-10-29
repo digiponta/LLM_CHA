@@ -229,6 +229,7 @@ class ChatGUI:
                 return
         general_reply=self.general_intent.respond(text,self.evidence.topic)
         if general_reply is not None:
+            self.intent_gate.awaiting_taste=False
             self.add(self.conversation,"あなた: "+text+"\n","user")
             self.add(self.conversation,"AI: "+general_reply+"\n","assistant")
             self.entry.delete(0,"end")
@@ -309,6 +310,7 @@ class ChatGUI:
             preference_reply=self.preference_context.respond(text)
             if preference_reply is not None:
                 self.add(self.conversation,"あなた: "+text+"\n","user")
+                self.general_intent.observe(preference_reply,self.preference_context.topic,self.evidence.topic)
                 self.add(self.conversation,"AI: "+preference_reply+"\n","assistant")
                 self.entry.delete(0,"end")
                 return
