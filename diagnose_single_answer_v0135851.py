@@ -23,10 +23,10 @@ def find_row(path,query):
 def diagnostics(model,tok,row,device):
     import torch
     prefix=tok.encode(prompt_for(row["user"]),add_bos=True)
-    completion=tok.encode(dialogue_for(row["user"],row["assistant"]),add_bos=True)
-    if completion[:len(prefix)]!=prefix:
-        raise ValueError("dialogue/prompt token-prefix mismatch; cannot diagnose reliably")
-    target=completion[len(prefix):]
+    # Match aligned_replay_examples_v0135816 exactly: encode prompt and answer separately.
+    # Joint BPE tokenization of prompt+answer can change boundary tokens.
+    target=tok.encode(row["assistant"].strip(),add_bos=False,add_eos=True)
+    completion=prefix+target
     if not target:raise ValueError("empty completion tokens")
     if len(completion)>model.context_length:raise ValueError("context exceeded")
     trace=[]
