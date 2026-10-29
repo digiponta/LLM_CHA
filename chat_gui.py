@@ -26,6 +26,7 @@ from menu_evidence_v013588215 import retrieve_menu, format_menu
 from product_dialogue_v013588217 import ProductDialogue
 from dialogue_intent_gate_v013588218 import DialogueIntentGate
 from general_dialogue_intent_v013588219 import GeneralDialogueIntentContext
+from episodic_context_v013588220 import EpisodeContext
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
@@ -54,6 +55,7 @@ class ChatGUI:
         self.product_dialogue = ProductDialogue()
         self.intent_gate = DialogueIntentGate()
         self.general_intent = GeneralDialogueIntentContext()
+        self.episodes = EpisodeContext()
         self.dialogue_context = UnifiedDialogueContext()
         self.recent_products = []
         self.pending_llm_questions = queue.Queue()
@@ -227,6 +229,8 @@ class ChatGUI:
             if not text:
                 self.entry.delete(0,"end")
                 return
+        # Explicit self-reported episode details are recorded in session only.
+        self.episodes.observe(text,self.evidence.topic)
         general_reply=self.general_intent.respond(text,self.evidence.topic)
         if general_reply is not None:
             self.intent_gate.awaiting_taste=False
@@ -303,6 +307,7 @@ class ChatGUI:
                 self.add(self.conversation,"あなた: "+text+"\n","user")
                 self.intent_gate.observe_assistant(product_reply)
                 self.general_intent.observe(product_reply,self.product_dialogue.last_product,self.evidence.topic)
+                self.episodes.start(self.evidence.topic,self.product_dialogue.last_product,text)
                 self.add(self.conversation,"AI: "+product_reply+"\n","assistant")
                 self.entry.delete(0,"end")
                 return
