@@ -26,4 +26,23 @@ class Tests(unittest.TestCase):
   c=GeneralDialogueIntentContext();c.observe("どんな香りだった？","ラテ","スターバックス")
   self.assertIsNotNone(c.respond("いい香り","スターバックス"))
   self.assertIsNone(c.respond("いい香り","スターバックス"))
+class EmotionsTests(unittest.TestCase):
+ def test_hearing(self):
+  c=GeneralDialogueIntentContext()
+  c.observe("どんな音だった？","真空管アンプ","アンプ")
+  self.assertIn("いい音",c.respond("いい音","アンプ"))
+ def test_joy(self):
+  self.assertIn("嬉しい",GeneralDialogueIntentContext().respond("嬉しい"))
+ def test_anger(self):
+  self.assertIn("腹が立った",GeneralDialogueIntentContext().respond("イライラする"))
+ def test_sadness(self):
+  self.assertIn("悲しい",GeneralDialogueIntentContext().respond("寂しい"))
+ def test_pleasure(self):
+  self.assertIn("心地よく",GeneralDialogueIntentContext().respond("心地よい"))
+ def test_emotion_prompt(self):
+  c=GeneralDialogueIntentContext();c.observe("どんな気持ち？","コーヒー","スターバックス")
+  self.assertIn("嬉しい",c.respond("楽しい","スターバックス"))
+ def test_knowledge_query(self):
+  c=GeneralDialogueIntentContext();c.observe("どんな気持ち？","","")
+  self.assertIsNone(c.respond("怒りとは？"))
 if __name__=="__main__":unittest.main()
