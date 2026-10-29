@@ -19,6 +19,11 @@ class EpisodeTests(unittest.TestCase):
   self.assertIn("vision",dims)
   self.assertIn("preference",dims)
   self.assertIn("emotion",dims)
+ def test_topic_preference(self):
+  c=EpisodeContext()
+  c.observe("スファレライトが好きです","スファレライト")
+  self.assertEqual(c.active.subject,"スファレライト")
+  self.assertIn("preference",c.active.observations[0]["dimensions"])
  def test_topic_isolation(self):
   c=EpisodeContext();c.start("コーヒー","ラテ","飲んだ")
   self.assertEqual(c.observe("苦かった","スファレライト"),[])
