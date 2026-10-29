@@ -19,6 +19,7 @@ from urllib.request import Request, urlopen
 import json
 
 from chat_runtime_status_v0135882 import status_text
+from natural_tool_router_v01358823 import route
 
 ROOT = Path(__file__).resolve().parent
 PROMPT = "You> "
@@ -165,6 +166,23 @@ class ChatGUI:
     def send(self):
         text = self.entry.get().strip()
         if not text:
+            return
+        intent=route(text)
+        if intent is not None:
+            self.entry.delete(0,"end")
+            self.add(self.conversation,"あなた: "+text+"\n","user")
+            if intent.action=="GOOGLE":
+                self.entry.insert(0,intent.query)
+                self.google()
+                self.entry.delete(0,"end")
+                self.add(self.conversation,"システム: Google検索をブラウザーで開きました。\n","system")
+            elif intent.action=="WIKI":
+                self.entry.insert(0,intent.query)
+                self.wiki_search()
+                self.entry.delete(0,"end")
+                self.add(self.conversation,"システム: Wikipediaを検索しています。結果はログに表示します。\n","system")
+            elif intent.action=="CLIPBOARD":
+                self.clipboard_read()
             return
         if self.proc is None or self.proc.poll() is not None:
             messagebox.showwarning("LLM_CHA", "Chatプロセスが起動していません")
