@@ -3341,6 +3341,12 @@ def main() -> None:
         if not user_text:
             continue
 
+        # v0.13.58.82: local diagnostic commands (no model/training mutation).
+        if user_text in ("/status", "/verifier-status"):
+            from chat_runtime_status_v0135882 import status_text
+            print(status_text())
+            continue
+
         raw_user_text = user_text
         normalized_user_text = normalize_runtime_input(user_text)
         if normalized_user_text and normalized_user_text != user_text:
