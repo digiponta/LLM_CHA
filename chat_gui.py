@@ -24,6 +24,7 @@ from temporary_evidence_v01358824 import TemporaryEvidence
 from general_evidence_retrieval_v01358827 import retrieve
 from menu_evidence_v013588215 import retrieve_menu, format_menu
 from product_dialogue_v013588217 import ProductDialogue
+from dialogue_intent_gate_v013588218 import DialogueIntentGate
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
@@ -50,6 +51,7 @@ class ChatGUI:
         self.evidence = TemporaryEvidence()
         self.preference_context = PreferenceContext()
         self.product_dialogue = ProductDialogue()
+        self.intent_gate = DialogueIntentGate()
         self.dialogue_context = UnifiedDialogueContext()
         self.recent_products = []
         self.pending_llm_questions = queue.Queue()
@@ -223,6 +225,12 @@ class ChatGUI:
             if not text:
                 self.entry.delete(0,"end")
                 return
+        short_reply=self.intent_gate.respond(text)
+        if short_reply is not None:
+            self.add(self.conversation,"あなた: "+text+"\n","user")
+            self.add(self.conversation,"AI: "+short_reply+"\n","assistant")
+            self.entry.delete(0,"end")
+            return
         intent=route(text)
         if intent is None:
             causal=retrieve_cause(self.evidence,text)
@@ -284,6 +292,7 @@ class ChatGUI:
             product_reply=self.product_dialogue.respond(text,self.evidence.records,self.evidence.topic)
             if product_reply is not None:
                 self.add(self.conversation,"あなた: "+text+"\n","user")
+                self.intent_gate.observe_assistant(product_reply)
                 self.add(self.conversation,"AI: "+product_reply+"\n","assistant")
                 self.entry.delete(0,"end")
                 return
