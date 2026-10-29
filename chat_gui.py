@@ -325,6 +325,20 @@ class ChatGUI:
                 self.add(self.conversation,"AI: "+preference_reply+"\n","assistant")
                 self.entry.delete(0,"end")
                 return
+        # Self-reported liking does not require catalog confirmation.
+        if intent is None:
+            match=re.fullmatch(r"(.{2,70}?)(?:も|が)?好き(?:です|だ)?[。！!]*",text)
+            if match:
+                subject=match.group(1).strip()
+                if subject:
+                    reply=subject+"も好きなんだね。どんなところが気に入っているの？"
+                    self.episodes.start(self.evidence.topic or subject,subject,"好み")
+                    self.episodes.observe(text,self.evidence.topic or subject)
+                    self.general_intent.observe(reply,subject,self.evidence.topic)
+                    self.add(self.conversation,"あなた: "+text+"\n","user")
+                    self.add(self.conversation,"AI: "+reply+"\n","assistant")
+                    self.entry.delete(0,"end")
+                    return
         if intent is None:
             reply=social_reply(text, self.evidence.topic, self.recent_products)
             if reply is not None:
