@@ -39,33 +39,62 @@ def product_type(line):
  if f:return "フード"
  return None
 
+NAVIGATION = re.compile(
+ r"一覧へ|カテゴリー|カテゴリ|季節のおすすめ|Seasonal Offering|Beans|Tealeaf|"
+ r"Tumbler|Goods|Brewing|GIFT at|Company|会社案内|会社概要|Our Mission|"
+ r"Promises and Values|Recruiting|採用|Social Impact|People & Community|"
+ r"Planet|お問い合わせ|使用条件|ポリシー|サイトマップ|instagram|facebook|"
+ r"^line$|^©|rights reserved|コーヒー豆|コーヒー器具|タンブラー|マグカップ|"
+ r"スターバックスを知る|ベネフィット|パートナーストーリー",
+ re.I)
+DRINK_NAV = re.compile(r"^(?:ビバレッジ一覧へ|ドリンク一覧へ|コーヒー豆|コーヒー器具|ティー・紅茶)$")
+CATEGORY_END = re.compile(r"^(?:フード一覧へ|ビバレッジ一覧へ|ドリンク一覧へ|"
+ r"商品一覧へ|カテゴリー|カテゴリ|季節のおすすめ|Seasonal Offering|"
+ r"Beans|Tealeaf|Goods|Company|会社案内|サイトマップ|Recruiting)$", re.I)
+PRODUCT_FOOD = re.compile(
+ r"サンド|バゲット|ベーグル|マフィン|スコーン|ケーキ|ドーナツ|"
+ r"クッキー|ペストリー|キッシュ|クロワッサン|サラダ|デニッシュ|"
+ r"ブラウニー|フィローネ|パイ|モンブラン|スープチーノ|タルト|プリン")
+PRODUCT_DRINK = re.compile(
+ r"フラペチーノ|コーヒー$|ラテ$|マキアート|ティーラテ|ティー$|"
+ r"エスプレッソ|カプチーノ|レモネード|チャイ|フロート|"
+ r"クリア コーヒー|クリーム コーヒー")
 def extract_menu(records,topic):
  sections={"ドリンク":[],"フード":[]}
  categories=set()
- # Oldest to newest so the source order is preserved.
  for rec in records:
-  if rec.get("topic")!=topic:continue
+  if rec.get("topic")!=topic:
+   continue
   context=None
   for raw in rec.get("text","").splitlines():
    line=clean_line(raw)
-   if not line or len(line)>110 or NOISE.search(line) or CURRENCY.fullmatch(line):
+   if not line:
     continue
    head=next((key for key,p in CATEGORY_HEADS.items() if p.fullmatch(line)),None)
    if head:
-    context=head;categories.add(head)
+    context=head
+    categories.add(head)
     continue
-   if re.fullmatch(r"メニュー|商品|商品一覧|店舗|新商品|季節限定|おすすめ",line):
-    context=None;continue
-   # Avoid long descriptive snippets and standalone section labels as products.
-   if len(line)<4 or re.search(r"[。！？?]",line) or re.search(r"^(?:メニュー|商品の一覧|詳しくはこちら|公式サイト)",line):
+   if CATEGORY_END.search(line):
+    context=None
     continue
-   kind=product_type(line)
-   if not kind and context and 4<=len(line)<=70 and not re.match(r"^\d",line):
-    # Section-scoped named items may not repeat category keywords.
-    kind=context
-   if kind and line not in sections[kind]:
-    # Unrelated category navigation is not a product.
-    if line in ("フードメニュー","ドリンクメニュー"):continue
+   if NAVIGATION.search(line) or len(line)>100 or NOISE.search(line) or CURRENCY.fullmatch(line):
+    continue
+   if len(line)<4 or re.search(r"[。！？?]",line) or re.search(
+       r"^(?:メニュー|商品の一覧|詳しくはこちら|公式サイト|スターバックス コーヒー ジャパン)$",line):
+    continue
+   food=bool(PRODUCT_FOOD.search(line))
+   drink=bool(PRODUCT_DRINK.search(line))
+   if food:
+    kind="フード"
+   elif drink:
+    kind="ドリンク"
+   else:
+    # Unknown strings below a heading might be navigation, never guess.
+    continue
+   if kind=="ドリンク" and DRINK_NAV.search(line):
+    continue
+   if line not in sections[kind]:
     sections[kind].append(line)
     categories.add(kind)
  return categories,sections
