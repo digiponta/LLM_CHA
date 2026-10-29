@@ -23,6 +23,7 @@ from natural_tool_router_v01358823 import route
 from temporary_evidence_v01358824 import TemporaryEvidence
 from general_evidence_retrieval_v01358827 import retrieve
 from social_dialogue_bridge_v01358828 import social_reply
+from causal_evidence_retrieval_v01358829 import retrieve_cause
 
 ROOT = Path(__file__).resolve().parent
 PROMPT = "You> "
@@ -189,6 +190,22 @@ class ChatGUI:
         if not text:
             return
         intent=route(text)
+        if intent is None:
+            causal=retrieve_cause(self.evidence,text)
+            if causal is not None:
+                self.add(self.conversation,"あなた: "+text+"\n","user")
+                if causal["status"]=="SUPPORTED_EXCERPT":
+                    self.add(self.conversation,
+                             "AI: 【外部未検証資料："+causal["source"]+"】資料に次の理由説明があります。\n"
+                             +"  引用: "+causal["quote"]+"\n","assistant")
+                elif causal["status"]=="NO_EVIDENCE":
+                    self.add(self.conversation,"AI: 話題に対応する一時資料がありません。関連資料をクリップ読込してください。\n","system")
+                elif causal["status"]=="NO_TOPIC":
+                    self.add(self.conversation,"AI: 理由を調べたい対象を指定してください。\n","system")
+                else:
+                    self.add(self.conversation,"AI: 一時資料から質問に対応する因果関係を確認できません。推測による理由説明は控えます。\n","system")
+                self.entry.delete(0,"end")
+                return
         if intent is None:
             evidence_answer=self.evidence.answer(text)
             if evidence_answer is not None:
