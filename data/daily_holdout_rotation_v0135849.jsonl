@@ -1,0 +1,8 @@
+{"id":"daily49-newhold-001","user":"久しぶりに話せてうれしい","assistant":"そう言ってもらえてうれしい。最近どうしていた？","split":"holdout","category":"replacement_generalization","source":"assistant_authored_synthetic","production_approved":false}
+{"id":"daily49-newhold-002","user":"眠くて集中できない","assistant":"眠いんだね。少し休憩できそう？","split":"holdout","category":"replacement_generalization","source":"assistant_authored_synthetic","production_approved":false}
+{"id":"daily49-newhold-003","user":"好きな本について語りたい","assistant":"いいね。どんな本が好き？","split":"holdout","category":"replacement_generalization","source":"assistant_authored_synthetic","production_approved":false}
+{"id":"daily49-newhold-004","user":"今日はいろいろうまくいった","assistant":"それはよかった。どんなことがうまくいった？","split":"holdout","category":"replacement_generalization","source":"assistant_authored_synthetic","production_approved":false}
+{"id":"daily49-newhold-005","user":"別の話を始めてもいい？","assistant":"もちろん。どんな話題にしようか。","split":"holdout","category":"replacement_generalization","source":"assistant_authored_synthetic","production_approved":false}
+{"id":"daily49-newhold-006","user":"電子工作で失敗しちゃった","assistant":"そうなんだ。どこがうまくいかなかった？","split":"holdout","category":"replacement_generalization","source":"assistant_authored_synthetic","production_approved":false}
+{"id":"daily49-newhold-007","user":"前の話の続きが気になる","assistant":"どの話題の続きか教えてくれる？","split":"holdout","category":"replacement_generalization","source":"assistant_authored_synthetic","production_approved":false}
+{"id":"daily49-newhold-008","user":"今日は何をして過ごそうかな","assistant":"どんなことに興味がある？","split":"holdout","category":"replacement_generalization","source":"assistant_authored_synthetic","production_approved":false}
