@@ -4,6 +4,7 @@ Only explicitly labeled values from a document about the active topic qualify.
 No generated facts, learning, or persistent memory writes.
 """
 import re
+from datetime import datetime, timezone
 from dataclasses import dataclass, field
 
 ATTRS = {
@@ -45,22 +46,27 @@ class TemporaryEvidence:
         new=(topic or "").strip()
         if new != self.topic:
             self.topic=new
-    def add(self, text, source, topic=None):
+    def add(self, text, source, topic=None, source_title="", source_url="", retrieved_at=None):
         if topic:
             self.set_topic(topic)
         text=(text or "")[:12000]
         if not text.strip():
             return False
-        self.records.append({"topic":self.topic,"source":source,"text":text,"verified":False})
+        self.records.append({
+            "topic":self.topic, "source":source, "source_type":source,
+            "source_title":source_title or source, "source_url":source_url,
+            "retrieved_at":retrieved_at or datetime.now(timezone.utc).isoformat(),
+            "text":text, "verified":False, "truth_state":"EXTERNAL_UNVERIFIED",
+        })
         self.records=self.records[-5:]
         return True
-    def answer(self, question):
+    def lookup(self, question):
         attr=attribute_from_question((question or "").strip())
         if not attr or not self.topic or not self.records:
             return None
         aliases=ALIASES.get(self.topic,(self.topic,))
         for record in reversed(self.records):
-            if record["topic"]!=self.topic:
+            if record["topic"] != self.topic:
                 continue
             text=record["text"]
             if not any(alias.lower() in text.lower() for alias in aliases):
@@ -68,5 +74,24 @@ class TemporaryEvidence:
             value=extract_attribute(text,attr)
             if not value:
                 continue
-            return f"【外部未検証資料：{record['source']}】{self.topic}の{attr}は{value}です。"
+            quote=next((line.strip() for line in text.splitlines()
+                        if value in line and any(
+                            line.strip().startswith(label+"：") or line.strip().startswith(label+":")
+                            for label in ATTRS[attr][1])), "")
+            if not quote:
+                continue
+            return {"topic":self.topic,"attribute":attr,"value":value,
+                    "quote":quote,"source":record["source"],
+                    "source_type":record["source_type"],
+                    "source_title":record["source_title"],
+                    "source_url":record["source_url"],
+                    "retrieved_at":record["retrieved_at"],
+                    "truth_state":record["truth_state"]}
         return None
+
+    def answer(self, question):
+        found=self.lookup(question)
+        if found is None:
+            return None
+        return (f"【外部未検証資料：{found['source']}】"
+                f"{found['topic']}の{found['attribute']}は{found['value']}です。")
