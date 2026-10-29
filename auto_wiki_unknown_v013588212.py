@@ -1,7 +1,7 @@
 """Wikipedia fallback for UNKNOWN responses. Network requests are never on the GUI thread."""
 import json
 import re
-from urllib.parse import urlencode
+from urllib.parse import urlencode, quote
 from urllib.request import Request, urlopen
 
 UNKNOWN_MARKER = re.compile(r"^(?:未学習です[。．.]?|未学習|わかりません[。．.]?)$")
@@ -17,6 +17,8 @@ def search_term(question, active_topic=""):
     q=(question or "").strip().rstrip("？?。．.")
     q=QUESTION_PREFIX.sub("",q)
     q=QUESTION_SUFFIX.sub("",q).strip(" のはを")
+    if active_topic and re.fullmatch(r"(?:屈折率|硬度|化学組成|成分|産地|理由|特徴|用途|意味)(?:は)?",q):
+        return active_topic.strip()
     if not q or q in STOP_WORDS or len(q)>60:
         return active_topic.strip()
     if len(q)<=3 and active_topic and re.search(r"^(?:意味|特徴|成分|用途|産地|性質|硬度|屈折率)",q):
@@ -51,7 +53,7 @@ def search_wikipedia(query, opener=urlopen):
         if not all(w.casefold() in (title+" "+extract).casefold() for w in words):
             continue
         hits.append({"title":title,"extract":extract,"url":
-                     "https://ja.wikipedia.org/wiki/"+__import__("urllib.parse",fromlist=["quote"]).quote(title.replace(" ","_"))})
+                     "https://ja.wikipedia.org/wiki/"+quote(title.replace(" ","_"))})
         if len(hits)>=MAX_RESULTS:
             break
     return {"status":"HIT" if hits else "NO_HIT","hits":hits}
