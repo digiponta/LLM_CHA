@@ -24,6 +24,7 @@ from temporary_evidence_v01358824 import TemporaryEvidence
 from general_evidence_retrieval_v01358827 import retrieve
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
+from preference_dialogue_v013588210 import PreferenceContext
 
 ROOT = Path(__file__).resolve().parent
 PROMPT = "You> "
@@ -42,6 +43,7 @@ class ChatGUI:
         self.pending = ""
         self.booted = False
         self.evidence = TemporaryEvidence()
+        self.preference_context = PreferenceContext()
         self.recent_products = []
         self.header = ttk.Frame(root, padding=(12, 10))
         self.header.pack(fill="x")
@@ -240,6 +242,13 @@ class ChatGUI:
                 self.entry.delete(0,"end")
                 return
         if intent is None:
+            preference_reply=self.preference_context.respond(text)
+            if preference_reply is not None:
+                self.add(self.conversation,"あなた: "+text+"\n","user")
+                self.add(self.conversation,"AI: "+preference_reply+"\n","assistant")
+                self.entry.delete(0,"end")
+                return
+        if intent is None:
             reply=social_reply(text, self.evidence.topic, self.recent_products)
             if reply is not None:
                 self.add(self.conversation,"あなた: "+text+"\n","user")
@@ -250,6 +259,7 @@ class ChatGUI:
             if intent.query:
                 self.recent_products = []
                 self.evidence.set_topic(intent.query)
+                self.preference_context.set_topic(intent.query)
             self.entry.delete(0,"end")
             self.add(self.conversation,"あなた: "+text+"\n","user")
             if intent.action=="GOOGLE":
