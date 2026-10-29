@@ -229,6 +229,12 @@ class ChatGUI:
             if not text:
                 self.entry.delete(0,"end")
                 return
+        if re.fullmatch(r"(?:さっきの|先ほどの)?(?:感想|印象)(?:は|を教えて)?[？?]?",text):
+            summary=self.episodes.summary(self.evidence.topic)
+            self.add(self.conversation,"あなた: "+text+"\n","user")
+            self.add(self.conversation,"AI: "+(summary or "この話題で記録した感想はまだありません。")+"\n","assistant")
+            self.entry.delete(0,"end")
+            return
         # Explicit self-reported episode details are recorded in session only.
         self.episodes.observe(text,self.evidence.topic)
         general_reply=self.general_intent.respond(text,self.evidence.topic)
