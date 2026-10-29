@@ -30,6 +30,7 @@ from episodic_context_v013588220 import EpisodeContext
 from episodic_retrieval_v013588222 import retrieve_episodes, natural_summary
 from episodic_memory_gate_v013588223 import EpisodicMemoryGate
 from approved_episode_retrieval_v013588224 import ApprovedEpisodeRetriever
+from unified_episode_retrieval_v013588225 import UnifiedEpisodeRetriever
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
@@ -62,6 +63,7 @@ class ChatGUI:
         self.episode_gate = EpisodicMemoryGate(ROOT / 'data' / 'approved_episodic_memory.json')
         self.last_staged_episode_id = None
         self.approved_retriever = ApprovedEpisodeRetriever(self.episode_gate)
+        self.unified_retriever = UnifiedEpisodeRetriever(self.episodes,self.episode_gate)
         self.dialogue_context = UnifiedDialogueContext()
         self.recent_products = []
         self.pending_llm_questions = queue.Queue()
@@ -272,20 +274,13 @@ class ChatGUI:
             if not text:
                 self.entry.delete(0,"end")
                 return
-        approved_answer=None
         try:
-            approved_answer=self.approved_retriever.answer(text)
+            unified_answer=self.unified_retriever.answer(text)
         except (OSError,ValueError) as exc:
-            approved_answer="承認済みEpisodeの読み込みに失敗しました: "+str(exc)
-        if approved_answer is not None:
+            unified_answer="Episode記録を読み込めませんでした: "+str(exc)
+        if unified_answer is not None:
             self.add(self.conversation,"あなた: "+text+"\n","user")
-            self.add(self.conversation,"AI: "+approved_answer+"\n","assistant")
-            self.entry.delete(0,"end")
-            return
-        episode_answer=retrieve_episodes(self.episodes,text)
-        if episode_answer is not None:
-            self.add(self.conversation,"あなた: "+text+"\n","user")
-            self.add(self.conversation,"AI: "+episode_answer+"\n","assistant")
+            self.add(self.conversation,"AI: "+unified_answer+"\n","assistant")
             self.entry.delete(0,"end")
             return
         if re.fullmatch(r"(?:さっきの|先ほどの)?(?:感想|印象)(?:は|を教えて)?[？?]?",text):
