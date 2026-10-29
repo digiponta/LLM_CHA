@@ -47,6 +47,8 @@ class ChatGUI:
         ttk.Label(self.header, text="LLM_CHA Chat", font=("Yu Gothic UI", 17, "bold")).pack(side="left")
         self.status_label = ttk.Label(self.header, text="起動中")
         self.status_label.pack(side="right")
+        self.semantic_label = ttk.Label(self.header, text="Semantic: 初期化中")
+        self.semantic_label.pack(side="right", padx=(0,16))
 
         self.tabs = ttk.Notebook(root)
         self.tabs.pack(fill="both", expand=True, padx=10, pady=4)
@@ -144,6 +146,10 @@ class ChatGUI:
 
     def route_line(self, line):
         line = line.strip()
+        match = re.search(r"\[Nagato Semantic Memory:.*?internalized=(\d+),\s*pending=(\d+)", line)
+        if match:
+            self.semantic_label.configure(
+                text=f"Trusted internalized: {match.group(1)}  Pending: {match.group(2)}")
         if not line:
             return
         if line.startswith("AI>"):
