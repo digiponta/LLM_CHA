@@ -3353,6 +3353,34 @@ def main() -> None:
             print(status_text())
             continue
 
+        # v0.13.58.82.3: explicit external-tool intent bypasses LLM.
+        from natural_tool_router_v01358823 import route as route_external_tool
+        intent = route_external_tool(user_text)
+        if intent is not None:
+            if intent.action in ("GOOGLE", "WIKI"):
+                import webbrowser
+                from urllib.parse import urlencode
+                if intent.action == "GOOGLE":
+                    url = "https://www.google.com/search?" + urlencode({"q": intent.query})
+                else:
+                    url = "https://ja.wikipedia.org/w/index.php?" + urlencode({"search": intent.query})
+                webbrowser.open(url)
+                print(f"[external tool: {intent.action}, query={intent.query}, browser_open_requested, unverified]")
+            elif intent.action == "CLIPBOARD":
+                try:
+                    import tkinter as tk
+                    clip_root = tk.Tk()
+                    clip_root.withdraw()
+                    try:
+                        text = clip_root.clipboard_get()
+                    finally:
+                        clip_root.destroy()
+                    print(f"[clipboard: {len(text)} chars, unverified, not added to LLM context]")
+                    print(text[:4000])
+                except Exception as exc:
+                    print(f"[clipboard unavailable: {exc}]")
+            continue
+
         raw_user_text = user_text
         normalized_user_text = normalize_runtime_input(user_text)
         if normalized_user_text and normalized_user_text != user_text:
