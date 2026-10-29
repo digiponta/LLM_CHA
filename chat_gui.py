@@ -55,6 +55,10 @@ class ChatGUI:
             font=("Consolas", 10), padx=8, pady=8)
         self.tabs.add(self.conversation, text="会話")
         self.tabs.add(self.diagnostics, text="ログ・コマンド")
+        self.evidence_view = scrolledtext.ScrolledText(
+            self.tabs, wrap="word", state="disabled",
+            font=("Yu Gothic UI", 10), padx=10, pady=8)
+        self.tabs.add(self.evidence_view, text="Evidence")
         self.conversation.tag_configure("user", foreground="#2159a4", spacing1=12)
         self.conversation.tag_configure("assistant", spacing1=10)
         self.conversation.tag_configure("system", foreground="#5c6571")
@@ -159,7 +163,10 @@ class ChatGUI:
                 self.add(self.diagnostics, data)
             elif kind == "wiki_evidence":
                 topic, text = data
-                self.evidence.add(text, "Wikipedia", topic=topic)
+                self.evidence.add(text, "Wikipedia", topic=topic,
+                                  source_title="日本語Wikipedia: "+topic,
+                                  source_url="https://ja.wikipedia.org/w/index.php?"+urlencode({"search":topic}))
+                self.refresh_evidence()
             elif data is self.proc:
                 self.status_label.configure(text="終了")
                 if self.pending:
@@ -178,6 +185,9 @@ class ChatGUI:
             if evidence_answer is not None:
                 self.add(self.conversation,"あなた: "+text+"\n","user")
                 self.add(self.conversation,"AI: "+evidence_answer+"\n","assistant")
+                detail=self.evidence.lookup(text)
+                if detail:
+                    self.add(self.conversation,"  根拠: "+detail["quote"]+"\n","system")
                 self.entry.delete(0,"end")
                 return
         if intent is not None:
@@ -239,7 +249,8 @@ class ChatGUI:
                  ("\n[以下省略]\n" if len(clip)>4000 else "\n"))
         self.tabs.select(self.diagnostics)
         self._clipboard_context=preview
-        self.evidence.add(preview, 'clipboard')
+        self.evidence.add(preview, 'clipboard', source_title="クリップボードからの貼り付け")
+        self.refresh_evidence()
         messagebox.showinfo("クリップ読込",
             "クリップボードを一時資料として読み込み、ログに表示しました。\n自動的な学習や回答への採用は行いません。")
 
@@ -271,6 +282,27 @@ class ChatGUI:
             except Exception as exc:
                 self.out.put(("wiki","[Wikipedia検索失敗] "+str(exc)+"\n"))
         threading.Thread(target=worker,daemon=True).start()
+
+    def refresh_evidence(self):
+        if not hasattr(self, "evidence_view"):
+            return
+        self.evidence_view.configure(state="normal")
+        self.evidence_view.delete("1.0","end")
+        for index, record in enumerate(self.evidence.records, 1):
+            lines = [
+                f"[{index}] Topic: {record['topic']}",
+                f"Source: {record.get('source_title', record['source'])}",
+                f"URL: {record.get('source_url') or '未設定'}",
+                f"Retrieved: {record.get('retrieved_at','不明')}",
+                f"Truth: {record.get('truth_state','EXTERNAL_UNVERIFIED')}",
+            ]
+            for attr in ("化学組成","モース硬度","屈折率","分散率","産地"):
+                from temporary_evidence_v01358824 import extract_attribute
+                val=extract_attribute(record["text"],attr)
+                if val:
+                    lines.append(f"  {attr}: {val}")
+            self.evidence_view.insert("end","\n".join(lines)+"\n\n")
+        self.evidence_view.configure(state="disabled")
 
     def status(self):
         self.add(self.diagnostics, "\n" + status_text(ROOT) + "\n")
