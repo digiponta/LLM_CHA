@@ -6,7 +6,7 @@ development data, not an independent final test.
 """
 import argparse,csv,json
 from pathlib import Path
-from score_holdout_llm_sem_v0135875 import input_pairs,load_encoder,generate
+from score_holdout_llm_sem_v0135875 import input_pairs,generate
 from compare_holdout_retrieval_v0135874 import evaluate
 from diagnose_semantic_retrieval_v0135876 import diagnose
 
@@ -41,9 +41,27 @@ def main():
     p.add_argument("--output",default="results/pooling_sweep_v0135877.json")
     args=p.parse_args()
     rows,questions,candidates=input_pairs(args.review)
-    # Reuse existing real checkpoint-backed encoder API.
+    # Load checkpoint once; reuse it for all pooling methods.
+    import importlib
+    import sys
+    root=Path(args.sem_root).resolve()
+    if not all((root/name).is_file() for name in ("model.py","semantic.py","tokenizer.py")):
+        raise FileNotFoundError("LLM_SEM Python modules missing")
+    for name in ("model","semantic","tokenizer"):
+        if name in sys.modules:
+            raise RuntimeError("module collision: "+name)
+    sys.path.insert(0,str(root))
+    import torch
+    LanguageModel=importlib.import_module("model").LanguageModel
+    Tokenizer=importlib.import_module("tokenizer").Tokenizer
+    encode_text=importlib.import_module("semantic").encode_text
+    model,_=LanguageModel.load_checkpoint(args.checkpoint,device=torch.device(args.device))
+    model.eval()
+    tokenizer=Tokenizer.load(args.tokenizer)
     def factory(pooling,alpha):
-        return load_encoder(args.sem_root,args.checkpoint,args.tokenizer,args.device,pooling,alpha)
+        def encode(text):
+            return encode_text(model,tokenizer,text,pooling=pooling,hybrid_alpha=alpha).vector
+        return encode
     result=run_sweep(rows,questions,candidates,factory)
     dest=Path(args.output);dest.parent.mkdir(parents=True,exist_ok=True)
     dest.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
