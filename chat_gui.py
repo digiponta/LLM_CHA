@@ -321,7 +321,7 @@ class ChatGUI:
                 self.add(self.conversation,"あなた: "+text+"\n","user")
                 self.intent_gate.observe_assistant(product_reply)
                 self.general_intent.observe(product_reply,self.product_dialogue.last_product,self.evidence.topic)
-                self.episodes.start(self.evidence.topic,self.product_dialogue.last_product,text)
+                self.episodes.start(self.evidence.topic,self.product_dialogue.last_product,("飲んだ" if re.search(r"飲んだ|飲みました",text) else "食べた" if re.search(r"食べた|食べました",text) else "好み" if re.search(r"好き",text) else "発言"))
                 self.add(self.conversation,"AI: "+product_reply+"\n","assistant")
                 self.entry.delete(0,"end")
                 return
