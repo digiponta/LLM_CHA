@@ -46,6 +46,8 @@ class EpisodeContext:
   if match:
    self.start(topic,match.group(1).strip(),match.group(2))
    return []
+  if (not self.active or self.active.topic!=topic) and topic and re.search(r"好き|気に入った|心地よい|満足",s):
+   self.start(topic,topic,"感想")
   if not self.active or self.active.topic!=topic:return []
   clauses=[p.strip(" 、。") for p in re.split(r"。|、|けど|けれど|でも|しかし|が、",s) if p.strip()]
   results=[]
