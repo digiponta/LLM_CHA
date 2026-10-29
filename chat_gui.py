@@ -23,6 +23,7 @@ from natural_tool_router_v01358823 import route
 from temporary_evidence_v01358824 import TemporaryEvidence
 from general_evidence_retrieval_v01358827 import retrieve
 from menu_evidence_v013588215 import retrieve_menu, format_menu
+from product_dialogue_v013588217 import ProductDialogue
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
@@ -48,6 +49,7 @@ class ChatGUI:
         self.booted = False
         self.evidence = TemporaryEvidence()
         self.preference_context = PreferenceContext()
+        self.product_dialogue = ProductDialogue()
         self.dialogue_context = UnifiedDialogueContext()
         self.recent_products = []
         self.pending_llm_questions = queue.Queue()
@@ -276,6 +278,13 @@ class ChatGUI:
                              "AI: 一時資料に質問へ直接答えられる記述が見つかりません。"
                              "関連するメニューやフードの説明をコピーしてください。\n",
                              "system")
+                self.entry.delete(0,"end")
+                return
+        if intent is None:
+            product_reply=self.product_dialogue.respond(text,self.evidence.records,self.evidence.topic)
+            if product_reply is not None:
+                self.add(self.conversation,"あなた: "+text+"\n","user")
+                self.add(self.conversation,"AI: "+product_reply+"\n","assistant")
                 self.entry.delete(0,"end")
                 return
         if intent is None:
