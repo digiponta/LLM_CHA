@@ -20,6 +20,7 @@ import json
 
 from chat_runtime_status_v0135882 import status_text
 from natural_tool_router_v01358823 import route
+from temporary_evidence_v01358824 import TemporaryEvidence
 
 ROOT = Path(__file__).resolve().parent
 PROMPT = "You> "
@@ -37,6 +38,7 @@ class ChatGUI:
         self.out = queue.Queue()
         self.pending = ""
         self.booted = False
+        self.evidence = TemporaryEvidence()
         self.header = ttk.Frame(root, padding=(12, 10))
         self.header.pack(fill="x")
         ttk.Label(self.header, text="LLM_CHA Chat", font=("Yu Gothic UI", 17, "bold")).pack(side="left")
@@ -155,6 +157,9 @@ class ChatGUI:
                 self.process_output(data)
             elif kind == "wiki":
                 self.add(self.diagnostics, data)
+            elif kind == "wiki_evidence":
+                topic, text = data
+                self.evidence.add(text, "Wikipedia", topic=topic)
             elif data is self.proc:
                 self.status_label.configure(text="終了")
                 if self.pending:
@@ -168,7 +173,16 @@ class ChatGUI:
         if not text:
             return
         intent=route(text)
+        if intent is None:
+            evidence_answer=self.evidence.answer(text)
+            if evidence_answer is not None:
+                self.add(self.conversation,"あなた: "+text+"\n","user")
+                self.add(self.conversation,"AI: "+evidence_answer+"\n","assistant")
+                self.entry.delete(0,"end")
+                return
         if intent is not None:
+            if intent.query:
+                self.evidence.set_topic(intent.query)
             self.entry.delete(0,"end")
             self.add(self.conversation,"あなた: "+text+"\n","user")
             if intent.action=="GOOGLE":
@@ -225,6 +239,7 @@ class ChatGUI:
                  ("\n[以下省略]\n" if len(clip)>4000 else "\n"))
         self.tabs.select(self.diagnostics)
         self._clipboard_context=preview
+        self.evidence.add(preview, 'clipboard')
         messagebox.showinfo("クリップ読込",
             "クリップボードを一時資料として読み込み、ログに表示しました。\n自動的な学習や回答への採用は行いません。")
 
@@ -252,6 +267,7 @@ class ChatGUI:
                         extract=page.get("extract","")
                         lines.append(title+"\n"+extract+"\n")
                     self.out.put(("wiki","\n".join(lines)+"\n"))
+                    self.out.put(("wiki_evidence", (query, "\n".join(lines))))
             except Exception as exc:
                 self.out.put(("wiki","[Wikipedia検索失敗] "+str(exc)+"\n"))
         threading.Thread(target=worker,daemon=True).start()
