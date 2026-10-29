@@ -22,6 +22,7 @@ from chat_runtime_status_v0135882 import status_text
 from natural_tool_router_v01358823 import route
 from temporary_evidence_v01358824 import TemporaryEvidence
 from general_evidence_retrieval_v01358827 import retrieve
+from social_dialogue_bridge_v01358828 import social_reply
 
 ROOT = Path(__file__).resolve().parent
 PROMPT = "You> "
@@ -40,6 +41,7 @@ class ChatGUI:
         self.pending = ""
         self.booted = False
         self.evidence = TemporaryEvidence()
+        self.recent_products = []
         self.header = ttk.Frame(root, padding=(12, 10))
         self.header.pack(fill="x")
         ttk.Label(self.header, text="LLM_CHA Chat", font=("Yu Gothic UI", 17, "bold")).pack(side="left")
@@ -196,6 +198,7 @@ class ChatGUI:
             if result is not None:
                 self.add(self.conversation,"あなた: "+text+"\n","user")
                 if result["status"]=="EXCERPTS":
+                    self.recent_products = [x.strip() for x in result["quotes"] if x.strip()][:8]
                     self.add(self.conversation,
                              "AI: 【外部未検証資料："+result["source"]+"】"
                              +result["topic"]+"について、資料に次の記載があります。\n"
@@ -213,8 +216,16 @@ class ChatGUI:
                              "system")
                 self.entry.delete(0,"end")
                 return
+        if intent is None:
+            reply=social_reply(text, self.evidence.topic, self.recent_products)
+            if reply is not None:
+                self.add(self.conversation,"あなた: "+text+"\n","user")
+                self.add(self.conversation,"AI: "+reply+"\n","assistant")
+                self.entry.delete(0,"end")
+                return
         if intent is not None:
             if intent.query:
+                self.recent_products = []
                 self.evidence.set_topic(intent.query)
             self.entry.delete(0,"end")
             self.add(self.conversation,"あなた: "+text+"\n","user")
