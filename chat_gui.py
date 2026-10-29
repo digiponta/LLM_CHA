@@ -27,7 +27,7 @@ from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
 from unified_dialogue_context_v013588211 import UnifiedDialogueContext
 from auto_wiki_unknown_v013588212 import is_unknown_answer, format_result
-from wiki_topic_attribute_v013588213 import search_for_question
+from wiki_full_article_v013588214 import resolve_full
 
 ROOT = Path(__file__).resolve().parent
 PROMPT = "You> "
@@ -321,7 +321,7 @@ class ChatGUI:
 
     def auto_wiki(self, question):
         def worker():
-            result=search_for_question(question,self.evidence.topic)
+            result=resolve_full(question,self.evidence.topic)
             self.out.put(("auto_wiki",result))
         threading.Thread(target=worker,daemon=True).start()
 
