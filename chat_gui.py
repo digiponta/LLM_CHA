@@ -22,6 +22,7 @@ from chat_runtime_status_v0135882 import status_text
 from natural_tool_router_v01358823 import route
 from temporary_evidence_v01358824 import TemporaryEvidence
 from general_evidence_retrieval_v01358827 import retrieve
+from menu_evidence_v013588215 import retrieve_menu, format_menu
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
@@ -245,6 +246,13 @@ class ChatGUI:
                 detail=self.evidence.lookup(text)
                 if detail:
                     self.add(self.conversation,"  根拠: "+detail["quote"]+"\n","system")
+                self.entry.delete(0,"end")
+                return
+        if intent is None:
+            menu_result=retrieve_menu(self.evidence,text)
+            if menu_result is not None and menu_result["status"]=="MENU":
+                self.add(self.conversation,"あなた: "+text+"\n","user")
+                self.add(self.conversation,"AI: "+format_menu(menu_result)+"\n","assistant")
                 self.entry.delete(0,"end")
                 return
         if intent is None:
