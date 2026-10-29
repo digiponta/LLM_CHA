@@ -29,7 +29,6 @@ def social_reply(utterance, topic="", recent_products=()):
         if len(subject)>60:
             return None
         followup="どんな味だった？" if verb=="飲んだ" else "おいしかった？"
-        return f"そう、{subject}を{verb}んだね。{followup}" if False else (
-            f"そう、{subject}を飲んだんだね。{followup}" if verb=="飲んだ"
-            else f"そう、{subject}を食べたんだね。{followup}")
+        return (f"そう、{subject}を飲んだんだね。{followup}" if verb=="飲んだ"
+                else f"そう、{subject}を食べたんだね。{followup}")
     return None
