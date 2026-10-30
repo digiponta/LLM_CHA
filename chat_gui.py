@@ -80,6 +80,8 @@ class ChatGUI:
         self.pending_grounded_prompts = {}
         self.candidate_analyses = []
         self.repair_queue = RepairQueue(ROOT / "data" / "rejected_answer_repairs.jsonl")
+        self.active_repair_training_id = None
+        self.active_repair_training_phase = None
         self.generation_diagnostics = GenerationDiagnostics()
         self.attempt_tracker = AttemptTracker()
         self.pending_attempt_ids = []
@@ -195,6 +197,29 @@ class ChatGUI:
                 text=f"Trusted internalized: {match.group(1)}  Pending: {match.group(2)}")
         if not line:
             return
+        if self.active_repair_training_id:
+            current_id=self.active_repair_training_id
+            if self.active_repair_training_phase=="TEACH_REQUESTED" and line.startswith("[explicit manual learning pair saved;"):
+                try:
+                    send_one_line(self.proc,"/train")
+                    self.repair_queue.mark_training(current_id,"TRAIN_REQUESTED")
+                    self.active_repair_training_phase="TRAIN_REQUESTED"
+                    self.add(self.diagnostics,"[Auto Repair Training Started] "+current_id+"\n")
+                except (OSError,RuntimeError,ValueError) as exc:
+                    self.repair_queue.mark_training(current_id,"TRAIN_FAILED")
+                    self.active_repair_training_id=None
+                    self.active_repair_training_phase=None
+                    self.add(self.diagnostics,"[Auto Repair Training Error] "+str(exc)+"\n")
+            elif self.active_repair_training_phase=="TEACH_REQUESTED" and line.startswith("[teaching rejected:"):
+                self.repair_queue.mark_training(current_id,"TEACH_FAILED")
+                self.active_repair_training_id=None
+                self.active_repair_training_phase=None
+                self.add(self.conversation,"システム: 修復用正解が学習入力チェックに通りませんでした。\n","system")
+            elif self.active_repair_training_phase=="TRAIN_REQUESTED" and line.startswith("[reloaded trained checkpoint:"):
+                self.repair_queue.mark_training(current_id,"TRAINED")
+                self.active_repair_training_id=None
+                self.active_repair_training_phase=None
+                self.add(self.conversation,"システム: 修復用の追加学習が完了し、チェックポイントが再ロードされました。\n","system")
         if line.startswith("AI>"):
             answer = line[3:].strip()
             try:
@@ -326,7 +351,22 @@ class ChatGUI:
                     reply="正解候補を審査待ちにしました: "+row["id"]
                 elif action=="approve" and len(parts)==3:
                     row=self.repair_queue.approve(parts[2])
-                    reply="明示承認済み（未学習）: "+row["id"]
+                    if self.active_repair_training_id is not None:
+                        reply="承認しましたが、先行する自動学習が処理中です。自動学習は開始されません: "+row["id"]
+                    elif self.proc is None or self.proc.poll() is not None:
+                        reply="承認しましたが、モデルが起動していないため学習できません: "+row["id"]
+                    else:
+                        teaching="/teachq "+row["question"]+" => "+row["answer_candidate"]
+                        try:
+                            if len(teaching)>4000 or "\n" in teaching or "\r" in teaching:
+                                raise ValueError("INVALID_TEACHING_LINE")
+                            send_one_line(self.proc,teaching)
+                            self.repair_queue.mark_training(row["id"],"TEACH_REQUESTED")
+                            self.active_repair_training_id=row["id"]
+                            self.active_repair_training_phase="TEACH_REQUESTED"
+                            reply="承認しました。正解を登録し、成功を確認後に自動学習します: "+row["id"]
+                        except (OSError,RuntimeError,ValueError) as exc:
+                            reply="承認済みですが学習開始失敗: "+str(exc)
                 elif action=="reject" and len(parts)==3:
                     row=self.repair_queue.reject(parts[2])
                     reply="修復候補を却下しました: "+row["id"]
