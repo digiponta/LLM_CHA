@@ -25,12 +25,12 @@ def decode_request(line):
         raise ValueError("INVALID_EVIDENCE_PAYLOAD") from exc
     if not isinstance(payload,dict) or not isinstance(payload.get("topic"),str) or not isinstance(payload.get("excerpt"),str):
         raise ValueError("INVALID_EVIDENCE_FIELDS")
-    topic=re.sub(r"\\s+"," ",payload["topic"]).strip()[:100]
-    excerpt=re.sub(r"\\s+"," ",payload["excerpt"]).strip()[:450]
+    topic=re.sub(r"\s+"," ",payload["topic"]).strip()[:100]
+    excerpt=re.sub(r"\s+"," ",payload["excerpt"]).strip()[:450]
     if not topic or not excerpt:
         raise ValueError("EMPTY_EVIDENCE_FIELDS")
     return topic,excerpt
 
 def generation_prompt(topic,excerpt):
     # Prompt text is explicitly untrusted. Output still requires the GUI evidence gate.
-    return ("人: "+topic+"を説明してください。参考文: "+excerpt+"\\nAI:")
+    return ("人: "+topic+"を説明してください。参考文: "+excerpt+"\nAI:")
