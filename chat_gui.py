@@ -369,6 +369,15 @@ class ChatGUI:
         text = self.entry.get().strip()
         if not text:
             return
+        if text.startswith("/grounded "):
+            from chat_grounded_bridge_v013588264 import answer as grounded_answer
+            question=text[len("/grounded "):]
+            result=grounded_answer(question)
+            self.add(self.conversation,"あなた: "+text+"\n","user")
+            self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
+            self.add(self.diagnostics,"[Grounded] "+json.dumps({k:result.get(k) for k in ("status","source_id","review_status","source_url")},ensure_ascii=False)+"\n")
+            self.entry.delete(0,"end")
+            return
         if text=="/good":
             self.add(self.conversation,"あなた: /good\n","user")
             self.add(self.conversation,"システム: /good と正解自動学習は廃止しました。負の教師信号だけを自動記録します。\n","system")
