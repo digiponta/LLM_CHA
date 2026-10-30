@@ -32,6 +32,7 @@ from episodic_memory_gate_v013588223 import EpisodicMemoryGate
 from approved_episode_retrieval_v013588224 import ApprovedEpisodeRetriever
 from unified_episode_retrieval_v013588225 import UnifiedEpisodeRetriever
 from topic_answer_context_v013588226 import TopicAnswerContext
+from grounded_elaboration_v013588227 import elaborate_from_wikipedia
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
@@ -214,6 +215,9 @@ class ChatGUI:
                 self.pending_auto_wiki_question=None
                 self.add(self.conversation,rendered,"assistant")
                 self.wiki_inflight=False
+            elif kind == "topic_elaboration":
+                self.add(self.diagnostics,"[話題詳細化] "+data["topic"]+" / "+str(data["status"])+"\n")
+                self.add(self.conversation,"AI: "+data["answer"]+"\n","assistant")
             elif kind == "wiki":
                 self.add(self.diagnostics, data)
             elif kind == "wiki_evidence":
@@ -276,7 +280,18 @@ class ChatGUI:
         if topic_action is not None:
             state,topic,reply=topic_action
             if state=="ELABORATE":
-                reply=self.topic_answers.elaborate(topic)
+                self.add(self.conversation,"あなた: "+text+"\n","user")
+                self.add(self.conversation,"システム: 「"+topic+"」の根拠資料を確認しています。\n","system")
+                def topic_worker(current_topic=topic):
+                    try:
+                        result=elaborate_from_wikipedia(current_topic)
+                    except Exception:
+                        result={"topic":current_topic,"status":"ERROR",
+                                "answer":"資料の取得に失敗しました。前回のLLM回答を根拠なく詳述することは避けます。"}
+                    self.out.put(("topic_elaboration",result))
+                threading.Thread(target=topic_worker,daemon=True).start()
+                self.entry.delete(0,"end")
+                return
             if state=="RETURNED":
                 self.dialogue_context.switch(topic)
                 self.evidence.set_topic(topic)
