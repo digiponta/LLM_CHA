@@ -37,6 +37,7 @@ from evidence_conditioned_generation_v013588228 import retrieve_evidence,conditi
 from generation_diagnostics_v013588230 import GenerationDiagnostics
 from generation_attempt_tracker_v013588231 import AttemptTracker
 from llm_input_channel_v013588233 import send_one_line, normalize_one_line
+from evidence_aware_route_v013588236 import encode_request
 from response_correlation_v013588235 import response_action
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
@@ -255,7 +256,7 @@ class ChatGUI:
                     self.generation_diagnostics.record("NO_MODEL",evidence.get("status",""),evidence.get("topic",""),"",result["answer"])
                     self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
                 else:
-                    prompt=normalize_one_line(conditioned_prompt(evidence))
+                    prompt=encode_request(evidence["topic"],evidence["excerpt"])
                     if attempt_id:self.attempt_tracker.annotate(attempt_id,prompt_chars=len(prompt),process_alive=True)
                     try:
                         # Register only after validation and successful send.
@@ -265,7 +266,7 @@ class ChatGUI:
                             self.attempt_tracker.transition(attempt_id,"WAITING_LLM")
                             self.pending_attempt_ids.append(attempt_id)
                         self.pending_llm_questions.put(prompt)
-                        self.add(self.diagnostics,"[Evidence-Conditioned LLM] "+evidence["query"]+"\n")
+                        self.add(self.diagnostics,"[Evidence-Aware Candidate Route] "+evidence["query"]+"\n")
                     except (OSError,ValueError,RuntimeError) as exc:
                         reason=str(exc) if str(exc) in ("PROMPT_MULTILINE","STDIN_UNAVAILABLE","PROCESS_NOT_RUNNING") else "SEND_FAILED"
                         if attempt_id:
