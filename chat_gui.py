@@ -630,15 +630,19 @@ class ChatGUI:
         if self.proc is None or self.proc.poll() is not None:
             messagebox.showwarning("LLM_CHA", "Chatプロセスが起動していません")
             return
+        concept=normalize_concept_query(text)
+        sent_text=(concept+"とは" if concept!=text and concept else text)
         try:
-            self.proc.stdin.write((text + "\n").encode("utf-8"))
+            self.proc.stdin.write((sent_text + "\n").encode("utf-8"))
             self.proc.stdin.flush()
         except (OSError, ValueError):
             messagebox.showerror("LLM_CHA", "送信できませんでした")
             return
         self.topic_answers.note_question(text)
-        self.pending_llm_questions.put(text)
+        self.pending_llm_questions.put(sent_text)
         self.add(self.conversation, "あなた: " + text + "\n", "user")
+        if sent_text!=text:
+            self.add(self.diagnostics,"[Concept Query Normalized] "+repr(text)+" -> "+repr(sent_text)+"\n")
         self.entry.delete(0, "end")
 
 
