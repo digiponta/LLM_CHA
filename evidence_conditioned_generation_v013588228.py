@@ -24,8 +24,11 @@ def retrieve_evidence(topic,previous="",searcher=search_wikipedia):
          "title":hit["title"],"excerpt":hit["extract"][:900],"url":hit["url"],
          "trust":"EXTERNAL_UNVERIFIED"}
 def conditioned_prompt(evidence):
- return ("次の引用資料を使い、資料にある事実だけで短く説明してください。推測しないでください。\n"
-         "話題："+evidence["topic"]+"\n資料："+evidence["excerpt"][:400]+"\n回答：")
+ # chat.py consumes each newline as a separate user turn. Keep exactly one.
+ topic=re.sub(r"[\\r\\n\\t]+"," ",str(evidence["topic"])).strip()
+ excerpt=re.sub(r"\\s+"," ",str(evidence["excerpt"])).strip()[:240]
+ return ("資料の範囲内で"+topic+"について簡潔に説明: "+excerpt)
+
 def evidence_gate(candidate,evidence):
  if evidence.get("status")!="EVIDENCE":return ("NO_EVIDENCE",None)
  candidate=(candidate or "").strip()
