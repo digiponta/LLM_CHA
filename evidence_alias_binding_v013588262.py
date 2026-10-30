@@ -42,7 +42,7 @@ def bind(question,evidence):
         for sentence in split_sentences(evidence.get("excerpt","")):
             if not 15<=len(sentence)<=300:continue
             if not ("CPU" in sentence and ("中央処理装置" in sentence or "コンピュータ" in sentence)):continue
-            if not re.search(r"は、.{4,}(?:装置|プロセッサ)(?:。|$)",sentence):continue
+            if not re.search(r"は、.{4,}(?:装置|プロセッサ)(?:である)?(?:。|$)",sentence):continue
             gate,_=evidence_gate(sentence,evidence)
             if gate=="ACCEPT_SOURCE_EXTRACT":
                 return {"question":question,"status":"BOUND_EXTRACT_ACCEPTED","subject":"CPU",
