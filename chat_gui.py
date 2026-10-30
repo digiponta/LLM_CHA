@@ -228,9 +228,13 @@ class ChatGUI:
             elif kind == "conditioned_evidence":
                 evidence=data
                 if evidence.get("status")!="EVIDENCE":
-                    self.add(self.conversation,"AI: "+final_answer("",evidence)["answer"]+"\n","assistant")
+                    result=final_answer("",evidence)
+                    self.generation_diagnostics.record(result["gate"],evidence.get("status",""),evidence.get("topic",""),"",result["answer"])
+                    self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
                 elif self.proc is None or self.proc.poll() is not None:
-                    self.add(self.conversation,"AI: "+final_answer("",evidence)["answer"]+"\n","assistant")
+                    result=final_answer("",evidence)
+                    self.generation_diagnostics.record("NO_MODEL",evidence.get("status",""),evidence.get("topic",""),"",result["answer"])
+                    self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
                 else:
                     prompt=conditioned_prompt(evidence)
                     try:
