@@ -35,6 +35,7 @@ from topic_answer_context_v013588226 import TopicAnswerContext
 from grounded_elaboration_v013588227 import elaborate_from_wikipedia
 from evidence_conditioned_generation_v013588228 import retrieve_evidence,conditioned_prompt,final_answer
 from generation_diagnostics_v013588230 import GenerationDiagnostics
+from generation_attempt_tracker_v013588231 import AttemptTracker
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
@@ -73,6 +74,8 @@ class ChatGUI:
         self.pending_auto_wiki_question = None
         self.pending_grounded_prompts = {}
         self.generation_diagnostics = GenerationDiagnostics()
+        self.attempt_tracker = AttemptTracker()
+        self.pending_attempt_ids = []
         self.recent_products = []
         self.pending_llm_questions = queue.Queue()
         self.wiki_inflight = False
@@ -194,6 +197,8 @@ class ChatGUI:
             if question in self.pending_grounded_prompts:
                 evidence=self.pending_grounded_prompts.pop(question)
                 result=final_answer(answer,evidence)
+                if self.pending_attempt_ids:
+                    self.attempt_tracker.transition(self.pending_attempt_ids.pop(0),"COMPLETED",result["gate"])
                 self.generation_diagnostics.record(result["gate"],evidence.get("status",""),evidence.get("topic",""),answer,result["answer"])
                 self.add(self.diagnostics,"[Evidence Gate] "+result["gate"]+"\n")
                 self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
@@ -227,12 +232,15 @@ class ChatGUI:
                 self.wiki_inflight=False
             elif kind == "conditioned_evidence":
                 evidence=data
+                attempt_id=evidence.get("_attempt_id")
                 if evidence.get("status")!="EVIDENCE":
                     result=final_answer("",evidence)
+                    if attempt_id:self.attempt_tracker.transition(attempt_id,"COMPLETED",result["gate"])
                     self.generation_diagnostics.record(result["gate"],evidence.get("status",""),evidence.get("topic",""),"",result["answer"])
                     self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
                 elif self.proc is None or self.proc.poll() is not None:
                     result=final_answer("",evidence)
+                    if attempt_id:self.attempt_tracker.transition(attempt_id,"FAILED","NO_MODEL")
                     self.generation_diagnostics.record("NO_MODEL",evidence.get("status",""),evidence.get("topic",""),"",result["answer"])
                     self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
                 else:
@@ -241,11 +249,16 @@ class ChatGUI:
                         if "\n" in prompt or "\r" in prompt:
                             raise ValueError("Multiline prompts are not supported by chat.py")
                         self.pending_grounded_prompts[prompt]=evidence
+                        if attempt_id:
+                            self.attempt_tracker.transition(attempt_id,"WAITING_LLM")
+                            self.pending_attempt_ids.append(attempt_id)
                         self.pending_llm_questions.put(prompt)
                         self.proc.stdin.write((prompt+"\n").encode("utf-8"))
                         self.proc.stdin.flush()
                         self.add(self.diagnostics,"[Evidence-Conditioned LLM] "+evidence["query"]+"\n")
                     except (OSError,ValueError):
+                        if attempt_id:self.attempt_tracker.transition(attempt_id,"FAILED","SEND_FAILED")
+                        if attempt_id and attempt_id in self.pending_attempt_ids:self.pending_attempt_ids.remove(attempt_id)
                         self.pending_grounded_prompts.pop(prompt,None)
                         self.add(self.conversation,"AI: "+final_answer("",evidence)["answer"]+"\n","assistant")
             elif kind == "topic_elaboration":
@@ -274,10 +287,13 @@ class ChatGUI:
         if text in ("/genstats","/genstats reset","/gencompare"):
             if text=="/genstats reset":
                 self.generation_diagnostics.reset()
+                self.attempt_tracker.reset()
+                self.pending_attempt_ids.clear()
                 response="生成診断のセッション内集計を初期化しました。"
             else:
                 data=(self.generation_diagnostics.comparison() if text=="/gencompare"
                       else self.generation_diagnostics.report())
+                data["lifecycle"]=self.attempt_tracker.report()
                 response=json.dumps(data,ensure_ascii=False,indent=2)
             self.add(self.conversation,"あなた: "+text+"\n","user")
             self.add(self.conversation,"システム: "+response+"\n","system")
@@ -327,13 +343,16 @@ class ChatGUI:
             if state=="ELABORATE":
                 self.add(self.conversation,"あなた: "+text+"\n","user")
                 self.add(self.conversation,"システム: 「"+topic+"」の根拠資料を確認しています。\n","system")
-                def topic_worker(current_topic=topic):
+                attempt_id=self.attempt_tracker.start(topic)
+                self.add(self.diagnostics,"[Generation Attempt STARTED] "+attempt_id+" / "+topic+"\n")
+                def topic_worker(current_topic=topic,current_attempt=attempt_id):
                     try:
                         previous=self.topic_answers.history.get(current_topic)
                         result=retrieve_evidence(current_topic,previous.answer if previous else "")
                     except Exception:
                         result={"topic":current_topic,"status":"ERROR",
                                 "answer":"資料の取得に失敗しました。前回のLLM回答を根拠なく詳述することは避けます。"}
+                    result["_attempt_id"]=current_attempt
                     self.out.put(("conditioned_evidence",result))
                 threading.Thread(target=topic_worker,daemon=True).start()
                 self.entry.delete(0,"end")
