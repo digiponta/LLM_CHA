@@ -3346,6 +3346,13 @@ def main() -> None:
 
         if not user_text:
             continue
+        if user_text.startswith("/grounded "):
+            from chat_grounded_bridge_v013588264 import answer as grounded_answer
+            grounded=grounded_answer(user_text[len("/grounded "):])
+            print("AI> "+grounded["answer"].replace("\n","\n    "))
+            print("[grounded_status="+grounded["status"]+", source="+str(grounded.get("source_id","-"))+", review="+str(grounded.get("review_status","-"))+"]")
+            print()
+            continue
 
         if user_text.startswith("/interference-compare "):
             # Four deterministic candidates, no knowledge-gate changes or learning.
