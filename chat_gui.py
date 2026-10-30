@@ -231,10 +231,12 @@ class ChatGUI:
                 else:
                     prompt=conditioned_prompt(evidence)
                     try:
-                        self.proc.stdin.write((prompt+"\n").encode("utf-8"))
-                        self.proc.stdin.flush()
+                        if "\n" in prompt or "\r" in prompt:
+                            raise ValueError("Multiline prompts are not supported by chat.py")
                         self.pending_grounded_prompts[prompt]=evidence
                         self.pending_llm_questions.put(prompt)
+                        self.proc.stdin.write((prompt+"\n").encode("utf-8"))
+                        self.proc.stdin.flush()
                         self.add(self.diagnostics,"[Evidence-Conditioned LLM] "+evidence["query"]+"\n")
                     except (OSError,ValueError):
                         self.add(self.conversation,"AI: "+final_answer("",evidence)["answer"]+"\n","assistant")
