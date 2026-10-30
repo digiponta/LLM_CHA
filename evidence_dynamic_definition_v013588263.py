@@ -6,7 +6,7 @@ from evidence_conditioned_generation_v013588228 import evidence_gate
 from question_aware_evidence_v013588255 import classify, split_sentences
 
 HISTORICAL=re.compile(r"かつて|当時|従来|世紀|と考えられていた|学説|歴史|提唱|起源")
-DEFINITION_END=re.compile(r"(?:である|を指す|という|のことである|を意味する|と呼ぶ|にあたる|を行う装置|を扱う理論)(?:。|$)")
+DEFINITION_END=re.compile(r"(?:である|を指す|という|のことである|を意味する|と呼ぶ|にあたる|を行う装置|を扱う理論|理論・分野)(?:。|$)")
 DEFINITION_PREDICATE=re.compile(r"(?:とは|は、|は、?.{1,70}?を指す|は、?.{1,70}?を意味する)")
 ALIASED_TITLE=("CPU","閃亜鉛鉱")
 
