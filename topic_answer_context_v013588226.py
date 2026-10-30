@@ -71,6 +71,7 @@ class TopicAnswerContext:
   rec=self.history.get(topic)
   if not rec:return "その話題の以前の回答を参照できません。"
   # A safe, grounded prompt for the existing LLM: no implicit factual promotion.
-  return ("「"+topic+"」について、先ほどの回答のうちどの点を詳しく知りたい？"
-          " 基本的な説明・根拠・具体例などから選べるよ。"
-          " 以前の回答は検証済みの事実とは限らないため、必要なら出典を確認するね。")
+  first=re.split(r"[。／/]",rec.answer,maxsplit=1)[0].strip()[:180]
+  return ("「"+topic+"」について、先ほどは「"+first+"」と説明したよ。"
+          " これは前回の回答内容を参照したもので、科学的な正しさを保証しない。"
+          " 詳しい説明には根拠の確認が必要だから、基本原理・観測結果・仮説のどれを知りたいか教えてね。")
