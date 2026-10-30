@@ -43,7 +43,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--output", default="model/model-gpu-v1.6.2-online.pt")
     p.add_argument("--epochs", type=int, default=8)
     p.add_argument("--negative-repairs", default="data/rejected_answer_repairs.jsonl")
-    p.add_argument("--negative-weight", type=float, default=0.05)
+    p.add_argument("--negative-weight", type=float, default=0.0)
     p.add_argument("--negative-margin", type=float, default=0.2)
     p.add_argument("--early-token-count", type=int, default=0, help="Opt-in number of answer-start tokens weighted in training loss.")
     p.add_argument("--early-token-weight", type=float, default=1.0, help="Opt-in training loss multiplier for first N answer tokens.")
