@@ -27,12 +27,13 @@ def evaluate(cases):
     accepted=sum(x["accepted"] for x in results)
     correct=sum(x["correct_accept"] for x in results)
     false=sum(x["false_accept"] for x in results)
+    negative_false=sum(x["accepted"] and not x["expected_answerable"] for x in results)
     false_negative=sum(x["expected_answerable"] and not x["accepted"] for x in results)
     return {"status":"BINDING_EVAL_DIAGNOSTIC","cases":len(results),
         "positive_cases":positives,"negative_cases":negatives,
-        "accepted":accepted,"correct_accept":correct,"false_accept":false,
+        "accepted":accepted,"correct_accept":correct,"false_accept":false,"negative_false_accept":negative_false,
         "false_negative":false_negative,
-        "false_accept_rate":false/negatives if negatives else None,
+        "false_accept_rate":negative_false/negatives if negatives else None,
         "accepted_error_rate":false/accepted if accepted else None,
         "coverage":accepted/len(results) if results else None,
         "answerable_recall":correct/positives if positives else None,
