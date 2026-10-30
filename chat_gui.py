@@ -31,6 +31,7 @@ from episodic_retrieval_v013588222 import retrieve_episodes, natural_summary
 from episodic_memory_gate_v013588223 import EpisodicMemoryGate
 from approved_episode_retrieval_v013588224 import ApprovedEpisodeRetriever
 from unified_episode_retrieval_v013588225 import UnifiedEpisodeRetriever
+from topic_answer_context_v013588226 import TopicAnswerContext
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
@@ -65,6 +66,8 @@ class ChatGUI:
         self.approved_retriever = ApprovedEpisodeRetriever(self.episode_gate)
         self.unified_retriever = UnifiedEpisodeRetriever(self.episodes,self.episode_gate)
         self.dialogue_context = UnifiedDialogueContext()
+        self.topic_answers = TopicAnswerContext()
+        self.pending_auto_wiki_question = None
         self.recent_products = []
         self.pending_llm_questions = queue.Queue()
         self.wiki_inflight = False
@@ -185,8 +188,10 @@ class ChatGUI:
                 question = ""
             if question and is_unknown_answer(answer):
                 self.add(self.conversation,"システム: 未学習のためWikipediaを検索しています。\n","system")
+                self.pending_auto_wiki_question = question
                 self.auto_wiki(question)
             else:
+                self.topic_answers.record(question,answer,"LLM_RUNTIME")
                 self.add(self.conversation,"AI: "+answer+"\n","assistant")
         elif self.booted and not (DIAGNOSTIC.match(line) or line.startswith("You>")
                                  or line.startswith("PS ") or line.startswith("/")):
@@ -203,7 +208,11 @@ class ChatGUI:
                 self.process_output(data)
             elif kind == "auto_wiki":
                 self.add(self.diagnostics, "[自動Wikipedia] "+data["status"]+"\n")
-                self.add(self.conversation,format_result(data),"assistant")
+                rendered=format_result(data)
+                if data.get("status") in ("FOUND","OK","SUCCESS"):
+                    self.topic_answers.record(self.pending_auto_wiki_question or "",rendered,"WIKIPEDIA_UNVERIFIED")
+                self.pending_auto_wiki_question=None
+                self.add(self.conversation,rendered,"assistant")
                 self.wiki_inflight=False
             elif kind == "wiki":
                 self.add(self.diagnostics, data)
@@ -260,6 +269,20 @@ class ChatGUI:
             except (OSError,ValueError,KeyError) as exc:
                 reply="Episode操作は完了しませんでした: "+str(exc)
             self.add(self.conversation,"システム: "+reply+"\n","system")
+            self.entry.delete(0,"end")
+            return
+        # Explicit return and elaboration must precede external-search fallback.
+        topic_action=self.topic_answers.navigate(text)
+        if topic_action is not None:
+            state,topic,reply=topic_action
+            if state=="ELABORATE":
+                reply=self.topic_answers.elaborate(topic)
+            if state=="RETURNED":
+                self.dialogue_context.switch(topic)
+                self.evidence.set_topic(topic)
+                self.preference_context.set_topic(topic)
+            self.add(self.conversation,"あなた: "+text+"\n","user")
+            self.add(self.conversation,"AI: "+reply+"\n","assistant")
             self.entry.delete(0,"end")
             return
         # Multi-topic reference resolution, before knowledge/social routing.
@@ -435,6 +458,7 @@ class ChatGUI:
         except (OSError, ValueError):
             messagebox.showerror("LLM_CHA", "送信できませんでした")
             return
+        self.topic_answers.note_question(text)
         self.pending_llm_questions.put(text)
         self.add(self.conversation, "あなた: " + text + "\n", "user")
         self.entry.delete(0, "end")
