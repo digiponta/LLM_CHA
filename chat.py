@@ -3347,6 +3347,29 @@ def main() -> None:
         if not user_text:
             continue
 
+        if user_text.startswith("/evidence-candidate "):
+            # Deliberately bypass the ordinary knowledge-dispatch Unknown Gate ONLY
+            # to obtain an untrusted candidate for the GUI's independent Evidence Gate.
+            from evidence_aware_route_v013588236 import decode_request, generation_prompt
+            try:
+                topic, excerpt = decode_request(user_text)
+                prompt = generation_prompt(topic, excerpt)
+                result = generate_reply(
+                    model=model, tokenizer=tokenizer, prompt=prompt,
+                    max_new_tokens=min(args.max_new_tokens, 120),
+                    temperature=0.0, top_k=args.top_k,
+                    repetition_penalty=args.repetition_penalty, seed=0,
+                )
+                candidate = " ".join(result.text.splitlines()).strip()
+                print("AI> " + (candidate or "未学習です"))
+                print("[evidence-candidate=UNVERIFIED, normal_unknown_gate=bypassed_for_candidate_only, auto_train=false]")
+            except (ValueError, TypeError, KeyError) as exc:
+                print("AI> 未学習です")
+                print("[evidence-candidate=INVALID_REQUEST, reason=" + type(exc).__name__ + "]")
+            print()
+            continue
+
+
         # v0.13.58.82: local diagnostic commands (no model/training mutation).
         if user_text in ("/status", "/verifier-status"):
             from chat_runtime_status_v0135882 import status_text
