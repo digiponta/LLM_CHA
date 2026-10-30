@@ -64,3 +64,15 @@ class RepairQueue:
   path.write_text(json.dumps({"format":"llm-cha-repair-training-candidates-v1",
           "status":"EXPERIMENT_ONLY","pairs":rows},ensure_ascii=False,indent=2),encoding="utf-8")
   return len(rows)
+
+ def mark_training(self,id,status):
+  allowed={"TEACH_REQUESTED","TRAIN_REQUESTED","TRAINED","TEACH_FAILED","TRAIN_FAILED"}
+  if status not in allowed:raise ValueError("INVALID_TRAIN_STATUS")
+  rows=self._load()
+  for row in rows:
+   if row["id"]==id:
+    if row["state"]!="APPROVED":raise ValueError("NOT_APPROVED")
+    row["training_status"]=status
+    self._save(rows)
+    return row
+  raise KeyError(id)
