@@ -4421,19 +4421,7 @@ def main() -> None:
             continue
 
         if command == "/good":
-            if last_user_text is None or last_ai_reply is None:
-                print("[no previous AI answer to approve]")
-            else:
-                append_learning_pair(
-                    learning_log,
-                    last_user_text,
-                    last_ai_reply,
-                    source="chat-approved",
-                )
-                print(
-                    f"[approved learning pair saved; "
-                    f"pairs={learning_log_count(learning_log)}]"
-                )
+            print("[/good disabled: rejected responses only create negative teacher signals in GUI; no positive learning]")
             print()
             continue
 
