@@ -33,6 +33,7 @@ from approved_episode_retrieval_v013588224 import ApprovedEpisodeRetriever
 from unified_episode_retrieval_v013588225 import UnifiedEpisodeRetriever
 from topic_answer_context_v013588226 import TopicAnswerContext
 from grounded_elaboration_v013588227 import elaborate_from_wikipedia
+from evidence_conditioned_generation_v013588228 import retrieve_evidence,conditioned_prompt,final_answer
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
@@ -69,6 +70,7 @@ class ChatGUI:
         self.dialogue_context = UnifiedDialogueContext()
         self.topic_answers = TopicAnswerContext()
         self.pending_auto_wiki_question = None
+        self.pending_grounded_prompts = {}
         self.recent_products = []
         self.pending_llm_questions = queue.Queue()
         self.wiki_inflight = False
@@ -187,7 +189,12 @@ class ChatGUI:
                 question = self.pending_llm_questions.get_nowait()
             except queue.Empty:
                 question = ""
-            if question and is_unknown_answer(answer):
+            if question in self.pending_grounded_prompts:
+                evidence=self.pending_grounded_prompts.pop(question)
+                result=final_answer(answer,evidence)
+                self.add(self.diagnostics,"[Evidence Gate] "+result["gate"]+"\n")
+                self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
+            elif question and is_unknown_answer(answer):
                 self.add(self.conversation,"システム: 未学習のためWikipediaを検索しています。\n","system")
                 self.pending_auto_wiki_question = question
                 self.auto_wiki(question)
@@ -215,6 +222,22 @@ class ChatGUI:
                 self.pending_auto_wiki_question=None
                 self.add(self.conversation,rendered,"assistant")
                 self.wiki_inflight=False
+            elif kind == "conditioned_evidence":
+                evidence=data
+                if evidence.get("status")!="EVIDENCE":
+                    self.add(self.conversation,"AI: "+final_answer("",evidence)["answer"]+"\n","assistant")
+                elif self.proc is None or self.proc.poll() is not None:
+                    self.add(self.conversation,"AI: "+final_answer("",evidence)["answer"]+"\n","assistant")
+                else:
+                    prompt=conditioned_prompt(evidence)
+                    try:
+                        self.proc.stdin.write((prompt+"\n").encode("utf-8"))
+                        self.proc.stdin.flush()
+                        self.pending_grounded_prompts[prompt]=evidence
+                        self.pending_llm_questions.put(prompt)
+                        self.add(self.diagnostics,"[Evidence-Conditioned LLM] "+evidence["query"]+"\n")
+                    except (OSError,ValueError):
+                        self.add(self.conversation,"AI: "+final_answer("",evidence)["answer"]+"\n","assistant")
             elif kind == "topic_elaboration":
                 self.add(self.diagnostics,"[話題詳細化] "+data["topic"]+" / "+str(data["status"])+"\n")
                 self.add(self.conversation,"AI: "+data["answer"]+"\n","assistant")
@@ -284,11 +307,12 @@ class ChatGUI:
                 self.add(self.conversation,"システム: 「"+topic+"」の根拠資料を確認しています。\n","system")
                 def topic_worker(current_topic=topic):
                     try:
-                        result=elaborate_from_wikipedia(current_topic)
+                        previous=self.topic_answers.history.get(current_topic)
+                        result=retrieve_evidence(current_topic,previous.answer if previous else "")
                     except Exception:
                         result={"topic":current_topic,"status":"ERROR",
                                 "answer":"資料の取得に失敗しました。前回のLLM回答を根拠なく詳述することは避けます。"}
-                    self.out.put(("topic_elaboration",result))
+                    self.out.put(("conditioned_evidence",result))
                 threading.Thread(target=topic_worker,daemon=True).start()
                 self.entry.delete(0,"end")
                 return
