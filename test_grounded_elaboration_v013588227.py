@@ -8,7 +8,7 @@ class Tests(unittest.TestCase):
  def test_no_hit(self):
   self.assertIn("見つかりません",summarize_hit("宇宙",{"status":"NO_HIT","hits":[]}))
  def test_wrong_title(self):
-  self.assertIn("確認できません",summarize_hit("宇宙",{"status":"HIT","hits":[{"title":"宇宙とは無関係","extract":"text","url":"x"}]}) if False else summarize_hit("宇宙",{"status":"HIT","hits":[{"title":"CPU","extract":"CPUの説明。","url":"x"}]}))
+  self.assertIn("確認できません",summarize_hit("宇宙",{"status":"HIT","hits":[{"title":"CPU","extract":"CPUの説明。","url":"x"}]}))
  def test_no_hypothesis_promotion(self):
   sample={"status":"HIT","hits":[{"title":"宇宙","extract":"宇宙の説明。","url":"https://example.org"}]}
   self.assertIn("独自仮説",summarize_hit("宇宙",sample))
