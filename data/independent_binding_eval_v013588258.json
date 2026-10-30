@@ -1,0 +1,185 @@
+{
+  "description": "Synthetic manually authored evaluation fixtures; not sourced from Wikipedia, not an independent statistical holdout",
+  "cases": [
+    {
+      "id": "ind-universe-definition-positive",
+      "question": "宇宙とは",
+      "evidence": {
+        "status": "EVIDENCE",
+        "topic": "宇宙とは",
+        "excerpt": "宇宙とは、すべての空間と時間、およびその中に存在する物質とエネルギーの全体を指す。",
+        "url": "https://example.invalid/fixture/ind-universe-definition-positive",
+        "trust": "SYNTHETIC_FIXTURE"
+      },
+      "expected": {
+        "answerable": true,
+        "required_substring": "宇宙とは"
+      }
+    },
+    {
+      "id": "ind-universe-historical-negative",
+      "question": "宇宙とは",
+      "evidence": {
+        "status": "EVIDENCE",
+        "topic": "宇宙とは",
+        "excerpt": "19世紀には宇宙は静的であるという考え方が広く受け入れられていた。",
+        "url": "https://example.invalid/fixture/ind-universe-historical-negative",
+        "trust": "SYNTHETIC_FIXTURE"
+      },
+      "expected": {
+        "answerable": false,
+        "required_substring": null
+      }
+    },
+    {
+      "id": "ind-bang-time-positive",
+      "question": "ビッグバンはいつ起きたのか",
+      "evidence": {
+        "status": "EVIDENCE",
+        "topic": "ビッグバンはいつ起きたのか",
+        "excerpt": "ビッグバンは今から約138億年前に起きたと考えられている。",
+        "url": "https://example.invalid/fixture/ind-bang-time-positive",
+        "trust": "SYNTHETIC_FIXTURE"
+      },
+      "expected": {
+        "answerable": true,
+        "required_substring": "138億年前"
+      }
+    },
+    {
+      "id": "ind-bang-history-negative",
+      "question": "ビッグバンはいつ起きたのか",
+      "evidence": {
+        "status": "EVIDENCE",
+        "topic": "ビッグバンはいつ起きたのか",
+        "excerpt": "20世紀前半には、宇宙論についてさまざまな学説が提案された。",
+        "url": "https://example.invalid/fixture/ind-bang-history-negative",
+        "trust": "SYNTHETIC_FIXTURE"
+      },
+      "expected": {
+        "answerable": false,
+        "required_substring": null
+      }
+    },
+    {
+      "id": "ind-bang-pronoun-positive",
+      "question": "ビッグバンはいつ起きたのか",
+      "evidence": {
+        "status": "EVIDENCE",
+        "topic": "ビッグバンはいつ起きたのか",
+        "excerpt": "ビッグバンは宇宙の初期に起きた膨張現象である。その時刻は今から約138億年前と推定されている。",
+        "url": "https://example.invalid/fixture/ind-bang-pronoun-positive",
+        "trust": "SYNTHETIC_FIXTURE"
+      },
+      "expected": {
+        "answerable": true,
+        "required_substring": "138億年前"
+      }
+    },
+    {
+      "id": "ind-bang-pronoun-negative",
+      "question": "ビッグバンはいつ起きたのか",
+      "evidence": {
+        "status": "EVIDENCE",
+        "topic": "ビッグバンはいつ起きたのか",
+        "excerpt": "別の天文現象が観測された。その時刻は今から約138億年前と説明されている。",
+        "url": "https://example.invalid/fixture/ind-bang-pronoun-negative",
+        "trust": "SYNTHETIC_FIXTURE"
+      },
+      "expected": {
+        "answerable": false,
+        "required_substring": null
+      }
+    },
+    {
+      "id": "ind-bang-time-without-ago-negative",
+      "question": "ビッグバンはいつ起きたのか",
+      "evidence": {
+        "status": "EVIDENCE",
+        "topic": "ビッグバンはいつ起きたのか",
+        "excerpt": "ビッグバンは138億年にわたって研究されていると記載されている。",
+        "url": "https://example.invalid/fixture/ind-bang-time-without-ago-negative",
+        "trust": "SYNTHETIC_FIXTURE"
+      },
+      "expected": {
+        "answerable": false,
+        "required_substring": null
+      }
+    },
+    {
+      "id": "ind-universe-cause-negative",
+      "question": "宇宙はなぜ膨張するのか",
+      "evidence": {
+        "status": "EVIDENCE",
+        "topic": "宇宙はなぜ膨張するのか",
+        "excerpt": "宇宙は膨張することによって平均密度が低下する。",
+        "url": "https://example.invalid/fixture/ind-universe-cause-negative",
+        "trust": "SYNTHETIC_FIXTURE"
+      },
+      "expected": {
+        "answerable": false,
+        "required_substring": null
+      }
+    },
+    {
+      "id": "ind-universe-cause-explanation-positive",
+      "question": "宇宙はなぜ膨張するのか",
+      "evidence": {
+        "status": "EVIDENCE",
+        "topic": "宇宙はなぜ膨張するのか",
+        "excerpt": "宇宙の膨張の原因は、時空のダイナミクスによると説明される。",
+        "url": "https://example.invalid/fixture/ind-universe-cause-explanation-positive",
+        "trust": "SYNTHETIC_FIXTURE"
+      },
+      "expected": {
+        "answerable": true,
+        "required_substring": "原因"
+      }
+    },
+    {
+      "id": "ind-sphalerite-composition-positive",
+      "question": "スファレライトの化学組成は",
+      "evidence": {
+        "status": "EVIDENCE",
+        "topic": "スファレライトの化学組成は",
+        "excerpt": "スファレライトの化学組成は硫化亜鉛（ZnS）である。",
+        "url": "https://example.invalid/fixture/ind-sphalerite-composition-positive",
+        "trust": "SYNTHETIC_FIXTURE"
+      },
+      "expected": {
+        "answerable": true,
+        "required_substring": "ZnS"
+      }
+    },
+    {
+      "id": "ind-sphalerite-composition-negative",
+      "question": "スファレライトの化学組成は",
+      "evidence": {
+        "status": "EVIDENCE",
+        "topic": "スファレライトの化学組成は",
+        "excerpt": "スファレライトは美しい宝石として知られ、結晶は多彩な色を示す。",
+        "url": "https://example.invalid/fixture/ind-sphalerite-composition-negative",
+        "trust": "SYNTHETIC_FIXTURE"
+      },
+      "expected": {
+        "answerable": false,
+        "required_substring": null
+      }
+    },
+    {
+      "id": "ind-other-subject-negative",
+      "question": "銀河の化学組成は",
+      "evidence": {
+        "status": "EVIDENCE",
+        "topic": "銀河の化学組成は",
+        "excerpt": "スファレライトの化学組成は硫化亜鉛（ZnS）である。",
+        "url": "https://example.invalid/fixture/ind-other-subject-negative",
+        "trust": "SYNTHETIC_FIXTURE"
+      },
+      "expected": {
+        "answerable": false,
+        "required_substring": null
+      }
+    }
+  ]
+}
