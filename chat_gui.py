@@ -236,6 +236,8 @@ class ChatGUI:
                          " / candidate_preview="+repr(answer[:100])+"\n")
                 self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
                 self.add(self.conversation,answer_disposition("EVIDENCE_GATE",result["gate"])+"\n","system")
+                if result["gate"] in REJECTED:
+                    self.add(self.conversation,"［破棄されたLLM回答（不採用・未検証）］\n"+(answer if answer.strip() else "（空の回答）")+"\n","system")
             elif question and is_unknown_answer(answer):
                 self.add(self.conversation,answer_disposition("UNKNOWN_FALLBACK")+"\n","system")
                 self.add(self.conversation,"システム: 未学習のためWikipediaを検索しています。\n","system")
