@@ -195,13 +195,20 @@ class ChatGUI:
                 question = self.pending_llm_questions.get_nowait()
             except queue.Empty:
                 question = ""
+            if not question:
+                # chat.py may emit an additional unscheduled AI> line.
+                # It must never be rendered as a second answer to the same user turn.
+                self.add(self.diagnostics,"[Uncorrelated AI suppressed] "+answer[:160]+"\n")
+                return
             if question in self.pending_grounded_prompts:
                 evidence=self.pending_grounded_prompts.pop(question)
                 result=final_answer(answer,evidence)
                 if self.pending_attempt_ids:
                     self.attempt_tracker.transition(self.pending_attempt_ids.pop(0),"COMPLETED",result["gate"])
                 self.generation_diagnostics.record(result["gate"],evidence.get("status",""),evidence.get("topic",""),answer,result["answer"])
-                self.add(self.diagnostics,"[Evidence Gate] "+result["gate"]+"\n")
+                self.add(self.diagnostics,"[Evidence Gate] "+result["gate"]+
+                         " / candidate_chars="+str(len(answer))+
+                         " / candidate_preview="+repr(answer[:100])+"\n")
                 self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
             elif question and is_unknown_answer(answer):
                 self.add(self.conversation,"システム: 未学習のためWikipediaを検索しています。\n","system")
