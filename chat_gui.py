@@ -42,6 +42,7 @@ from evidence_candidate_analysis_v013588237 import analyze
 from rejected_answer_repair_v013588239 import RepairQueue, REJECTED
 from response_correlation_v013588235 import response_action
 from answer_disposition_v013588242 import answer_disposition
+from rejection_reuse_v013588246 import RejectionReuse, normalize_concept_query, negative_signal_counts
 from negative_teacher_signal_v013588244 import append_negative_signal
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
@@ -85,6 +86,8 @@ class ChatGUI:
         self.active_repair_training_id = None
         self.active_repair_training_phase = None
         self.pending_good_repair = None
+        self.rejection_reuse = RejectionReuse(ROOT / "data" / "rejected_evidence_cache_v013588246.jsonl")
+        self.runtime_model_path = ROOT / "model" / "model-gpu-v1.6.2-online.pt"
         self.generation_diagnostics = GenerationDiagnostics()
         self.attempt_tracker = AttemptTracker()
         self.pending_attempt_ids = []
@@ -192,8 +195,19 @@ class ChatGUI:
             self.pending = self.pending[newline_at + 1:]
             self.route_line(line)
 
+    def model_revision(self):
+        try:
+            st = self.runtime_model_path.stat()
+            return str(self.runtime_model_path.resolve()) + ":" + str(st.st_size) + ":" + str(st.st_mtime_ns)
+        except OSError:
+            return None
+
     def route_line(self, line):
         line = line.strip()
+        if line.startswith("Model           :") or line.startswith("Model:"):
+            candidate=line.split(":",1)[1].strip()
+            if candidate:
+                self.runtime_model_path=Path(candidate)
         match = re.search(r"\[Nagato Semantic Memory:.*?internalized=(\d+),\s*pending=(\d+)", line)
         if match:
             self.semantic_label.configure(
@@ -215,6 +229,9 @@ class ChatGUI:
                 evidence=self.pending_grounded_prompts.pop(question)
                 result=final_answer(answer,evidence)
                 if result["gate"] in REJECTED:
+                    revision=self.model_revision()
+                    if revision:
+                        self.rejection_reuse.record(evidence.get("topic",""),evidence.get("excerpt",""),revision,answer,result["gate"])
                     try:
                         record=append_negative_signal(
                             ROOT / "data" / "negative_teacher_signals_v013588244.jsonl",
@@ -287,6 +304,17 @@ class ChatGUI:
                     self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
                     self.add(self.conversation,answer_disposition("NO_CANDIDATE")+"\n","system")
                 else:
+                    revision=self.model_revision()
+                    previous=(self.rejection_reuse.find(evidence.get("topic",""),evidence.get("excerpt",""),revision)
+                              if revision else None)
+                    if previous:
+                        result=final_answer("",evidence)
+                        if attempt_id:self.attempt_tracker.transition(attempt_id,"COMPLETED","REUSED_REJECTION")
+                        self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
+                        self.add(self.conversation,"［LLM回答：過去に破棄／同一Evidence・同一チェックポイントのため再生成省略］\n","system")
+                        self.add(self.conversation,"［以前の破棄回答（不採用）］\n"+previous.get("candidate","")+"\n","system")
+                        self.add(self.diagnostics,"[Rejected Candidate Reused] "+previous["gate"]+"\n")
+                        continue
                     prompt=encode_request(evidence["topic"],evidence["excerpt"])
                     if attempt_id:self.attempt_tracker.annotate(attempt_id,prompt_chars=len(prompt),process_alive=True)
                     try:
@@ -336,6 +364,12 @@ class ChatGUI:
         if text.startswith("/repair"):
             self.add(self.conversation,"あなた: "+text+"\n","user")
             self.add(self.conversation,"システム: Repair承認・正例学習は廃止しました。棄却時に負の教師信号を自動記録します。\n","system")
+            self.entry.delete(0,"end")
+            return
+        if text=="/negstats":
+            counts=negative_signal_counts(ROOT / "data" / "negative_teacher_signals_v013588244.jsonl")
+            self.add(self.conversation,"あなた: /negstats\n","user")
+            self.add(self.conversation,"システム: 負の教師信号 "+json.dumps(counts,ensure_ascii=False)+"（学習は実行しません）\n","system")
             self.entry.delete(0,"end")
             return
         if text=="/gencandidates":
