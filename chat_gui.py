@@ -314,6 +314,13 @@ class ChatGUI:
                     previous=(self.rejection_reuse.find(evidence.get("topic",""),evidence.get("excerpt",""),revision)
                               if revision else None)
                     if previous:
+                        try:
+                            state=capture_negative(
+                                ROOT / "data" / "negative_evidence_aligned_v013588251.jsonl",
+                                evidence,previous.get("candidate",""),previous["gate"],revision)
+                            self.add(self.diagnostics,"[Evidence-Aligned Negative Backfill] "+state+"\n")
+                        except (ValueError,OSError) as exc:
+                            self.add(self.diagnostics,"[Evidence-Aligned Negative Backfill Error] "+str(exc)+"\n")
                         result=final_answer("",evidence)
                         if attempt_id:self.attempt_tracker.transition(attempt_id,"COMPLETED","REUSED_REJECTION")
                         self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
