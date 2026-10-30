@@ -210,7 +210,7 @@ class ChatGUI:
             elif kind == "auto_wiki":
                 self.add(self.diagnostics, "[自動Wikipedia] "+data["status"]+"\n")
                 rendered=format_result(data)
-                if data.get("status") in ("FOUND","OK","SUCCESS"):
+                if data.get("status") in ("HIT","FOUND","OK","SUCCESS"):
                     self.topic_answers.record(self.pending_auto_wiki_question or "",rendered,"WIKIPEDIA_UNVERIFIED")
                 self.pending_auto_wiki_question=None
                 self.add(self.conversation,rendered,"assistant")
