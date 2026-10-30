@@ -240,11 +240,14 @@ class ChatGUI:
                     self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
                 elif self.proc is None or self.proc.poll() is not None:
                     result=final_answer("",evidence)
-                    if attempt_id:self.attempt_tracker.transition(attempt_id,"FAILED","NO_MODEL")
+                    if attempt_id:
+                        self.attempt_tracker.annotate(attempt_id,failure_reason="NO_MODEL",process_alive=False)
+                        self.attempt_tracker.transition(attempt_id,"FAILED","NO_MODEL")
                     self.generation_diagnostics.record("NO_MODEL",evidence.get("status",""),evidence.get("topic",""),"",result["answer"])
                     self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
                 else:
                     prompt=conditioned_prompt(evidence)
+                    if attempt_id:self.attempt_tracker.annotate(attempt_id,prompt_chars=len(prompt),process_alive=True)
                     try:
                         if "\n" in prompt or "\r" in prompt:
                             raise ValueError("Multiline prompts are not supported by chat.py")
@@ -256,8 +259,12 @@ class ChatGUI:
                         self.proc.stdin.write((prompt+"\n").encode("utf-8"))
                         self.proc.stdin.flush()
                         self.add(self.diagnostics,"[Evidence-Conditioned LLM] "+evidence["query"]+"\n")
-                    except (OSError,ValueError):
-                        if attempt_id:self.attempt_tracker.transition(attempt_id,"FAILED","SEND_FAILED")
+                    except (OSError,ValueError) as exc:
+                        if attempt_id:
+                            self.attempt_tracker.annotate(attempt_id,failure_reason="SEND_FAILED",exception_type=type(exc).__name__,process_alive=self.proc is not None and self.proc.poll() is None)
+                            if self.attempt_tracker.attempts[attempt_id]["state"] not in ("COMPLETED","FAILED"):
+                                self.attempt_tracker.transition(attempt_id,"FAILED","SEND_FAILED")
+                        self.add(self.diagnostics,"[Generation Send Failure] "+type(exc).__name__+": "+str(exc)+"\n")
                         if attempt_id and attempt_id in self.pending_attempt_ids:self.pending_attempt_ids.remove(attempt_id)
                         self.pending_grounded_prompts.pop(prompt,None)
                         self.add(self.conversation,"AI: "+final_answer("",evidence)["answer"]+"\n","assistant")
