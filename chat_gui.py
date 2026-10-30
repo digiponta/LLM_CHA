@@ -37,6 +37,7 @@ from evidence_conditioned_generation_v013588228 import retrieve_evidence,conditi
 from generation_diagnostics_v013588230 import GenerationDiagnostics
 from generation_attempt_tracker_v013588231 import AttemptTracker
 from llm_input_channel_v013588233 import send_one_line, normalize_one_line
+from response_correlation_v013588235 import response_action
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
@@ -195,7 +196,7 @@ class ChatGUI:
                 question = self.pending_llm_questions.get_nowait()
             except queue.Empty:
                 question = ""
-            if not question:
+            if response_action(question,answer)=="SUPPRESS_UNCORRELATED":
                 # chat.py may emit an additional unscheduled AI> line.
                 # It must never be rendered as a second answer to the same user turn.
                 self.add(self.diagnostics,"[Uncorrelated AI suppressed] "+answer[:160]+"\n")
