@@ -43,6 +43,7 @@ from rejected_answer_repair_v013588239 import RepairQueue, REJECTED
 from response_correlation_v013588235 import response_action
 from answer_disposition_v013588242 import answer_disposition
 from rejection_reuse_v013588246 import RejectionReuse, normalize_concept_query, negative_signal_counts
+from evidence_aligned_negative_v013588251 import capture_negative
 from negative_teacher_signal_v013588244 import append_negative_signal
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
@@ -232,6 +233,11 @@ class ChatGUI:
                     revision=self.model_revision()
                     if revision:
                         self.rejection_reuse.record(evidence.get("topic",""),evidence.get("excerpt",""),revision,answer,result["gate"])
+                    try:
+                        state=capture_negative(ROOT / "data" / "negative_evidence_aligned_v013588251.jsonl",evidence,answer,result["gate"],revision)
+                        self.add(self.diagnostics,"[Evidence-Aligned Negative] "+state+"\n")
+                    except (ValueError,OSError) as exc:
+                        self.add(self.diagnostics,"[Evidence-Aligned Negative Error] "+str(exc)+"\n")
                     try:
                         record=append_negative_signal(
                             ROOT / "data" / "negative_teacher_signals_v013588244.jsonl",
