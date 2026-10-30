@@ -4,7 +4,7 @@ import re
 def normalize_one_line(prompt):
     if not isinstance(prompt,str):
         raise TypeError("PROMPT_NOT_TEXT")
-    return re.sub(r"\\s+", " ", prompt).strip()
+    return re.sub(r"\s+", " ", prompt).strip()
 
 def send_one_line(proc,prompt):
     prompt=normalize_one_line(prompt)
