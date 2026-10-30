@@ -6,6 +6,7 @@ import argparse,json
 from pathlib import Path
 from evidence_alias_binding_v013588262 import answer_or_abstain
 from evaluate_cause_binding_v013588259 import evaluate as evaluate_synthetic
+import evaluate_cause_binding_v013588259 as synthetic_module
 
 def evaluate_real(data):
     cases=[]
@@ -30,10 +31,15 @@ def main():
     real=json.loads(Path(args.real_data).read_text(encoding="utf-8-sig"))
     synthetic=json.loads(Path(args.synthetic_data).read_text(encoding="utf-8-sig"))
     real_report=evaluate_real(real)
-    synthetic_report=evaluate_synthetic(synthetic["cases"])
+    original=synthetic_module.answer_or_abstain
+    try:
+        synthetic_module.answer_or_abstain=answer_or_abstain
+        synthetic_report=evaluate_synthetic(synthetic["cases"])
+    finally:
+        synthetic_module.answer_or_abstain=original
     # Legacy synthetic metrics remain a separate preservation baseline.
     report={"status":"ALIAS_BINDING_OFFLINE_DIAGNOSTIC",
-            "real":real_report,"legacy_synthetic_baseline":{k:synthetic_report.get(k) for k in
+            "real":real_report,"alias_synthetic_metrics":{k:synthetic_report.get(k) for k in
               ("cases","accepted","correct_accept","false_accept","false_accept_rate","coverage","selective_accuracy")},
             "production_changed":False}
     path=Path(args.output);path.parent.mkdir(parents=True,exist_ok=True)
