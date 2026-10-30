@@ -14,7 +14,7 @@ class GroundedChatTests(unittest.TestCase):
   self.items=[
    record("s","スファレライトの化学組成は","閃亜鉛鉱","閃亜鉛鉱は亜鉛鉱物である。成分は硫化亜鉛であり、純粋なものは白色である。"),
    record("w","水の化学組成は","水","水とは、化学式 H2O で表される、水素と酸素の化合物である。"),
-   record("u","宇宙とは","宇宙","英語 outer space は地球の大気圏外の空間を指し、日本語では宇宙空間と呼ぶ。")]
+   record("u","宇宙とは","宇宙","英語 outer space は、地球の大気圏外の空間を指し、日本語では宇宙空間と呼ぶことが一般的である。")]
   self.path.write_text(json.dumps({"cases":self.items},ensure_ascii=False),encoding="utf-8")
  def tearDown(self):self.tmp.cleanup()
  def test_composition_grounded(self):
