@@ -38,6 +38,7 @@ from generation_diagnostics_v013588230 import GenerationDiagnostics
 from generation_attempt_tracker_v013588231 import AttemptTracker
 from llm_input_channel_v013588233 import send_one_line, normalize_one_line
 from evidence_aware_route_v013588236 import encode_request
+from evidence_candidate_analysis_v013588237 import analyze
 from response_correlation_v013588235 import response_action
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
@@ -76,6 +77,7 @@ class ChatGUI:
         self.topic_answers = TopicAnswerContext()
         self.pending_auto_wiki_question = None
         self.pending_grounded_prompts = {}
+        self.candidate_analyses = []
         self.generation_diagnostics = GenerationDiagnostics()
         self.attempt_tracker = AttemptTracker()
         self.pending_attempt_ids = []
@@ -205,6 +207,12 @@ class ChatGUI:
             if question in self.pending_grounded_prompts:
                 evidence=self.pending_grounded_prompts.pop(question)
                 result=final_answer(answer,evidence)
+                analysis=analyze(answer,evidence,result["gate"])
+                self.candidate_analyses.append(analysis)
+                self.add(self.diagnostics,"[Candidate Analysis] "+json.dumps({
+                    "gate":analysis["gate"],
+                    "sentences":analysis["candidate_sentences"]
+                },ensure_ascii=False)+"\n")
                 if self.pending_attempt_ids:
                     self.attempt_tracker.transition(self.pending_attempt_ids.pop(0),"COMPLETED",result["gate"])
                 self.generation_diagnostics.record(result["gate"],evidence.get("status",""),evidence.get("topic",""),answer,result["answer"])
@@ -297,9 +305,19 @@ class ChatGUI:
         text = self.entry.get().strip()
         if not text:
             return
+        if text=="/gencandidates":
+            self.add(self.conversation,"あなた: "+text+"\n","user")
+            if not self.candidate_analyses:
+                response="分析対象の生成候補はありません。"
+            else:
+                response=json.dumps(self.candidate_analyses[-3:],ensure_ascii=False,indent=2)
+            self.add(self.conversation,"システム: "+response+"\n","system")
+            self.entry.delete(0,"end")
+            return
         if text in ("/genstats","/genstats reset","/gencompare"):
             if text=="/genstats reset":
                 self.generation_diagnostics.reset()
+                self.candidate_analyses.clear()
                 self.attempt_tracker.reset()
                 self.pending_attempt_ids.clear()
                 response="生成診断のセッション内集計を初期化しました。"
