@@ -39,6 +39,7 @@ from generation_attempt_tracker_v013588231 import AttemptTracker
 from llm_input_channel_v013588233 import send_one_line, normalize_one_line
 from evidence_aware_route_v013588236 import encode_request
 from evidence_candidate_analysis_v013588237 import analyze
+from rejected_answer_repair_v013588239 import RepairQueue, REJECTED
 from response_correlation_v013588235 import response_action
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
@@ -78,6 +79,7 @@ class ChatGUI:
         self.pending_auto_wiki_question = None
         self.pending_grounded_prompts = {}
         self.candidate_analyses = []
+        self.repair_queue = RepairQueue(ROOT / "data" / "rejected_answer_repairs.jsonl")
         self.generation_diagnostics = GenerationDiagnostics()
         self.attempt_tracker = AttemptTracker()
         self.pending_attempt_ids = []
@@ -207,6 +209,12 @@ class ChatGUI:
             if question in self.pending_grounded_prompts:
                 evidence=self.pending_grounded_prompts.pop(question)
                 result=final_answer(answer,evidence)
+                if result["gate"] in REJECTED:
+                    try:
+                        repair=self.repair_queue.stage(evidence.get("topic",""),answer,evidence,result["gate"])
+                        self.add(self.diagnostics,"[Repair Staged] "+repair["id"]+" / "+result["gate"]+"\n")
+                    except (ValueError,OSError) as exc:
+                        self.add(self.diagnostics,"[Repair Stage Failure] "+str(exc)+"\n")
                 analysis=analyze(answer,evidence,result["gate"])
                 self.candidate_analyses.append(analysis)
                 self.add(self.diagnostics,"[Candidate Analysis] "+json.dumps({
@@ -304,6 +312,33 @@ class ChatGUI:
     def send(self):
         text = self.entry.get().strip()
         if not text:
+            return
+        if text.startswith("/repair"):
+            self.add(self.conversation,"あなた: "+text+"\n","user")
+            parts=text.split(" ",3)
+            try:
+                action=parts[1] if len(parts)>1 else "help"
+                if action=="list":
+                    items=self.repair_queue.list()
+                    reply=json.dumps([{"id":x["id"],"question":x["question"],"gate":x["gate"],"state":x["state"]} for x in items[-10:]],ensure_ascii=False,indent=2)
+                elif action=="propose" and len(parts)==4:
+                    row=self.repair_queue.propose(parts[2],parts[3])
+                    reply="正解候補を審査待ちにしました: "+row["id"]
+                elif action=="approve" and len(parts)==3:
+                    row=self.repair_queue.approve(parts[2])
+                    reply="明示承認済み（未学習）: "+row["id"]
+                elif action=="reject" and len(parts)==3:
+                    row=self.repair_queue.reject(parts[2])
+                    reply="修復候補を却下しました: "+row["id"]
+                elif action=="export":
+                    n=self.repair_queue.export_approved(ROOT / "results" / "repair_training_candidates_v013588239.json")
+                    reply="実験用候補を出力しました: "+str(n)+"件。自動学習はしません。"
+                else:
+                    reply="/repair list | /repair propose ID 正解文 | /repair approve ID | /repair reject ID | /repair export"
+            except (ValueError,KeyError,OSError) as exc:
+                reply="Repair操作失敗: "+str(exc)
+            self.add(self.conversation,"システム: "+reply+"\n","system")
+            self.entry.delete(0,"end")
             return
         if text=="/gencandidates":
             self.add(self.conversation,"あなた: "+text+"\n","user")
