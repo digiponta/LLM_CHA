@@ -41,6 +41,7 @@ from evidence_aware_route_v013588236 import encode_request
 from evidence_candidate_analysis_v013588237 import analyze
 from rejected_answer_repair_v013588239 import RepairQueue, REJECTED
 from response_correlation_v013588235 import response_action
+from answer_disposition_v013588242 import answer_disposition
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
@@ -259,15 +260,18 @@ class ChatGUI:
                          " / candidate_chars="+str(len(answer))+
                          " / candidate_preview="+repr(answer[:100])+"\n")
                 self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
+                self.add(self.conversation,answer_disposition("EVIDENCE_GATE",result["gate"])+"\n","system")
                 if result["gate"] in REJECTED and self.pending_good_repair:
                     self.add(self.conversation,"システム: この参考資料に基づく説明を正解として学習させる場合は、次の入力で /good と送信してください。別の入力なら学習を取り消します。\n","system")
             elif question and is_unknown_answer(answer):
+                self.add(self.conversation,answer_disposition("UNKNOWN_FALLBACK")+"\n","system")
                 self.add(self.conversation,"システム: 未学習のためWikipediaを検索しています。\n","system")
                 self.pending_auto_wiki_question = question
                 self.auto_wiki(question)
             else:
                 self.topic_answers.record(question,answer,"LLM_RUNTIME")
                 self.add(self.conversation,"AI: "+answer+"\n","assistant")
+                self.add(self.conversation,answer_disposition("CLI_ANSWER")+"\n","system")
         elif self.booted and not (DIAGNOSTIC.match(line) or line.startswith("You>")
                                  or line.startswith("PS ") or line.startswith("/")):
             # Unclassified output is kept in diagnostic tab, not silently interpreted as AI.
@@ -288,6 +292,7 @@ class ChatGUI:
                     self.topic_answers.record(self.pending_auto_wiki_question or "",rendered,"WIKIPEDIA_UNVERIFIED")
                 self.pending_auto_wiki_question=None
                 self.add(self.conversation,rendered,"assistant")
+                self.add(self.conversation,answer_disposition("WIKI_RETRIEVAL")+"\n","system")
                 self.wiki_inflight=False
             elif kind == "conditioned_evidence":
                 evidence=data
@@ -297,6 +302,7 @@ class ChatGUI:
                     if attempt_id:self.attempt_tracker.transition(attempt_id,"COMPLETED",result["gate"])
                     self.generation_diagnostics.record(result["gate"],evidence.get("status",""),evidence.get("topic",""),"",result["answer"])
                     self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
+                    self.add(self.conversation,answer_disposition("NO_CANDIDATE")+"\n","system")
                 elif self.proc is None or self.proc.poll() is not None:
                     result=final_answer("",evidence)
                     if attempt_id:
@@ -304,6 +310,7 @@ class ChatGUI:
                         self.attempt_tracker.transition(attempt_id,"FAILED","NO_MODEL")
                     self.generation_diagnostics.record("NO_MODEL",evidence.get("status",""),evidence.get("topic",""),"",result["answer"])
                     self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
+                    self.add(self.conversation,answer_disposition("NO_CANDIDATE")+"\n","system")
                 else:
                     prompt=encode_request(evidence["topic"],evidence["excerpt"])
                     if attempt_id:self.attempt_tracker.annotate(attempt_id,prompt_chars=len(prompt),process_alive=True)
