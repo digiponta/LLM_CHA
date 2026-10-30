@@ -36,7 +36,7 @@ from grounded_elaboration_v013588227 import elaborate_from_wikipedia
 from evidence_conditioned_generation_v013588228 import retrieve_evidence,conditioned_prompt,final_answer
 from generation_diagnostics_v013588230 import GenerationDiagnostics
 from generation_attempt_tracker_v013588231 import AttemptTracker
-from llm_input_channel_v013588233 import send_one_line
+from llm_input_channel_v013588233 import send_one_line, normalize_one_line
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
@@ -247,7 +247,7 @@ class ChatGUI:
                     self.generation_diagnostics.record("NO_MODEL",evidence.get("status",""),evidence.get("topic",""),"",result["answer"])
                     self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
                 else:
-                    prompt=conditioned_prompt(evidence)
+                    prompt=normalize_one_line(conditioned_prompt(evidence))
                     if attempt_id:self.attempt_tracker.annotate(attempt_id,prompt_chars=len(prompt),process_alive=True)
                     try:
                         # Register only after validation and successful send.
