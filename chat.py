@@ -3347,6 +3347,43 @@ def main() -> None:
         if not user_text:
             continue
 
+        if user_text.startswith("/interference-compare "):
+            # Four deterministic candidates, no knowledge-gate changes or learning.
+            from corpus_evidence_interference_v013588238 import variants, assess
+            from evidence_aware_route_v013588236 import decode_request
+            try:
+                topic, evidence_text = decode_request(
+                    "/evidence-candidate " + user_text[len("/interference-compare "):]
+                )
+                corpus_path = resolve_runtime_path(args.corpus_memory)
+                # Use explicitly supplied raw corpus text instead of semantic index.
+                raw_path = Path("data/data-nagato.txt")
+                if not raw_path.exists():
+                    raise ValueError("CORPUS_FILE_NOT_FOUND")
+                from corpus_evidence_interference_v013588238 import find_corpus_context
+                matches=find_corpus_context(raw_path)
+                if not matches:
+                    raise ValueError("CORPUS_CONTEXT_NOT_FOUND")
+                corpus_text=matches[0]["text"]
+                prompts=variants(topic,evidence_text,corpus_text)
+                outputs={}
+                for label,experiment_prompt in prompts.items():
+                    result=generate_reply(
+                        model=model,tokenizer=tokenizer,prompt=experiment_prompt,
+                        max_new_tokens=min(args.max_new_tokens,120),
+                        temperature=0.0,top_k=args.top_k,
+                        repetition_penalty=args.repetition_penalty,seed=0)
+                    outputs[label]=" ".join(result.text.splitlines()).strip()
+                report={"topic":topic,"corpus_location":str(raw_path),
+                        "corpus_line":matches[0]["line"],
+                        "source_trust":"EXTERNAL_UNVERIFIED",
+                        "results":assess(outputs,evidence_text,corpus_text)}
+                print("[interference-experiment] "+json.dumps(report,ensure_ascii=False))
+            except (ValueError,TypeError,OSError) as exc:
+                print("[interference-experiment-error] "+type(exc).__name__+": "+str(exc))
+            print()
+            continue
+
         if user_text.startswith("/evidence-candidate "):
             # Deliberately bypass the ordinary knowledge-dispatch Unknown Gate ONLY
             # to obtain an untrusted candidate for the GUI's independent Evidence Gate.
