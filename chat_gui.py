@@ -42,6 +42,7 @@ from evidence_candidate_analysis_v013588237 import analyze
 from rejected_answer_repair_v013588239 import RepairQueue, REJECTED
 from response_correlation_v013588235 import response_action
 from answer_disposition_v013588242 import answer_disposition
+from negative_teacher_signal_v013588244 import append_negative_signal
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
@@ -199,29 +200,6 @@ class ChatGUI:
                 text=f"Trusted internalized: {match.group(1)}  Pending: {match.group(2)}")
         if not line:
             return
-        if self.active_repair_training_id:
-            current_id=self.active_repair_training_id
-            if self.active_repair_training_phase=="TEACH_REQUESTED" and line.startswith("[explicit manual learning pair saved;"):
-                try:
-                    send_one_line(self.proc,"/train")
-                    self.repair_queue.mark_training(current_id,"TRAIN_REQUESTED")
-                    self.active_repair_training_phase="TRAIN_REQUESTED"
-                    self.add(self.diagnostics,"[Auto Repair Training Started] "+current_id+"\n")
-                except (OSError,RuntimeError,ValueError) as exc:
-                    self.repair_queue.mark_training(current_id,"TRAIN_FAILED")
-                    self.active_repair_training_id=None
-                    self.active_repair_training_phase=None
-                    self.add(self.diagnostics,"[Auto Repair Training Error] "+str(exc)+"\n")
-            elif self.active_repair_training_phase=="TEACH_REQUESTED" and line.startswith("[teaching rejected:"):
-                self.repair_queue.mark_training(current_id,"TEACH_FAILED")
-                self.active_repair_training_id=None
-                self.active_repair_training_phase=None
-                self.add(self.conversation,"システム: 修復用正解が学習入力チェックに通りませんでした。\n","system")
-            elif self.active_repair_training_phase=="TRAIN_REQUESTED" and line.startswith("[reloaded trained checkpoint:"):
-                self.repair_queue.mark_training(current_id,"TRAINED")
-                self.active_repair_training_id=None
-                self.active_repair_training_phase=None
-                self.add(self.conversation,"システム: 修復用の追加学習が完了し、チェックポイントが再ロードされました。\n","system")
         if line.startswith("AI>"):
             answer = line[3:].strip()
             try:
@@ -238,15 +216,12 @@ class ChatGUI:
                 result=final_answer(answer,evidence)
                 if result["gate"] in REJECTED:
                     try:
-                        repair=self.repair_queue.stage(evidence.get("topic",""),answer,evidence,result["gate"])
-                        self.pending_good_repair={
-                            "id":repair["id"],
-                            "answer":" ".join(evidence.get("excerpt","").split()),
-                            "question":evidence.get("topic",""),
-                        }
-                        self.add(self.diagnostics,"[Repair Staged] "+repair["id"]+" / "+result["gate"]+"\n")
-                    except (ValueError,OSError) as exc:
-                        self.add(self.diagnostics,"[Repair Stage Failure] "+str(exc)+"\n")
+                        record=append_negative_signal(
+                            ROOT / "data" / "negative_teacher_signals_v013588244.jsonl",
+                            evidence.get("topic",""),answer,result["gate"],evidence)
+                        self.add(self.diagnostics,"[Negative Teacher Signal] "+record["status"]+" / "+record["record"]["id"]+"\n")
+                    except (OSError,ValueError) as exc:
+                        self.add(self.diagnostics,"[Negative Teacher Signal Error] "+str(exc)+"\n")
                 analysis=analyze(answer,evidence,result["gate"])
                 self.candidate_analyses.append(analysis)
                 self.add(self.diagnostics,"[Candidate Analysis] "+json.dumps({
@@ -261,8 +236,6 @@ class ChatGUI:
                          " / candidate_preview="+repr(answer[:100])+"\n")
                 self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
                 self.add(self.conversation,answer_disposition("EVIDENCE_GATE",result["gate"])+"\n","system")
-                if result["gate"] in REJECTED and self.pending_good_repair:
-                    self.add(self.conversation,"システム: この参考資料に基づく説明を正解として学習させる場合は、次の入力で /good と送信してください。別の入力なら学習を取り消します。\n","system")
             elif question and is_unknown_answer(answer):
                 self.add(self.conversation,answer_disposition("UNKNOWN_FALLBACK")+"\n","system")
                 self.add(self.conversation,"システム: 未学習のためWikipediaを検索しています。\n","system")
@@ -355,68 +328,12 @@ class ChatGUI:
             return
         if text=="/good":
             self.add(self.conversation,"あなた: /good\n","user")
-            pending=self.pending_good_repair
-            self.pending_good_repair=None
-            if pending is None:
-                reply="直前に承認待ちのEvidence回答はありません。学習しません。"
-            elif self.active_repair_training_id:
-                self.repair_queue.reject(pending["id"])
-                reply="別の学習が進行中のため、今回の学習を取り消しました。"
-            elif self.proc is None or self.proc.poll() is not None:
-                self.repair_queue.reject(pending["id"])
-                reply="モデルが停止しているため、学習を取り消しました。"
-            else:
-                try:
-                    answer=pending["answer"]
-                    if not answer or len(answer)>1800 or "=>" in answer:
-                        raise ValueError("INVALID_EVIDENCE_ANSWER")
-                    row=self.repair_queue.propose(pending["id"],answer)
-                    row=self.repair_queue.approve(row["id"])
-                    teaching="/teachq "+row["question"]+" => "+row["answer_candidate"]
-                    send_one_line(self.proc,teaching)
-                    self.repair_queue.mark_training(row["id"],"TEACH_REQUESTED")
-                    self.active_repair_training_id=row["id"]
-                    self.active_repair_training_phase="TEACH_REQUESTED"
-                    reply="直前の参考資料を承認しました。正解登録に成功したら自動で /train を実行します。"
-                except (ValueError,OSError,RuntimeError,KeyError) as exc:
-                    try:self.repair_queue.mark_training(pending["id"],"TEACH_FAILED")
-                    except (ValueError,KeyError,OSError):pass
-                    reply="自動学習を開始できませんでした: "+str(exc)
-            self.add(self.conversation,"システム: "+reply+"\n","system")
+            self.add(self.conversation,"システム: /good と正解自動学習は廃止しました。負の教師信号だけを自動記録します。\n","system")
             self.entry.delete(0,"end")
             return
-        if self.pending_good_repair is not None:
-            cancelled=self.pending_good_repair
-            self.pending_good_repair=None
-            try:
-                self.repair_queue.reject(cancelled["id"])
-                self.add(self.diagnostics,"[Repair Learning Cancelled] /good not received: "+cancelled["id"]+"\n")
-            except (OSError,ValueError,KeyError) as exc:
-                self.add(self.diagnostics,"[Repair Cancel Failed] "+str(exc)+"\n")
         if text.startswith("/repair"):
             self.add(self.conversation,"あなた: "+text+"\n","user")
-            parts=text.split(" ",3)
-            try:
-                action=parts[1] if len(parts)>1 else "help"
-                if action=="list":
-                    items=self.repair_queue.list()
-                    reply=json.dumps([{"id":x["id"],"question":x["question"],"gate":x["gate"],"state":x["state"]} for x in items[-10:]],ensure_ascii=False,indent=2)
-                elif action=="propose" and len(parts)==4:
-                    row=self.repair_queue.propose(parts[2],parts[3])
-                    reply="正解候補を審査待ちにしました: "+row["id"]
-                elif action=="approve" and len(parts)==3:
-                    reply="承認と自動学習は、直前の参考資料を表示した直後の /good のみで行います。"
-                elif action=="reject" and len(parts)==3:
-                    row=self.repair_queue.reject(parts[2])
-                    reply="修復候補を却下しました: "+row["id"]
-                elif action=="export":
-                    n=self.repair_queue.export_approved(ROOT / "results" / "repair_training_candidates_v013588239.json")
-                    reply="実験用候補を出力しました: "+str(n)+"件。自動学習はしません。"
-                else:
-                    reply="/repair list | /repair propose ID 正解文 | /repair approve ID | /repair reject ID | /repair export"
-            except (ValueError,KeyError,OSError) as exc:
-                reply="Repair操作失敗: "+str(exc)
-            self.add(self.conversation,"システム: "+reply+"\n","system")
+            self.add(self.conversation,"システム: Repair承認・正例学習は廃止しました。棄却時に負の教師信号を自動記録します。\n","system")
             self.entry.delete(0,"end")
             return
         if text=="/gencandidates":
