@@ -34,6 +34,7 @@ from unified_episode_retrieval_v013588225 import UnifiedEpisodeRetriever
 from topic_answer_context_v013588226 import TopicAnswerContext
 from grounded_elaboration_v013588227 import elaborate_from_wikipedia
 from evidence_conditioned_generation_v013588228 import retrieve_evidence,conditioned_prompt,final_answer
+from generation_diagnostics_v013588230 import GenerationDiagnostics
 from social_dialogue_bridge_v01358828 import social_reply
 from causal_evidence_retrieval_v01358829 import retrieve_cause
 from preference_dialogue_v013588210 import PreferenceContext
@@ -71,6 +72,7 @@ class ChatGUI:
         self.topic_answers = TopicAnswerContext()
         self.pending_auto_wiki_question = None
         self.pending_grounded_prompts = {}
+        self.generation_diagnostics = GenerationDiagnostics()
         self.recent_products = []
         self.pending_llm_questions = queue.Queue()
         self.wiki_inflight = False
@@ -192,6 +194,7 @@ class ChatGUI:
             if question in self.pending_grounded_prompts:
                 evidence=self.pending_grounded_prompts.pop(question)
                 result=final_answer(answer,evidence)
+                self.generation_diagnostics.record(result["gate"],evidence.get("status",""),evidence.get("topic",""),answer,result["answer"])
                 self.add(self.diagnostics,"[Evidence Gate] "+result["gate"]+"\n")
                 self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
             elif question and is_unknown_answer(answer):
@@ -239,6 +242,7 @@ class ChatGUI:
                         self.proc.stdin.flush()
                         self.add(self.diagnostics,"[Evidence-Conditioned LLM] "+evidence["query"]+"\n")
                     except (OSError,ValueError):
+                        self.pending_grounded_prompts.pop(prompt,None)
                         self.add(self.conversation,"AI: "+final_answer("",evidence)["answer"]+"\n","assistant")
             elif kind == "topic_elaboration":
                 self.add(self.diagnostics,"[話題詳細化] "+data["topic"]+" / "+str(data["status"])+"\n")
@@ -262,6 +266,18 @@ class ChatGUI:
     def send(self):
         text = self.entry.get().strip()
         if not text:
+            return
+        if text in ("/genstats","/genstats reset","/gencompare"):
+            if text=="/genstats reset":
+                self.generation_diagnostics.reset()
+                response="生成診断のセッション内集計を初期化しました。"
+            else:
+                data=(self.generation_diagnostics.comparison() if text=="/gencompare"
+                      else self.generation_diagnostics.report())
+                response=json.dumps(data,ensure_ascii=False,indent=2)
+            self.add(self.conversation,"あなた: "+text+"\n","user")
+            self.add(self.conversation,"システム: "+response+"\n","system")
+            self.entry.delete(0,"end")
             return
         # Explicit approval: never save a user episode silently.
         if text.startswith("/episode"):
