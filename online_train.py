@@ -42,6 +42,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--base-model", default="model/model-gpu-v0.8-chat-clean.pt")
     p.add_argument("--output", default="model/model-gpu-v1.6.2-online.pt")
     p.add_argument("--epochs", type=int, default=8)
+    p.add_argument("--negative-repairs", default="data/rejected_answer_repairs.jsonl")
+    p.add_argument("--negative-weight", type=float, default=0.05)
+    p.add_argument("--negative-margin", type=float, default=0.2)
     p.add_argument("--early-token-count", type=int, default=0, help="Opt-in number of answer-start tokens weighted in training loss.")
     p.add_argument("--early-token-weight", type=float, default=1.0, help="Opt-in training loss multiplier for first N answer tokens.")
     p.add_argument("--learning-rate", type=float, default=1e-5)
@@ -290,8 +293,57 @@ def evaluate(model, loader, device):
     return total / max(1, count)
 
 
+
+def load_approved_negative_pairs(path, pending_rows):
+    """Only /good-approved, current-step positive/negative pairs are eligible."""
+    if not path.exists():
+        return []
+    pending={(normalize_pair_text(q),normalize_pair_text(a)) for q,a,_ in pending_rows}
+    result=[]
+    seen=set()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try: row=json.loads(line)
+        except json.JSONDecodeError: continue
+        q=str(row.get("question","")).strip()
+        good=str(row.get("answer_candidate","")).strip()
+        bad=str(row.get("rejected_candidate","")).strip()
+        if (row.get("approval")!="EXPLICIT_HUMAN" or row.get("state")!="APPROVED"
+            or row.get("gate") not in {"REJECT_NOT_ENTAILED","REJECT_UNKNOWN","REJECT_UNGROUNDED","REJECT_LENGTH"}
+            or (normalize_pair_text(q),normalize_pair_text(good)) not in pending
+            or not q or not good or not bad or normalize_pair_text(good)==normalize_pair_text(bad)):
+            continue
+        key=(q,good,bad)
+        if key not in seen:
+            result.append(key)
+            seen.add(key)
+    return result
+
+
+def negative_preference_loss(model, tokenizer, context_length, triples, device, margin=0.2):
+    """Positive and rejected response on identical question, length-normalized."""
+    losses=[]
+    for question, good, bad in triples:
+        rows_good=ConversationDataset([(question,good)],tokenizer,context_length)
+        rows_bad=ConversationDataset([(question,bad)],tokenizer,context_length)
+        xg,yg,mg=rows_good[0]
+        xb,yb,mb=rows_bad[0]
+        xg,yg,mg=xg.unsqueeze(0).to(device),yg.unsqueeze(0).to(device),mg.unsqueeze(0).to(device)
+        xb,yb,mb=xb.unsqueeze(0).to(device),yb.unsqueeze(0).to(device),mb.unsqueeze(0).to(device)
+        # Log-probability per answer token. No gradient into data/evidence.
+        lg=F.log_softmax(model(xg),dim=-1).gather(-1,yg.unsqueeze(-1)).squeeze(-1)
+        lb=F.log_softmax(model(xb),dim=-1).gather(-1,yb.unsqueeze(-1)).squeeze(-1)
+        good_lp=(lg*mg).sum()/mg.sum().clamp_min(1)
+        bad_lp=(lb*mb).sum()/mb.sum().clamp_min(1)
+        losses.append(F.softplus(bad_lp-good_lp+margin))
+    return torch.stack(losses).mean() if losses else None
+
+
 def main() -> None:
     args = parse_args()
+    if args.negative_weight < 0 or args.negative_margin < 0:
+        raise ValueError("negative weight and margin must be nonnegative")
     if args.early_token_count < 0 or args.early_token_weight < 1.0:
         raise ValueError("early-token-count must be >=0 and early-token-weight must be >=1")
     random.seed(SEED)
@@ -321,6 +373,7 @@ def main() -> None:
             or pair_fingerprint(row[0], row[1]) not in trained_fingerprints
         )
     ]
+    negative_pairs=load_approved_negative_pairs(Path(args.negative_repairs),pending_rows)
     historical_rows = [
         row for row in trusted_rows
         if (
@@ -442,6 +495,7 @@ def main() -> None:
     print("Tiny-data mode  :", tiny_mode)
     print("Train pairs     :", len(train_pairs))
     print("Validation pairs:", len(val_pairs))
+    print("Negative pairs  :", len(negative_pairs), "weight=", args.negative_weight)
     print("Learning rate   :", args.learning_rate)
     print("Epoch limit     :", args.epochs)
     print()
@@ -461,6 +515,12 @@ def main() -> None:
             x, y, mask = x.to(device), y.to(device), mask.to(device)
             optimizer.zero_grad(set_to_none=True)
             loss = masked_loss(model, x, y, mask, args.early_token_count, args.early_token_weight)
+            if negative_pairs and args.negative_weight > 0:
+                # Diagnostic preference training on only the new approved pairs.
+                # Random one pair per minibatch prevents excessive negative updates.
+                selected=random.choice(negative_pairs)
+                preference=negative_preference_loss(model,tokenizer,model.context_length,[selected],device,args.negative_margin)
+                loss=loss + args.negative_weight * preference
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
