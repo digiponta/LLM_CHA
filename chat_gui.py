@@ -82,6 +82,7 @@ class ChatGUI:
         self.repair_queue = RepairQueue(ROOT / "data" / "rejected_answer_repairs.jsonl")
         self.active_repair_training_id = None
         self.active_repair_training_phase = None
+        self.pending_good_repair = None
         self.generation_diagnostics = GenerationDiagnostics()
         self.attempt_tracker = AttemptTracker()
         self.pending_attempt_ids = []
@@ -237,6 +238,11 @@ class ChatGUI:
                 if result["gate"] in REJECTED:
                     try:
                         repair=self.repair_queue.stage(evidence.get("topic",""),answer,evidence,result["gate"])
+                        self.pending_good_repair={
+                            "id":repair["id"],
+                            "answer":" ".join(evidence.get("excerpt","").split()),
+                            "question":evidence.get("topic",""),
+                        }
                         self.add(self.diagnostics,"[Repair Staged] "+repair["id"]+" / "+result["gate"]+"\n")
                     except (ValueError,OSError) as exc:
                         self.add(self.diagnostics,"[Repair Stage Failure] "+str(exc)+"\n")
@@ -253,6 +259,8 @@ class ChatGUI:
                          " / candidate_chars="+str(len(answer))+
                          " / candidate_preview="+repr(answer[:100])+"\n")
                 self.add(self.conversation,"AI: "+result["answer"]+"\n","assistant")
+                if result["gate"] in REJECTED and self.pending_good_repair:
+                    self.add(self.conversation,"システム: この参考資料に基づく説明を正解として学習させる場合は、次の入力で /good と送信してください。別の入力なら学習を取り消します。\n","system")
             elif question and is_unknown_answer(answer):
                 self.add(self.conversation,"システム: 未学習のためWikipediaを検索しています。\n","system")
                 self.pending_auto_wiki_question = question
@@ -338,6 +346,46 @@ class ChatGUI:
         text = self.entry.get().strip()
         if not text:
             return
+        if text=="/good":
+            self.add(self.conversation,"あなた: /good\n","user")
+            pending=self.pending_good_repair
+            self.pending_good_repair=None
+            if pending is None:
+                reply="直前に承認待ちのEvidence回答はありません。学習しません。"
+            elif self.active_repair_training_id:
+                self.repair_queue.reject(pending["id"])
+                reply="別の学習が進行中のため、今回の学習を取り消しました。"
+            elif self.proc is None or self.proc.poll() is not None:
+                self.repair_queue.reject(pending["id"])
+                reply="モデルが停止しているため、学習を取り消しました。"
+            else:
+                try:
+                    answer=pending["answer"]
+                    if not answer or len(answer)>1800 or "=>" in answer:
+                        raise ValueError("INVALID_EVIDENCE_ANSWER")
+                    row=self.repair_queue.propose(pending["id"],answer)
+                    row=self.repair_queue.approve(row["id"])
+                    teaching="/teachq "+row["question"]+" => "+row["answer_candidate"]
+                    send_one_line(self.proc,teaching)
+                    self.repair_queue.mark_training(row["id"],"TEACH_REQUESTED")
+                    self.active_repair_training_id=row["id"]
+                    self.active_repair_training_phase="TEACH_REQUESTED"
+                    reply="直前の参考資料を承認しました。正解登録に成功したら自動で /train を実行します。"
+                except (ValueError,OSError,RuntimeError,KeyError) as exc:
+                    try:self.repair_queue.mark_training(pending["id"],"TEACH_FAILED")
+                    except (ValueError,KeyError,OSError):pass
+                    reply="自動学習を開始できませんでした: "+str(exc)
+            self.add(self.conversation,"システム: "+reply+"\n","system")
+            self.entry.delete(0,"end")
+            return
+        if self.pending_good_repair is not None:
+            cancelled=self.pending_good_repair
+            self.pending_good_repair=None
+            try:
+                self.repair_queue.reject(cancelled["id"])
+                self.add(self.diagnostics,"[Repair Learning Cancelled] /good not received: "+cancelled["id"]+"\n")
+            except (OSError,ValueError,KeyError) as exc:
+                self.add(self.diagnostics,"[Repair Cancel Failed] "+str(exc)+"\n")
         if text.startswith("/repair"):
             self.add(self.conversation,"あなた: "+text+"\n","user")
             parts=text.split(" ",3)
@@ -350,23 +398,7 @@ class ChatGUI:
                     row=self.repair_queue.propose(parts[2],parts[3])
                     reply="正解候補を審査待ちにしました: "+row["id"]
                 elif action=="approve" and len(parts)==3:
-                    row=self.repair_queue.approve(parts[2])
-                    if self.active_repair_training_id is not None:
-                        reply="承認しましたが、先行する自動学習が処理中です。自動学習は開始されません: "+row["id"]
-                    elif self.proc is None or self.proc.poll() is not None:
-                        reply="承認しましたが、モデルが起動していないため学習できません: "+row["id"]
-                    else:
-                        teaching="/teachq "+row["question"]+" => "+row["answer_candidate"]
-                        try:
-                            if len(teaching)>4000 or "\n" in teaching or "\r" in teaching:
-                                raise ValueError("INVALID_TEACHING_LINE")
-                            send_one_line(self.proc,teaching)
-                            self.repair_queue.mark_training(row["id"],"TEACH_REQUESTED")
-                            self.active_repair_training_id=row["id"]
-                            self.active_repair_training_phase="TEACH_REQUESTED"
-                            reply="承認しました。正解を登録し、成功を確認後に自動学習します: "+row["id"]
-                        except (OSError,RuntimeError,ValueError) as exc:
-                            reply="承認済みですが学習開始失敗: "+str(exc)
+                    reply="承認と自動学習は、直前の参考資料を表示した直後の /good のみで行います。"
                 elif action=="reject" and len(parts)==3:
                     row=self.repair_queue.reject(parts[2])
                     reply="修復候補を却下しました: "+row["id"]
