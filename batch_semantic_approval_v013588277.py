@@ -145,8 +145,11 @@ def main():
         m=json_read(a.manifest)
         print(json.dumps({"batch_hash":m.get("batch_hash"),"eligible":m.get("eligible"),
                           "excluded":[x for x in m.get("items",[]) if not x["eligible"]]},ensure_ascii=False,indent=2))
-        answer=input("Approve exactly these eligible entries? [yes/no]: ").strip().lower()
-        result=approve(m,answer)
+        if not m.get("eligible"):
+            result={"status":"EMPTY_BATCH_SKIPPED","batch_hash":m.get("batch_hash"),"eligible_count":0,"production_changed":False}
+        else:
+            answer=input("Approve exactly these eligible entries? [yes/no]: ").strip().lower()
+            result=approve(m,answer)
         Path(a.approval).parent.mkdir(parents=True,exist_ok=True)
         Path(a.approval).write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     else:
