@@ -8,7 +8,7 @@ import re
 from question_aware_evidence_v013588255 import split_sentences
 from evidence_conditioned_generation_v013588228 import evidence_gate
 
-PATTERN=re.compile(r"(?P<term>[一-龥ぁ-んァ-ヶA-Za-z0-9・]{2,24})(?:（[^）]{1,70}）)?(?:とは|は、)(?P<meaning>[^。]{6,230})(?:。|$)")
+PATTERN=re.compile(r"(?P<term>[一-龥ぁ-んァ-ヶA-Za-z0-9・]{2,24}?)(?:（[^）]{1,70}）)?(?:とは|は、)(?P<meaning>[^。]{6,230})(?:。|$)")
 HISTORY=re.compile(r"かつて|当時|と考えられていた|歴史的|という説があった")
 def discover(evidence,known=()):
     if evidence.get("status")!="EVIDENCE":return []
