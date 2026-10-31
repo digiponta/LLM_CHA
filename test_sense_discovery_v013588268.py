@@ -11,6 +11,11 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(len(x),1)
         self.assertEqual(x[0]["subject"],"光電効果")
         self.assertFalse(x[0]["approved"])
+    def test_subject_boundary_to_wa(self):
+        x=discover(evidence("光電効果とは、電子が放出される現象である。"))
+        self.assertEqual(x[0]["subject"],"光電効果")
+        self.assertNotEqual(x[0]["subject"],"光電効果と")
+
     def test_repeatable_identity(self):
         self.assertEqual(discover(evidence(self.sentence))[0]["id"],discover(evidence(self.sentence))[0]["id"])
     def test_duplicate(self):
