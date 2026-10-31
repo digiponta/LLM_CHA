@@ -9,7 +9,7 @@ def fixture(root):
        "quality_gate":"PASS","review_status":"PENDING_HUMAN_REVIEW",
        "source_trust":"EXTERNAL_UNVERIFIED","source_url":"https://ja.wikipedia.org/wiki/閃亜鉛鉱",
        "evidence_sentence":"閃亜鉛鉱は、亜鉛の硫化鉱物である。"}
-    q={"candidates":[c],"id_migrations":[{"id":ALLOWED_ID,"new_id":ALLOWED_ID,"review_transfer_allowed":False}]}
+    q={"candidates":[c],"id_migrations":[{"old_id":ALLOWED_ID,"new_id":ALLOWED_ID,"review_transfer_allowed":False}]}
     a={"records":[{**c,"candidate_id":ALLOWED_ID,"decision":"RECOMMEND_APPROVE",
                    "reviewer_type":"AI_DELEGATE","human_review_recorded":False,"note":"Definition checked"}]}
     audit=root/"audit.json";audit.write_text("[]",encoding="utf-8")
@@ -20,6 +20,11 @@ class DelegatedGateTests(unittest.TestCase):
         self.tmp=tempfile.TemporaryDirectory()
         self.p,self.q,self.a,self.audit=fixture(Path(self.tmp.name))
     def tearDown(self):self.tmp.cleanup()
+    def test_actual_v070_migration_schema(self):
+        self.assertTrue(inspect(self.q,self.a,self.p,self.audit,AUTHORIZATION)["ready"])
+    def test_bad_migration_is_rejected(self):
+        self.q["id_migrations"][0]["old_id"]="sense-wrong"
+        self.assertFalse(inspect(self.q,self.a,self.p,self.audit,AUTHORIZATION)["ready"])
     def test_authorization_required(self):
         self.assertFalse(inspect(self.q,self.a,self.p,self.audit,"")["ready"])
     def test_preview_read_only(self):
