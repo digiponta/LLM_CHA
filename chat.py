@@ -3354,6 +3354,14 @@ def main() -> None:
             print()
             continue
 
+        from chat_unified_grounding_v013588265 import route as auto_grounded_route
+        auto_grounded=auto_grounded_route(user_text)
+        if auto_grounded is not None:
+            print("AI> "+auto_grounded["answer"].replace("\n","\n    "))
+            print("[route=AUTO_GROUNDED_SNAPSHOT, status="+auto_grounded["status"]+", review="+str(auto_grounded.get("review_status","-"))+"]")
+            print()
+            continue
+
         if user_text.startswith("/interference-compare "):
             # Four deterministic candidates, no knowledge-gate changes or learning.
             from corpus_evidence_interference_v013588238 import variants, assess
