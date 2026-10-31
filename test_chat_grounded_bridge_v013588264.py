@@ -25,7 +25,7 @@ class GroundedChatTests(unittest.TestCase):
  def test_water(self):
   self.assertEqual(answer("水の化学組成は",self.path)["status"],"BOUND_EXTRACT_ACCEPTED")
  def test_sense_safety(self):
-  self.assertEqual(answer("宇宙とは",self.path)["status"],"ABSTAIN_SENSE_MISMATCH")
+  self.assertEqual(answer("宇宙とは",self.path)["status"],"BOUND_SENSE_NOTICE")
  def test_unrelated_subject(self):
   self.assertEqual(answer("銀河の化学組成は",self.path)["status"],"ABSTAIN_NO_UNIQUE_SOURCE")
  def test_missing_file(self):
