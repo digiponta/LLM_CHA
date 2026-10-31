@@ -8,6 +8,7 @@ from pathlib import Path
 from evidence_dynamic_definition_v013588263 import answer_or_abstain
 from evidence_alias_normalization_v013588261 import matches_subject
 from evidence_universe_sense_v013588266 import resolve_universe
+from evidence_generalized_sense_v013588267 import resolve as resolve_generalized_sense
 
 DEFAULT_SNAPSHOT=Path(__file__).resolve().parent/"data/wiki_evidence_review_v013588260.json"
 ABSTAIN="提示された資料では、質問の対象・関係・回答値を確認できません。"
@@ -38,6 +39,8 @@ def answer(question,snapshot_path=DEFAULT_SNAPSHOT):
     evidence=dict(item["evidence"])
     evidence["topic"]=item["source"]["title"]
     result=resolve_universe(q,evidence)
+    if result is None:
+        result=resolve_generalized_sense(q,evidence)
     if result is None:
         result=answer_or_abstain(q,evidence)
     if _unsafe_universe_sense(q,result):
