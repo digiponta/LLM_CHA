@@ -5587,6 +5587,17 @@ def main() -> None:
             elif accepted:
                 reason = fidelity_reason
 
+        # v0.82: reject obvious corrupted punctuation only when the
+        # generation probes also show low agreement. Avoid rejecting
+        # legitimate low-agreement answers on agreement alone.
+        from response_quality_guard_v013588282 import assess as assess_response_quality
+        quality_check = assess_response_quality(
+            primary.text, agreement, effective_agreement, accepted
+        )
+        if accepted and not quality_check["accepted"]:
+            accepted = False
+            reason = quality_check["reason"]
+
         resolution, action = classify_resolution(
             accepted,
             reason,
