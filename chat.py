@@ -3354,6 +3354,16 @@ def main() -> None:
             print()
             continue
 
+        # v0.80: registered Semantic Memory takes precedence for the three
+        # fixed smoke-test questions, before external snapshot fallback.
+        from chat_semantic_retrieval_v013588280 import route as registered_memory_route
+        registered=registered_memory_route(user_text,PROJECT_ROOT)
+        if registered is not None:
+            print("AI> "+registered["answer"].replace("\n","\n    "))
+            print("[route="+registered["route"]+"]")
+            print()
+            continue
+
         from chat_unified_grounding_v013588265 import route as auto_grounded_route
         auto_grounded=auto_grounded_route(user_text)
         if auto_grounded is not None:
