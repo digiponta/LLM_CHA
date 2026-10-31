@@ -40,7 +40,7 @@ def inspect(quality,ai_review,paths,provenance_path,authorization):
             reasons.append("DELEGATED_REVIEW_NOT_ELIGIBLE")
         if c.get("source_trust")!="EXTERNAL_UNVERIFIED":
             reasons.append("SOURCE_TRUST_CHANGED")
-        if not any(x.get("id")==ALLOWED_ID and x.get("new_id")==ALLOWED_ID and x.get("review_transfer_allowed") is False for x in quality.get("id_migrations",[])):
+        if not any(x.get("old_id")==ALLOWED_ID and x.get("new_id")==ALLOWED_ID and x.get("review_transfer_allowed") is False for x in quality.get("id_migrations",[])):
             reasons.append("CANDIDATE_MIGRATION_NOT_VERIFIED")
         if not any(x.get("source_url","").startswith("https://ja.wikipedia.org/wiki/") for x in [c]):
             reasons.append("SOURCE_NOT_ALLOWLISTED")
