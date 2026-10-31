@@ -48,9 +48,6 @@ def resolve(question,evidence):
         return {"status":"ABSTAIN_SENSE_NOT_GROUNDED","answer":
                 "指定された語義に対応する定義は、この資料から確認できません。"}
     unique={item[0]["sense"] for item in options}
-    if preferred is None and len(unique)!=1:
-        return {"status":"ABSTAIN_AMBIGUOUS_SENSE","answer":
-                "複数の語義があります。コンピュータ／人間の記憶、機械学習／物理学などの対象を指定してください。"}
     if not options:return None
     sense,s=options[0]
     caution=("同じ語には別の分野の意味もあります。今回は「"+sense["label"]+"」として説明しています。")
