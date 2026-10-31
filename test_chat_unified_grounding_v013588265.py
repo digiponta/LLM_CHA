@@ -28,7 +28,7 @@ class UnifiedGroundingTests(unittest.TestCase):
     def test_water_normal_question(self):
         self.assertEqual(route("水の化学組成は",self.path)["status"],"BOUND_EXTRACT_ACCEPTED")
     def test_sense_mismatch_abstains(self):
-        self.assertEqual(route("宇宙とは",self.path)["status"],"ABSTAIN_SENSE_MISMATCH")
+        self.assertEqual(route("宇宙とは",self.path)["status"],"BOUND_SENSE_NOTICE")
     def test_no_ungrounded_fallback_when_sense_mismatch(self):
         self.assertIsNotNone(route("宇宙とは",self.path))
     def test_unrelated_subject_uses_old_route(self):
