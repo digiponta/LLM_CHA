@@ -1,0 +1,39 @@
+{
+  "version": "v0.13.58.82.83",
+  "purpose": "daily conversation holdout probes (evaluation-only; do not put in training data)",
+  "cases": [
+    {
+      "id": "daily-001",
+      "question": "今日は何をしてる？",
+      "intent": "casual_activity",
+      "baseline_candidate": "。よれにする言語である六階層のシステム。",
+      "baseline_route": "GATE_REVIEW",
+      "baseline_display": "未学習です",
+      "example_acceptable": "今はあなたと話している。何か話したいことはある？"
+    },
+    {
+      "id": "daily-002",
+      "question": "今何してる？",
+      "intent": "casual_activity",
+      "example_acceptable": "今は会話しているところ。どうしたの？"
+    },
+    {
+      "id": "daily-003",
+      "question": "最近どう？",
+      "intent": "casual_checkin",
+      "example_acceptable": "いつでも話せるよ。今日はどんな話をしようか。"
+    },
+    {
+      "id": "daily-004",
+      "question": "少し話さない？",
+      "intent": "casual_invitation",
+      "example_acceptable": "うん。何について話そうか。"
+    },
+    {
+      "id": "daily-005",
+      "question": "今日の調子はどう？",
+      "intent": "casual_checkin",
+      "example_acceptable": "いつもどおり会話できるよ。そちらはどう？"
+    }
+  ]
+}
