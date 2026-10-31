@@ -456,6 +456,15 @@ class ChatGUI:
             self.add(self.conversation,"システム: "+reply+"\n","system")
             self.entry.delete(0,"end")
             return
+        # v0.65: known source-backed factual questions use the same guarded route as CLI.
+        from chat_unified_grounding_v013588265 import route as auto_grounded_route
+        auto_grounded=auto_grounded_route(text)
+        if auto_grounded is not None:
+            self.add(self.conversation,"あなた: "+text+"\n","user")
+            self.add(self.conversation,"AI: "+auto_grounded["answer"]+"\n","assistant")
+            self.add(self.diagnostics,"[Auto Grounded] "+json.dumps({k:auto_grounded.get(k) for k in ("status","source_id","review_status","source_url")},ensure_ascii=False)+"\n")
+            self.entry.delete(0,"end")
+            return
         # Explicit return and elaboration must precede external-search fallback.
         topic_action=self.topic_answers.navigate(text)
         if topic_action is not None:
