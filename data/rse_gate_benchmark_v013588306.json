@@ -1,0 +1,47 @@
+{
+  "note": "Synthetic development checks, not independent held-out human evaluation. Review labels before reporting metrics.",
+  "cases": [
+    {
+      "id": "negative_quantified",
+      "query": "最近どう？",
+      "source_question": "１００マックス元気やとしたらどれぐらいですか？",
+      "source_answer": "９０くらいですかねー。夕方やからね。あなたは？",
+      "suitable": false
+    },
+    {
+      "id": "negative_persona",
+      "query": "最近どう？",
+      "source_question": "元気ですかー？",
+      "source_answer": "元気ですよー！",
+      "suitable": false
+    },
+    {
+      "id": "negative_enjoyment",
+      "query": "今何してる？",
+      "source_question": "最近何をしてる時が楽しいですか？",
+      "source_answer": "小説書いてるときですかねー？",
+      "suitable": false
+    },
+    {
+      "id": "positive_invitation",
+      "query": "少し話さない？",
+      "source_question": "少し話さない？",
+      "source_answer": "もちろん、何について話そうか？",
+      "suitable": true
+    },
+    {
+      "id": "positive_topic",
+      "query": "猫について話そう",
+      "source_question": "猫について話そう",
+      "source_answer": "猫のどんな話がいい？",
+      "suitable": true
+    },
+    {
+      "id": "negative_other_intent",
+      "query": "今何してる？",
+      "source_question": "最近どう？",
+      "source_answer": "今日は忙しかったです。",
+      "suitable": false
+    }
+  ]
+}
