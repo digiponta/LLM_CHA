@@ -26,7 +26,7 @@ def inspect(query, unified_path, truth_path):
     if len(hits)>1:
         state="MEMORY_AMBIGUOUS"
     truth=truths.get(focus,"UNVERIFIED")
-    if hits and truth=="TRUE":
+    if len(hits)==1 and truth=="TRUE":
         state="MEMORY_VERIFIED_BY_TRUTH"
     if hits and truth in ("FALSE","OUTDATED","CONTESTED"):
         state="MEMORY_TRUTH_RESTRICTED"
