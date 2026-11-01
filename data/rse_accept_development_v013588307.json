@@ -1,0 +1,61 @@
+{
+  "note": "Synthetic developer examples only; not independent heldout or verified human labels",
+  "cases": [
+    {
+      "id": "positive_invite",
+      "query": "少し話さない？",
+      "source_question": "少し話さない？",
+      "source_answer": "もちろん。どんな話がいい？",
+      "suitable": true
+    },
+    {
+      "id": "positive_greeting",
+      "query": "こんにちは",
+      "source_question": "こんにちは",
+      "source_answer": "こんにちは！",
+      "suitable": true
+    },
+    {
+      "id": "negative_state",
+      "query": "最近どう？",
+      "source_question": "元気ですかー？",
+      "source_answer": "元気ですよー！",
+      "suitable": false
+    },
+    {
+      "id": "negative_activity",
+      "query": "今何してる？",
+      "source_question": "最近何をしてる時が楽しいですか？",
+      "source_answer": "小説書いてるときですかねー？",
+      "suitable": false
+    },
+    {
+      "id": "negative_quantified",
+      "query": "最近どう？",
+      "source_question": "１００マックス元気やとしたらどれぐらいですか？",
+      "source_answer": "９０くらいですかねー。夕方やからね。あなたは？",
+      "suitable": false
+    },
+    {
+      "id": "positive_factual_defer",
+      "query": "猫について教えて",
+      "source_question": "猫について教えて",
+      "source_answer": "猫は哺乳類です。",
+      "suitable": true
+    },
+    {
+      "id": "negative_personal_greeting",
+      "query": "こんにちは",
+      "source_question": "こんにちは",
+      "source_answer": "昨日は家族と旅行に行きました。",
+      "suitable": false
+    },
+    {
+      "id": "negative_slot",
+      "query": "今何してる？",
+      "source_question": "今何してる？",
+      "source_answer": "今日は仕事で疲れました。",
+      "suitable": false
+    }
+  ]
+}
