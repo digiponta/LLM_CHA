@@ -110,9 +110,13 @@ def compose_propositions(
     subject_value = rows[0].subject
     values: List[str] = []
     for row in rows:
-        if row.value not in values:
-            values.append(row.value)
+        # Stored values may already contain the final copula.
+        value = re.sub(r"(?:である)+$", "", row.value).strip()
+        if value and value not in values:
+            values.append(value)
 
+    if not values:
+        return ""
     if len(values) == 1:
         return f"{subject_value}は、{values[0]}である。"
 
