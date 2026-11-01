@@ -1,0 +1,30 @@
+{
+  "memory_records": [
+    {
+      "id": "sphalerite_chemistry",
+      "query": "スファレライトの化学組成は？",
+      "answer": "スファレライトの化学組成はZnSです。",
+      "approved": true,
+      "verified": true
+    },
+    {
+      "id": "unverified",
+      "query": "未確認の知識とは？",
+      "answer": "確認されていません。",
+      "approved": false,
+      "verified": false
+    }
+  ],
+  "candidates": [
+    {
+      "id": "conversation_invite",
+      "question": "少しお話ししませんか？",
+      "answer": "もちろん。何について話しましょう？"
+    },
+    {
+      "id": "hobby_not_current",
+      "question": "最近何をしている時が楽しいですか？",
+      "answer": "小説を書いているときです。"
+    }
+  ]
+}
