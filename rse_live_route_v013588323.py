@@ -13,7 +13,11 @@ def decide_live_route(question,store):
         return None
     # Approval lifecycle and Theme/Intent/Time/Relation matcher remain
     # authoritative. Do not accept an unapproved or revoked candidate.
-    result=resolve(store,question)
+    try:
+        result=resolve(store,question)
+    except (ValueError, OSError, KeyError, TypeError):
+        return {"answer":"未学習です","route":"RSE_STORE_ERROR_EXPERIMENTAL",
+                "candidate_id":None}
     action=result["decision"]["action"]
     if action=="SELECT_RSE":
         return {"answer":result["decision"]["answer"],
