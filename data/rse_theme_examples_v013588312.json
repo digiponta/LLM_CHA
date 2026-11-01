@@ -1,0 +1,24 @@
+{
+  "candidates": [
+    {
+      "id": "conversation_invite",
+      "question": "少しお話ししませんか？",
+      "answer": "もちろん。何について話しましょう？"
+    },
+    {
+      "id": "hobby_not_current",
+      "question": "最近何をしている時が楽しいですか？",
+      "answer": "小説を書いているときです。"
+    },
+    {
+      "id": "unsafe_personal",
+      "question": "明日は何をします？",
+      "answer": "明日は実家に帰ります。家族が集まるんです！"
+    },
+    {
+      "id": "greeting",
+      "question": "こんばんはー。",
+      "answer": "こんばんは！"
+    }
+  ]
+}
