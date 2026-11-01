@@ -13,7 +13,7 @@ def semantic_features(text):
         theme="話題"
         if re.search(r"何について|どんな話|話題(は|を|について)",t):
             act="REQUEST_TOPIC"
-        elif re.search(r"話(しませんか|そう|せませんか|したい)|お話しし",t):
+        elif re.search(r"話(しませんか|そう|せませんか|したい)|お話ししませんか",t):
             act="INVITE_CONVERSATION"
         else: act="DISCUSS_TOPIC"
         return {"theme":theme,"intent":act,"time":None}
