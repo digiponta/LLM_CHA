@@ -23,6 +23,9 @@ def decide_live_route(question,store):
         return {"answer":result["decision"]["answer"],
                 "route":"RSE_APPROVED_EXPERIMENTAL",
                 "candidate_id":result["rse"].get("candidate_id")}
+    if result["rse"].get("reason")=="MULTIPLE_MATCHES_REQUIRE_DISAMBIGUATION":
+        return {"answer":"未学習です","route":"RSE_REVIEW_REQUIRED_EXPERIMENTAL",
+                "candidate_id":None}
     if action=="ABSTAIN":
         return {"answer":"未学習です","route":"RSE_UNLEARNED_EXPERIMENTAL",
                 "candidate_id":None}
