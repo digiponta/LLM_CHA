@@ -246,6 +246,11 @@ def parse_args() -> argparse.Namespace:
             "Uses train-centroid calibrated space when available."
         ),
     )
+    parser.add_argument("--rse-live-experiment", action="store_true",
+                        help="Opt-in experimental Theme RSE for narrow conversational intents")
+    parser.add_argument("--rse-candidate-store",
+                        default="data/rse_candidate_lifecycle_v013588322.json",
+                        help="Explicitly approved Theme RSE candidate lifecycle store")
     parser.add_argument("--max-new-tokens", type=int, default=96)
     parser.add_argument("--grounded-unapproved", action="store_true", help="Experimental source-bounded model generation; fallback to quotation")
     parser.add_argument("--temperature", type=float, default=0.45)
@@ -5381,6 +5386,28 @@ def main() -> None:
                     history.append((user_text, _preferred["answer"]))
                     last_ai_reply = _preferred["answer"]
                     continue
+
+        # v0.13.58.83.23: explicitly opt-in Theme RSE before generic generation.
+        # Earlier exact retrieval/Truth Gate/blocked routes always take precedence.
+        # Only the narrowly supported conversation/activity intents are handled;
+        # other requests retain their original generation behavior.
+        if (
+            args.rse_live_experiment
+            and dispatch.state == "NON_CONCEPT"
+            and not force_internalized_verification
+            and not user_text.startswith("/")
+        ):
+            from rse_live_route_v013588323 import decide_live_route
+            _rse_live = decide_live_route(user_text, args.rse_candidate_store)
+            if _rse_live is not None:
+                print("AI> " + _rse_live["answer"])
+                print("[route=" + _rse_live["route"] + ", candidate=" +
+                      str(_rse_live.get("candidate_id") or "-") + "]")
+                print("[0 generated probe tokens, experimental Theme RSE]")
+                print()
+                history.append((user_text, _rse_live["answer"]))
+                last_ai_reply = _rse_live["answer"]
+                continue
 
         # GENERATE: INTERNALIZED, NON_CONCEPT, or active repair verification.
         if force_internalized_verification:
