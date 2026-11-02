@@ -148,7 +148,7 @@ class ChatGUI:
 
     def on_rse_toggle(self):
         # Restart is required so each process uses a fixed RSE configuration.
-        self.add(self.diagnostics, "[RSE setting changed; restarting runtime]\\n")
+        self.add(self.diagnostics, "[RSE setting changed; restarting runtime]\n")
         self.restart()
 
     def launch(self):
@@ -161,7 +161,7 @@ class ChatGUI:
         argv = [sys.executable, "-u", str(ROOT / "chat.py")]
         if self.rse_enabled.get():
             argv.append("--rse-live-experiment")
-        self.add(self.diagnostics, "[RSE GUI mode: " + ("ON (experimental)" if self.rse_enabled.get() else "OFF") + "]\\n")
+        self.add(self.diagnostics, "[RSE GUI mode: " + ("ON (experimental)" if self.rse_enabled.get() else "OFF") + "]\n")
         self.proc = subprocess.Popen(
             argv,
             cwd=str(ROOT), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
