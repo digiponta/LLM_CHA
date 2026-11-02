@@ -11,24 +11,37 @@ from pathlib import Path
 def normalize(s):
     return re.sub(r"\\s+", "", unicodedata.normalize("NFKC", s).casefold())
 
+TEXT_KEYS = {"question", "query", "prompt", "text", "content", "utterance", "input", "user", "message"}
+def extract_strings(obj):
+    """Extract likely conversational text from JSON, including nested dialogue structures."""
+    found = []
+    def visit(x):
+        if isinstance(x, str):
+            if x.strip(): found.append(x)
+        elif isinstance(x, list):
+            for v in x: visit(v)
+        elif isinstance(x, dict):
+            for key, value in x.items():
+                if key in TEXT_KEYS:
+                    visit(value)
+                elif isinstance(value, (dict, list)):
+                    visit(value)
+    visit(obj)
+    return found
+
 def corpus_strings(path):
     p = Path(path)
     if p.suffix.lower() == ".json":
-        obj = json.loads(p.read_text(encoding="utf-8-sig"))
-        strings = []
-        def visit(x):
-            if isinstance(x, str):
-                strings.append(x)
-            elif isinstance(x, dict):
-                for k, v in x.items():
-                    if k in {"question", "query", "prompt", "text", "content", "utterance", "input"}:
-                        visit(v)
-                    elif isinstance(v, (dict, list)):
-                        visit(v)
-            elif isinstance(x, list):
-                for v in x: visit(v)
-        visit(obj)
-        return strings
+        return extract_strings(json.loads(p.read_text(encoding="utf-8-sig")))
+    if p.suffix.lower() == ".jsonl":
+        result = []
+        for line_no, line in enumerate(p.read_text(encoding="utf-8-sig").splitlines(), 1):
+            if not line.strip(): continue
+            try:
+                result.extend(extract_strings(json.loads(line)))
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"INVALID_JSONL:{p}:{line_no}:{exc.msg}") from exc
+        return result
     return p.read_text(encoding="utf-8-sig").splitlines()
 
 def audit(dataset, sources=None):
