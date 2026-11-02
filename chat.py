@@ -3123,6 +3123,11 @@ def main() -> None:
             if stream is not None and hasattr(stream, "reconfigure"):
                 stream.reconfigure(encoding="utf-8", errors="replace")
     args = parse_args()
+    # v0.13.58.83.25: explicitly report experimental RSE launch state.
+    # The independent holdout remains review-only and is never loaded here.
+    print("[RSE mode: " + ("ON (experimental, approved candidates only)" if args.rse_live_experiment else "OFF (default)") + "]")
+    if args.rse_live_experiment:
+        print("[RSE candidate store: " + str(args.rse_candidate_store) + "]")
     # v0.11.9: opt-in experiment, existing Truth Gate remains authoritative.
     import os as _reconcile_os
     _reconcile_enabled = _reconcile_os.environ.get("LLM_CHA_RECONCILIATION", "0") == "1"
