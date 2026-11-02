@@ -9,7 +9,7 @@ import unicodedata
 from pathlib import Path
 
 def normalize(s):
-    return re.sub(r"\\s+", "", unicodedata.normalize("NFKC", s).casefold())
+    return re.sub(r"\s+", "", unicodedata.normalize("NFKC", s).casefold())
 
 TEXT_KEYS = {"question", "query", "prompt", "text", "content", "utterance", "input", "user", "message"}
 def extract_strings(obj):
