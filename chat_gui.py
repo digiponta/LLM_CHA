@@ -129,6 +129,9 @@ class ChatGUI:
         ttk.Button(bar, text="送信", command=self.send).pack(side="left", padx=4)
         ttk.Button(bar, text="ググる", command=self.google).pack(side="left", padx=3)
         ttk.Button(bar, text="クリップ読込", command=self.clipboard_read).pack(side="left", padx=3)
+        self.rse_enabled = tk.BooleanVar(value=False)
+        ttk.Checkbutton(bar, text="RSE実験", variable=self.rse_enabled,
+                        command=self.on_rse_toggle).pack(side="left", padx=3)
         ttk.Button(bar, text="状態", command=self.status).pack(side="left", padx=3)
         ttk.Button(bar, text="再起動", command=self.restart).pack(side="left", padx=4)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
@@ -143,6 +146,11 @@ class ChatGUI:
         widget.see("end")
         widget.configure(state="disabled")
 
+    def on_rse_toggle(self):
+        # Restart is required so each process uses a fixed RSE configuration.
+        self.add(self.diagnostics, "[RSE setting changed; restarting runtime]\\n")
+        self.restart()
+
     def launch(self):
         env = os.environ.copy()
         env.update(PYTHONUTF8="1", PYTHONIOENCODING="utf-8",
@@ -150,8 +158,12 @@ class ChatGUI:
         self.pending = ""
         self.booted = False
         self.status_label.configure(text="起動中")
+        argv = [sys.executable, "-u", str(ROOT / "chat.py")]
+        if self.rse_enabled.get():
+            argv.append("--rse-live-experiment")
+        self.add(self.diagnostics, "[RSE GUI mode: " + ("ON (experimental)" if self.rse_enabled.get() else "OFF") + "]\\n")
         self.proc = subprocess.Popen(
-            [sys.executable, "-u", str(ROOT / "chat.py")],
+            argv,
             cwd=str(ROOT), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT, bufsize=0, env=env)
         process = self.proc
