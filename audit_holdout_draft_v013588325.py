@@ -37,7 +37,12 @@ def audit(dataset, sources=None):
         raise ValueError("INVALID_SCHEMA")
     cases = dataset.get("cases", [])
     source_data = {}
+    missing_sources = []
     for path in sources:
+        p = Path(path)
+        if not p.is_file():
+            missing_sources.append(str(path))
+            continue
         source_data[str(path)] = set(normalize(x) for x in corpus_strings(path) if isinstance(x, str) and x.strip())
     flags = []
     for c in cases:
@@ -52,11 +57,14 @@ def audit(dataset, sources=None):
                     flags.append({"id": c.get("id"), "type": "EXACT_NORMALIZED_OVERLAP", "source": path})
         if c.get("review_state") != "APPROVED":
             flags.append({"id": c.get("id"), "type": "HUMAN_REVIEW_PENDING"})
+    for path in missing_sources:
+        flags.append({"id": None, "type": "SOURCE_NOT_FOUND", "source": path})
     counts = {}
     for flag in flags: counts[flag["type"]] = counts.get(flag["type"], 0) + 1
     return {"status": "REVIEW_REQUIRED", "independence_verified": False,
             "scope": "DEVELOPMENT_DIAGNOSTIC_ONLY",
             "case_count": len(cases), "sources_compared": list(source_data),
+            "sources_missing": missing_sources,
             "flag_counts": counts, "flags": flags,
             "limitations": ["No semantic paraphrase search", "No training exposure proof",
                             "No human review", "No runtime evaluation"]}
@@ -73,5 +81,6 @@ def main():
     out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"status": report["status"], "flag_counts": report["flag_counts"],
                       "sources_compared": report["sources_compared"],
+                      "sources_missing": report["sources_missing"],
                       "report": str(out)}, ensure_ascii=False))
 if __name__ == "__main__": main()
