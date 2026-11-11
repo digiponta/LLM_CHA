@@ -55,7 +55,7 @@ python verify_cha_context_v013.py `
   --llm-tmp-dir C:\Users\inoma\git\misc\LLM_TMP
 ```
 
-Expected: LLM_CHA 46 focused tests (12 + 15 + 19),
+Expected: LLM_CHA 49 focused tests (12 + 15 + 22),
 SKI Bridge 102 tests (previous 100 + 2 new), and the three-repository
 multi-turn verifier 14 scenarios. These numbers are expected test counts,
 not claims of local execution.
@@ -102,3 +102,20 @@ of evidence have been evaluated. A native APPROVED relation is still
 `approval_authenticated=false`, `verified_fact=false`.
 The LLM_TMP v0.33 resolver is used as a narrowly defined conservative
 ambiguity check, *not* as a complete language or truth resolver.
+
+
+## v0.13 follow-up pronoun fix
+
+Windows integration showed 12/14 checks passing, but `その根拠は？`
+was passed through even though `根拠は？` worked. Cause:
+v0.12's explicit-question suffix recognized `その` as a fabricated
+explicit subject, overwriting the v0.13 retained topic interpretation.
+The v0.13 router now gives **recognized anaphoric follow-ups**
+precedence over the explicit-subject heuristic, while maintaining
+exact source selection for `主張の根拠は？`. Three focused regression tests
+cover a direct follow-up, an intervening turn, and missing context.
+
+After updating LLM_CHA, the expected focused test count is **49**.
+Re-run `verify_cha_context_v013.py` in the SKI Bridge repository; no
+Bridge implementation change is needed. Expected integration count
+remains **14**. Actual post-fix Windows results are pending.
