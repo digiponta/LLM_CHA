@@ -140,6 +140,9 @@ def print_ski_diagnostic(result, *, printer=print):
     if result is None:
         return False
     printer("AI> 【SKI診断・事実未検証】" + result["message"])
-    printer("[ski_status=" + result["status"] + ", route=SKI_DIAGNOSTIC_ONLY]")
+    profile = result.get("ski_diagnostic_profile")
+    profile_info = ", ski_profile=" + profile if profile else ""
+    printer("[ski_status=" + result["status"] +
+            ", route=SKI_DIAGNOSTIC_ONLY" + profile_info + "]")
     printer("")
     return True
