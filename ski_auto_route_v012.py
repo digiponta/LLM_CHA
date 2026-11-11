@@ -121,6 +121,7 @@ def auto_route(text, *, environ=None, executor=None):
             "message": result["message"],
             "verified_fact": False,
             "allow_model_context": False,
+            "ski_diagnostic_profile": result.get("ski_diagnostic_profile"),
         }
     except (ValueError, RuntimeError, OSError, ImportError, KeyError, TypeError):
         # An explicit evidence-query candidate must not fall through when
@@ -137,6 +138,9 @@ def display_auto_diagnostic(result, *, printer=print):
     if result is None:
         return False
     printer("AI> 【SKI自動照会・事実未検証】" + result["message"])
-    printer("[ski_auto_status=" + result["status"] + ", route=SKI_AUTO_DIAGNOSTIC_ONLY]")
+    profile = result.get("ski_diagnostic_profile")
+    profile_info = ", ski_profile=" + profile if profile else ""
+    printer("[ski_auto_status=" + result["status"] +
+            ", route=SKI_AUTO_DIAGNOSTIC_ONLY" + profile_info + "]")
     printer("")
     return True
