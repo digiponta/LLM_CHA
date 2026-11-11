@@ -71,6 +71,11 @@ def execute_ski_query(request, *, bridge_dir, tmp_dir, native_path, predicate=""
         request["question"], source_sd=request["source_sd"],
         target_sd=request["target_sd"])
     decision = assess_exchange(exchange)
+    # v0.14: the diagnostic is an actual structured SKI Dataset B field.
+    # Require the wire-profile contract and reject missing/mismatched data
+    # before the separate local Truth Boundary decision is displayed.
+    from ski.diagnostic_v014 import validate_diagnostic, PROFILE
+    validate_diagnostic(exchange)
     if (decision["action"] != "DIAGNOSTIC_ONLY"
             or decision["allow_model_context"] is not False
             or decision["allow_answer_from_evidence"] is not False
@@ -86,6 +91,7 @@ def execute_ski_query(request, *, bridge_dir, tmp_dir, native_path, predicate=""
         "human_approved": False,
         "llm_inference_invoked": False,
         "mapped_relations": report["relations_exported"],
+        "ski_diagnostic_profile": PROFILE,
     }
 
 
