@@ -94,6 +94,13 @@ class ContextRouteV013Tests(unittest.TestCase):
         _, req, _ = step("その根拠は？", state, resolver=resolver)
         self.assertIsNotNone(req)
 
+    def test_explicit_question_keeps_antecedent(self):
+        state, _, reason = step("主張の根拠は？")
+        self.assertEqual(reason, "EXPLICIT_TOPIC")
+        _, request, reason = step("その根拠は？", state)
+        self.assertEqual(reason, "CONTEXT_RESOLVED")
+        self.assertEqual(request["source_sd"], "CLAIM")
+
     def test_missing_context_abstains(self):
         _, request, reason = step("その根拠は？")
         self.assertIsNone(request)
