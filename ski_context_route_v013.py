@@ -210,7 +210,11 @@ def context_route(text, state, *, environ=None, executor=None):
             text, state, data, converted, tmp_resolver=resolver)
         if request is None:
             return updated, None
-        if _strict_subject(text) is not None:
+        # v0.12's suffix matcher also parses "その根拠は？" as a
+        # spurious explicit subject "その". Anaphoric follow-ups must
+        # take precedence once v0.13 has resolved an eligible context.
+        # Only a real explicit source query is delegated to v0.12.
+        if _strict_subject(text) is not None and not _is_followup(text):
             return updated, None  # v0.12 explicit routing retains precedence.
         run = executor or execute_ski_query
         result = run(
