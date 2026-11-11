@@ -109,7 +109,11 @@ def next_context(text, state, native, converted, *, tmp_resolver=None):
     # label as a competing topic.
     from ski_auto_route_v012 import _strict_subject
     explicit_subject = _strict_subject(text)
-    if explicit_subject is not None:
+    # Short anaphoric follow-ups such as "その根拠は？" also match the
+    # v0.12 "<subject>の根拠は" suffix with <subject>="その".
+    # The referent is NOT explicit, so do not replace session context
+    # with a bogus display-name lookup for "その".
+    if explicit_subject is not None and not _is_followup(text):
         hits = {sid for sid, label in labels.items()
                 if label == explicit_subject}
     if _is_followup(text):
