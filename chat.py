@@ -3346,6 +3346,10 @@ def main() -> None:
     semantic_followup_subject = None  # v0.13.58.45: experimental, session-only
     last_user_text: str | None = None
     last_ai_reply: str | None = None
+    # v0.13: session-local SKI topic pointer, distinct from model history.
+    # No external Semantic data is inserted into prompts or learned.
+    from ski_context_route_v013 import empty_context
+    ski_context_state = empty_context()
 
     while True:
         try:
@@ -3357,12 +3361,30 @@ def main() -> None:
         if not user_text:
             continue
 
+        # Clear the independent SKI context on user reset while retaining
+        # LLM_CHA's original /reset handling further below.
+        if user_text == "/reset":
+            from ski_context_route_v013 import empty_context
+            ski_context_state = empty_context()
+
         # v0.11: explicit SKI command is consumed before model, memory and
         # training routes. Never insert third-party Evidence into prompts.
         if user_text == "/ski" or user_text.startswith("/ski "):
             from ski_runtime_v011 import handle_ski_input, print_ski_diagnostic
             print_ski_diagnostic(handle_ski_input(user_text))
             continue
+
+        # v0.13: bounded session context for "その根拠は？". The module
+        # only shows a diagnostic for unambiguous, explicitly registered
+        # topics; unrelated input passes into the original chat engine.
+        if not user_text.startswith("/"):
+            from ski_context_route_v013 import (
+                context_route, display_context_diagnostic)
+            ski_context_state, context_ski_result = context_route(
+                user_text, ski_context_state)
+            if context_ski_result is not None:
+                display_context_diagnostic(context_ski_result)
+                continue
 
         # v0.12: opt-in exact-label Semantic evidence query. Only uniquely
         # resolved requests are consumed as unverified diagnostics. Others
