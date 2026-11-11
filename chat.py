@@ -3356,6 +3356,14 @@ def main() -> None:
 
         if not user_text:
             continue
+
+        # v0.11: explicit SKI command is consumed before model, memory and
+        # training routes. Never insert third-party Evidence into prompts.
+        if user_text == "/ski" or user_text.startswith("/ski "):
+            from ski_runtime_v011 import handle_ski_input, print_ski_diagnostic
+            print_ski_diagnostic(handle_ski_input(user_text))
+            continue
+
         if user_text.startswith("/grounded "):
             from chat_grounded_bridge_v013588264 import answer as grounded_answer
             grounded=grounded_answer(user_text[len("/grounded "):])
