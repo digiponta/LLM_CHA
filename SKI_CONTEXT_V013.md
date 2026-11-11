@@ -151,3 +151,15 @@ Re-run the same 49 focused tests and 14 cross-repository checks.
 An earlier Windows log showed one unreported unittest ERROR; the
 traceback is needed if that error persists after this correction.
 No post-fix Windows test result has been observed yet.
+
+### Windows follow-up: display callback error
+
+A prior 49-test run exposed `TypeError: list.append() takes exactly one
+argument (0 given)` in `print_ski_diagnostic`. The v0.11 diagnostic
+printer (and the v0.12/v0.13 diagnostic printers) now invoke `printer("")`
+instead of calling `printer()`. Default terminal output still gets a blank
+line; injected one-argument callback sinks now work.
+
+The LLM_CHA focused test count remains **49**. Please re-run the tests
+and the three-repository verifier; successful local runs are not yet
+confirmed for this fix.
