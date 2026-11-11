@@ -103,6 +103,15 @@ def next_context(text, state, native, converted, *, tmp_resolver=None):
         return fresh, None, "TMP_AMBIGUITY_VETO"
     labels = _labels(native)
     hits = _mentions(text, labels)
+    # For explicit v0.12 queries, "Xの根拠は?" often contains both
+    # source label X and the Evidence target label "根拠".
+    # Keep only the exactly specified subject; do not treat the target
+    # label as a competing topic.
+    from ski_auto_route_v012 import _strict_subject
+    explicit_subject = _strict_subject(text)
+    if explicit_subject is not None:
+        hits = {sid for sid, label in labels.items()
+                if label == explicit_subject}
     if _is_followup(text):
         # "根拠" can itself be a display name for the target Evidence
         # node. Never let that target label erase the previous source.
