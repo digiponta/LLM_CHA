@@ -55,7 +55,7 @@ python verify_cha_context_v013.py `
   --llm-tmp-dir C:\Users\inoma\git\misc\LLM_TMP
 ```
 
-Expected: LLM_CHA 45 focused tests (12 + 15 + 18),
+Expected: LLM_CHA 46 focused tests (12 + 15 + 19),
 SKI Bridge 102 tests (previous 100 + 2 new), and the three-repository
 multi-turn verifier 14 scenarios. These numbers are expected test counts,
 not claims of local execution.
