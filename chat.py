@@ -3364,6 +3364,16 @@ def main() -> None:
             print_ski_diagnostic(handle_ski_input(user_text))
             continue
 
+        # v0.12: opt-in exact-label Semantic evidence query. Only uniquely
+        # resolved requests are consumed as unverified diagnostics. Others
+        # retain the original chat.py route without altering model context.
+        if not user_text.startswith("/"):
+            from ski_auto_route_v012 import auto_route, display_auto_diagnostic
+            auto_ski_result = auto_route(user_text)
+            if auto_ski_result is not None:
+                display_auto_diagnostic(auto_ski_result)
+                continue
+
         if user_text.startswith("/grounded "):
             from chat_grounded_bridge_v013588264 import answer as grounded_answer
             grounded=grounded_answer(user_text[len("/grounded "):])
