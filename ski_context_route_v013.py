@@ -252,5 +252,5 @@ def display_context_diagnostic(result, *, printer=print):
     printer("AI> 【SKI文脈照会・事実未検証】" + result["message"])
     printer("[ski_context_status=" + result["status"] +
             ", route=SKI_CONTEXT_DIAGNOSTIC_ONLY]")
-    printer()
+    printer("")
     return True
