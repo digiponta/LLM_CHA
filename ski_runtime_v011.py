@@ -94,7 +94,11 @@ def handle_ski_input(line, *, environ=None, executor=None):
 
     Pass a fake executor in unit tests; production uses execute_ski_query.
     """
-    parsed = parse_ski_command(line)
+    try:
+        parsed = parse_ski_command(line)
+    except ValueError:
+        return {"kind": "SKI_DIAGNOSTIC", "status": "ERROR",
+                "message": "SKIコマンド形式が不正です。/ski SOURCE_SD TARGET_SD | question"}
     if parsed is None:
         return None
     env = os.environ if environ is None else environ
