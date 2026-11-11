@@ -51,6 +51,27 @@ class ContextRouteV013Tests(unittest.TestCase):
         _, request, _ = step("根拠は？", state)
         self.assertIsNotNone(request)
 
+    def test_anaphoric_followup_preserves_source(self):
+        state, _, _ = step("主張について教えて")
+        state, request, reason = step("その根拠は？", state)
+        self.assertEqual(reason, "CONTEXT_RESOLVED")
+        self.assertEqual(request["source_sd"], "CLAIM")
+        self.assertEqual(request["target_sd"], "EV")
+        self.assertEqual(state["source_sd"], "CLAIM")
+
+    def test_anaphoric_followup_after_intervening_turn(self):
+        state, _, _ = step("主張について")
+        state, _, _ = step("そうですね", state)
+        _, request, reason = step("その根拠は？", state)
+        self.assertEqual(reason, "CONTEXT_RESOLVED")
+        self.assertEqual(request["source_turn"], 1)
+
+    def test_anaphora_cannot_create_topic_without_context(self):
+        state, request, reason = step("その根拠は？")
+        self.assertIsNone(request)
+        self.assertEqual(reason, "NO_RECENT_CONTEXT")
+        self.assertIsNone(state["source_sd"])
+
     def test_one_intervening_turn(self):
         state, _, _ = step("主張について話そう")
         state, result, _ = step("そうですね", state)
