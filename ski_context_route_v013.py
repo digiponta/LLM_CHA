@@ -235,6 +235,7 @@ def context_route(text, state, *, environ=None, executor=None):
             "verified_fact": False,
             "allow_model_context": False,
             "source_turn": request["source_turn"],
+            "ski_diagnostic_profile": result.get("ski_diagnostic_profile"),
         }
     except (ValueError, OSError, ImportError, RuntimeError, KeyError, TypeError):
         # Do not use stale context when a configured integration fails.
@@ -250,7 +251,9 @@ def display_context_diagnostic(result, *, printer=print):
     if result is None:
         return False
     printer("AI> 【SKI文脈照会・事実未検証】" + result["message"])
+    profile = result.get("ski_diagnostic_profile")
+    profile_info = ", ski_profile=" + profile if profile else ""
     printer("[ski_context_status=" + result["status"] +
-            ", route=SKI_CONTEXT_DIAGNOSTIC_ONLY]")
+            ", route=SKI_CONTEXT_DIAGNOSTIC_ONLY" + profile_info + "]")
     printer("")
     return True
