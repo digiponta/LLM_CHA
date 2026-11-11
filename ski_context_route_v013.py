@@ -103,6 +103,12 @@ def next_context(text, state, native, converted, *, tmp_resolver=None):
         return fresh, None, "TMP_AMBIGUITY_VETO"
     labels = _labels(native)
     hits = _mentions(text, labels)
+    if _is_followup(text):
+        # "根拠" can itself be a display name for the target Evidence
+        # node. Never let that target label erase the previous source.
+        source_ids = {e["source"] for e in converted["relations"]
+                      if e["kind"] == "SUPPORTED_BY" and e["state"] == "APPROVED"}
+        hits.intersection_update(source_ids)
     if len(hits) > 1:
         fresh.update(source_sd=None, source_turn=None)
         return fresh, None, "AMBIGUOUS_TOPIC"
