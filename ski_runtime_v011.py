@@ -135,5 +135,5 @@ def print_ski_diagnostic(result, *, printer=print):
         return False
     printer("AI> 【SKI診断・事実未検証】" + result["message"])
     printer("[ski_status=" + result["status"] + ", route=SKI_DIAGNOSTIC_ONLY]")
-    printer()
+    printer("")
     return True
