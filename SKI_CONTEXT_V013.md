@@ -119,3 +119,35 @@ After updating LLM_CHA, the expected focused test count is **49**.
 Re-run `verify_cha_context_v013.py` in the SKI Bridge repository; no
 Bridge implementation change is needed. Expected integration count
 remains **14**. Actual post-fix Windows results are pending.
+
+
+### Second-stage dispatch guard fix (post Windows FAIL)
+
+The first anaphora correction fixed the pure `next_context` function,
+but actual `context_route` still contained a second v0.12
+explicit-subject veto:
+
+```python
+if _strict_subject(text) is not None:
+    return updated, None
+```
+
+This incorrectly suppressed already resolved `その根拠は？` requests:
+`_strict_subject("その根拠は？")` evaluates to `"その"`, which
+is **not** a registered topic. The second guard now exempts recognized
+anaphoric follow-ups:
+
+```python
+if _strict_subject(text) is not None and not _is_followup(text):
+    return updated, None
+```
+
+The native source ID remains required and `next_context` still rejects
+ambiguous or expired references. This change is limited to the v0.13
+dispatch; the ordinary LLM_CHA truth/Unknown Gate and v0.12 normal
+explicit-query router remain unchanged.
+
+Re-run the same 49 focused tests and 14 cross-repository checks.
+An earlier Windows log showed one unreported unittest ERROR; the
+traceback is needed if that error persists after this correction.
+No post-fix Windows test result has been observed yet.
